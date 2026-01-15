@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { 
   Camera, 
   Upload, 
@@ -64,8 +64,16 @@ export default function TransferenciaModal({
       })
       setStream(mediaStream)
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-        videoRef.current.play()
+        const video = videoRef.current
+        video.srcObject = mediaStream
+
+        video.onloadedmetadata = () => {
+          video.play().catch((e) => {
+            if (e?.name !== "AbortError") {
+              console.error("video.play() error:", e)
+            }
+          })
+        }
       }
     } catch (error) {
       console.error("Error al acceder a la cámara:", error)
@@ -81,6 +89,9 @@ export default function TransferenciaModal({
     if (stream) {
       stream.getTracks().forEach(track => track.stop())
       setStream(null)
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
     }
     setCapturandoFoto(false)
   }

@@ -43,68 +43,90 @@ export default function CameraModal({
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const startingRef = useRef(false)
   const { toast } = useToast()
 
   const startCamera = useCallback(async () => {
-    if (!isOpen || photoMode !== 'camera') return
-    
+    if (!isOpen || photoMode !== "camera") return
+
     setIsLoading(true)
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'user' // Preferir cámara frontal
-        } 
+          facingMode: "user",
+        },
       })
-      
+
       setStream(mediaStream)
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
+
+      const video = videoRef.current
+      if (video) {
+        video.srcObject = mediaStream
+        try {
+          await video.play()
+        } catch (e) {
+          console.error("video.play() blocked:", e)
+        }
       }
     } catch (error: unknown) {
-      console.error('Error accessing camera:', error)
-      
-      let errorMessage = "No se pudo acceder a la cámara."
-      let errorTitle = "Error de cámara"
-      
-      // Mensajes de error específicos según el tipo
+      console.error("Error accessing camera:", error)
+
+      let errorMessage = "No se pudo acceder a la camara."
+      let errorTitle = "Error de camara"
+
       const err = error as DOMException
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
         errorTitle = "Permiso denegado"
-        errorMessage = "Has bloqueado el acceso a la cámara. Para permitirlo:\n\n1. Haz clic en el ícono 🔒 o 🎥 en la barra de direcciones\n2. Selecciona 'Permitir' para la cámara\n3. Recarga la página (F5)\n\nO usa el botón 'Subir Archivo' para cargar una imagen."
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorTitle = "Cámara no encontrada"
-        errorMessage = "No se detectó ninguna cámara en tu dispositivo.\n\nPuedes usar el botón 'Subir Archivo' para cargar una imagen desde tu dispositivo."
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorTitle = "Cámara en uso"
-        errorMessage = "La cámara está siendo usada por otra aplicación (Zoom, Teams, etc.).\n\nCierra otras aplicaciones que usen la cámara e inténtalo de nuevo, o usa el botón 'Subir Archivo'."
-      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
-        errorTitle = "Cámara no compatible"
-        errorMessage = "Tu cámara no soporta las especificaciones requeridas.\n\nUsa el botón 'Subir Archivo' para cargar una imagen."
-      } else if (err.name === 'NotSupportedError') {
+        errorMessage = `Has bloqueado el acceso a la camara. Para permitirlo:
+
+1. Haz clic en el icono de permisos en la barra de direcciones
+2. Selecciona \'Permitir\' para la camara
+3. Recarga la pagina (F5)
+
+O usa el boton \'Subir Archivo\' para cargar una imagen.`
+} else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+        errorTitle = "Camara no encontrada"
+        errorMessage = `No se detecto ninguna camara en tu dispositivo.
+
+Puedes usar el boton \'Subir Archivo\' para cargar una imagen.`
+} else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
+        errorTitle = "Camara en uso"
+        errorMessage = `La camara esta siendo usada por otra aplicacion (Zoom, Teams, etc.).
+
+Cierra otras aplicaciones que usen la camara e intentalo de nuevo, o usa \'Subir Archivo\'.`
+} else if (err?.name === "OverconstrainedError" || err?.name === "ConstraintNotSatisfiedError") {
+        errorTitle = "Camara no compatible"
+        errorMessage = `Tu camara no soporta las especificaciones requeridas.
+
+Usa el boton \'Subir Archivo\' para cargar una imagen.`
+} else if (err?.name === "NotSupportedError") {
         errorTitle = "Navegador no compatible"
-        errorMessage = "Tu navegador no soporta acceso a la cámara.\n\nUsa Chrome, Firefox o Safari actualizado, o usa el botón 'Subir Archivo'."
-      } else if (err.name === 'SecurityError') {
+        errorMessage = `Tu navegador no soporta acceso a la camara.
+
+Usa Chrome/Firefox/Safari actualizado, o usa \'Subir Archivo\'.`
+} else if (err?.name === "SecurityError") {
         errorTitle = "Error de seguridad"
-        errorMessage = "Acceso a la cámara bloqueado por seguridad.\n\nAsegúrate de estar en una conexión segura (HTTPS) o usa el botón 'Subir Archivo'."
-      }
-      
+        errorMessage = `Acceso a la camara bloqueado por seguridad.
+
+Asegurate de estar en HTTPS.`
+}
+
       toast({
         title: errorTitle,
         description: errorMessage,
         variant: "destructive",
-        duration: 8000, // Más tiempo para leer el mensaje
+        duration: 8000,
       })
-      
-      // Regresar al modo de selección para que pueda elegir subir archivo
-      setPhotoMode('select')
+
+      setPhotoMode("select")
     } finally {
       setIsLoading(false)
     }
   }, [isOpen, photoMode, toast])
-
-  const stopCamera = useCallback(() => {
+const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop())
       setStream(null)
