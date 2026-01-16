@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -70,7 +70,7 @@ export default function NuevoGastoModal({
     }
 
     setFoto(file)
-    
+
     // Crear preview solo para imágenes
     if (file.type.startsWith('image/')) {
       const reader = new FileReader()
@@ -93,7 +93,7 @@ export default function NuevoGastoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const montoNumerico = parseFloat(monto)
     if (!concepto.trim()) {
       toast({
@@ -115,36 +115,30 @@ export default function NuevoGastoModal({
 
     setLoading(true)
     try {
-      let response
+      let fotoBase64 = null
 
       if (foto) {
-        // Si hay foto, enviar como FormData
-        const formData = new FormData()
-        formData.append("concepto", concepto.trim())
-        formData.append("monto", montoNumerico.toString())
-        if (observaciones.trim()) {
-          formData.append("observaciones", observaciones.trim())
-        }
-        formData.append("foto", foto)
-
-        response = await fetch('/api/gastos', {
-          method: 'POST',
-          body: formData,
-        })
-      } else {
-        // Si no hay foto, enviar como JSON
-        response = await fetch('/api/gastos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            concepto: concepto.trim(),
-            monto: montoNumerico,
-            observaciones: observaciones.trim() || undefined
-          }),
+        // Convertir archivo a Base64
+        const reader = new FileReader()
+        fotoBase64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(foto)
         })
       }
+
+      const response = await fetch('/api/gastos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          concepto: concepto.trim(),
+          monto: montoNumerico,
+          observaciones: observaciones.trim() || undefined,
+          fotoComprobante: fotoBase64
+        }),
+      })
 
       if (response.ok) {
         onSuccess()
@@ -244,7 +238,7 @@ export default function NuevoGastoModal({
             <Label htmlFor="foto">Foto de la boleta o factura</Label>
             <div className="mt-1">
               {!foto ? (
-                <div 
+                <div
                   onClick={() => fileInputRef.current?.click()}
                   className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary cursor-pointer transition-colors"
                 >

@@ -3,10 +3,10 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { 
-  Camera, 
-  Upload, 
-  X, 
+import {
+  Camera,
+  Upload,
+  X,
   Loader2,
   DollarSign,
   Building,
@@ -48,35 +48,69 @@ export default function TransferenciaModal({
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  
+  // Cambio: usar useRef para el stream
+  const streamRef = useRef<MediaStream | null>(null)
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const { toast } = useToast()
 
+  // Cambio: Cleanup al desmontar o cerrar modal
+  useEffect(() => {
+    return () => {
+      detenerCamara()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) {
+      detenerCamara()
+    }
+  }, [isOpen])
+
   const iniciarCamara = async () => {
+    // Cambio: Prevenir doble inicio
+    if (streamRef.current) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Camera] Stream already active, ignoring start request')
+      }
+      return
+    }
+
     try {
       setCapturandoFoto(true)
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Camera] Requesting access...')
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' } // Cámara trasera preferida
       })
-      setStream(mediaStream)
-      if (videoRef.current) {
-        const video = videoRef.current
-        video.srcObject = mediaStream
 
-        video.onloadedmetadata = () => {
-          video.play().catch((e) => {
-            if (e?.name !== "AbortError") {
-              console.error("video.play() error:", e)
+      streamRef.current = mediaStream
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream
+        // Cambio: manejar video.play() con onloadedmetadata
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play()
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Camera] Playback started')
             }
-          })
+          } catch (e: any) {
+            // Cambio: ignorar AbortError
+            if (e.name !== 'AbortError') {
+              console.error('[Camera] Play error:', e)
+            }
+          }
         }
       }
     } catch (error) {
       console.error("Error al acceder a la cámara:", error)
+      setCapturandoFoto(false) // Reset state on error
       toast({
         title: "Error",
         description: "No se pudo acceder a la cámara. Verifica los permisos.",
@@ -86,13 +120,24 @@ export default function TransferenciaModal({
   }
 
   const detenerCamara = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-      setStream(null)
+    if (streamRef.current) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Camera] Stopping stream')
+      }
+      streamRef.current.getTracks().forEach(track => {
+        track.stop()
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Camera] Track ${track.kind} stopped`)
+        }
+      })
+      streamRef.current = null
     }
+
+    // Cambio: asegurar video.srcObject = null
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
+
     setCapturandoFoto(false)
   }
 
@@ -100,17 +145,17 @@ export default function TransferenciaModal({
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current
       const video = videoRef.current
-      
+
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
-      
+
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.drawImage(video, 0, 0)
         const dataURL = canvas.toDataURL('image/jpeg', 0.8)
         setFotoComprobante(dataURL)
         detenerCamara()
-        
+
         toast({
           title: "Foto capturada",
           description: "La imagen del comprobante se ha capturado exitosamente",
@@ -145,7 +190,7 @@ export default function TransferenciaModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!monto || !fotoComprobante) {
       toast({
         title: "Error",
@@ -316,7 +361,7 @@ export default function TransferenciaModal({
                         <Camera className="h-4 w-4 mr-2" />
                         Tomar foto con cámara
                       </Button>
-                      
+
                       <div className="relative">
                         <Button
                           type="button"

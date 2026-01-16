@@ -5,6 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:prod": "next start -p 3030",
     "lint": "next lint"
   },
   "prisma": {

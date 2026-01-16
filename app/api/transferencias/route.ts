@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante } = body
 
-    // Validar campos obligatorios
+    // 1. Validaciones básicas
     if (!prestamoId || !monto || !fotoComprobante) {
       return NextResponse.json(
         { error: "Los campos préstamo, monto y foto del comprobante son obligatorios" },
@@ -25,19 +25,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar que el préstamo existe
-    const prestamo = await prisma.prestamo.findUnique({
-      where: { id: prestamoId }
-    })
-
-    if (!prestamo) {
-      return NextResponse.json(
-        { error: "Préstamo no encontrado" },
-        { status: 404 }
-      )
-    }
-
-    // Validar el monto
     const montoNum = parseFloat(monto.toString())
     if (montoNum <= 0) {
       return NextResponse.json(
@@ -46,17 +33,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Crear la transferencia
-    const nuevaTransferencia = await prisma.transferencia.create({
-      data: {
-        prestamoId,
-        userId: session.user.id,
-        monto: montoNum,
-        banco: banco?.trim() || null,
-        referencia: referencia?.trim() || null,
-        fotoComprobante,
-        observaciones: observaciones?.trim() || null,
-      },
+    // 2. Ejecutar todo dentro de una transacción
+    const resultado = await prisma.$transaction(async (tx: any) => {
+      // a) Verificar préstamo y saldo
+      const prestamo = await tx.prestamo.findUnique({
+        where: { id: prestamoId },
+        include: { pagos: { select: { monto: true } } }
+      })
+
+      if (!prestamo) {
+        throw new Error("Préstamo no encontrado")
+      }
+
+      // Calcular saldo pendiente
+      const totalPagado = prestamo.pagos.reduce((sum: number, p: any) => sum + Number(p.monto), 0)
+      const montoTotalPrestamo = Number(prestamo.monto) * (1 + Number(prestamo.interes) / 100)
+      const saldoPendiente = montoTotalPrestamo - totalPagado
+
+      // Validar que el pago no exceda el saldo (con un pequeño margen de error por decimales)
+      if (montoNum > saldoPendiente + 100) { // Margen de $100 pesos
+        throw new Error(`El monto ($${montoNum}) excede el saldo pendiente ($${saldoPendiente})`)
+      }
+
+      // b) Crear la Transferencia
+      const nuevaTransferencia = await tx.transferencia.create({
+        data: {
+          prestamoId,
+          userId: session.user.id,
+          monto: montoNum,
+          banco: banco?.trim() || null,
+          referencia: referencia?.trim() || null,
+          fotoComprobante,
+          observaciones: observaciones?.trim() || null,
+        }
+      })
+
+      // c) Crear el Pago asociado
+      // Nota: Usamos el mismo monto. En 'observaciones' referenciamos la transferencia.
+      await tx.pago.create({
+        data: {
+          prestamoId,
+          userId: session.user.id,
+          monto: montoNum,
+          metodoPago: "TRANSFERENCIA",
+          observaciones: `Transferencia ID: ${nuevaTransferencia.id}. Ref: ${referencia || 'S/N'}. ${observaciones || ''}`.trim().substring(0, 191) // Asegurar que cabe en DB
+        }
+      })
+
+      return nuevaTransferencia
+    })
+
+    // 3. Devolver respuesta con los datos enriquecidos (fuera de la transacción para no bloquear)
+    const transferenciaFull = await prisma.transferencia.findUnique({
+      where: { id: resultado.id },
       include: {
         usuario: {
           select: {
@@ -81,23 +110,32 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    if (!transferenciaFull) throw new Error("Error al recuperar la transferencia creada")
+
     return NextResponse.json({
-      id: nuevaTransferencia.id,
-      prestamoId: nuevaTransferencia.prestamoId,
-      monto: parseFloat(nuevaTransferencia.monto.toString()),
-      banco: nuevaTransferencia.banco,
-      referencia: nuevaTransferencia.referencia,
-      fotoComprobante: nuevaTransferencia.fotoComprobante,
-      observaciones: nuevaTransferencia.observaciones,
-      fecha: nuevaTransferencia.fecha,
-      usuario: nuevaTransferencia.usuario,
-      prestamo: nuevaTransferencia.prestamo
+      id: transferenciaFull.id,
+      prestamoId: transferenciaFull.prestamoId,
+      monto: parseFloat(transferenciaFull.monto.toString()),
+      banco: transferenciaFull.banco,
+      referencia: transferenciaFull.referencia,
+      fotoComprobante: transferenciaFull.fotoComprobante,
+      observaciones: transferenciaFull.observaciones,
+      fecha: transferenciaFull.fecha,
+      usuario: transferenciaFull.usuario,
+      prestamo: transferenciaFull.prestamo
     })
 
   } catch (error) {
     console.error("Error al crear transferencia:", error)
+    const message = error instanceof Error ? error.message : "Error interno del servidor"
+
+    // Si es un error de validación nuestro (ej: saldo excedido), devolvemos 400
+    if (message.includes("Préstamo no encontrado") || message.includes("excede el saldo")) {
+      return NextResponse.json({ error: message }, { status: 400 })
+    }
+
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: "Error interno del servidor al procesar la transferencia" },
       { status: 500 }
     )
   }
@@ -140,7 +178,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(transferencias.map(transferencia => ({
+    return NextResponse.json(transferencias.map((transferencia: any) => ({
       id: transferencia.id,
       prestamoId: transferencia.prestamoId,
       monto: parseFloat(transferencia.monto.toString()),

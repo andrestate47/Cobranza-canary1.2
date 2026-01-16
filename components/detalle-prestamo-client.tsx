@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   User,
   Phone,
   MapPin,
@@ -153,7 +153,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [editando, setEditando] = useState(false)
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<{url: string, title: string, subtitle?: string} | null>(null)
+  const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
   const { toast } = useToast()
   const { format: formatCurrency } = useCurrency()
   const router = useRouter()
@@ -188,7 +188,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const montoOriginal = prestamo.monto
   const interesAmount = (montoOriginal * prestamo.interes) / 100
   const montoTotal = montoOriginal + interesAmount
-  const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) => 
+  const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) =>
     sum + Number(pago.monto), 0
   )
   const saldoPendiente = montoTotal - totalPagado
@@ -196,19 +196,19 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const valorCuota = prestamo.valorCuota
 
   const progressPercentage = Math.min((cuotasPagadas / prestamo.cuotas) * 100, 100)
-  
+
   // Calcular información extendida del préstamo
   const calcularInformacionExtendida = () => {
     const hoy = new Date()
     const fechaInicio = new Date(prestamo.fechaInicio)
     const fechaFin = new Date(prestamo.fechaFin)
-    
+
     // Días transcurridos
     const diasTranscurridos = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24))
-    
+
     // Cuotas pendientes
     const cuotasPendientes = Math.max(0, prestamo.cuotas - cuotasPagadas)
-    
+
     // Calcular cuotas esperadas basado en el tipo de pago
     const diasPorTipo = {
       'DIARIO': 1,
@@ -224,10 +224,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       'SEMESTRAL': 180,
       'ANUAL': 365
     }
-    
+
     const diasEsperadosPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
     let cuotasEsperadas = Math.floor(diasTranscurridos / diasEsperadosPorCuota)
-    
+
     // Para tipos de pago especiales, ajustar cálculo
     if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
       // Contar solo días laborales (lunes a viernes)
@@ -254,12 +254,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       }
       cuotasEsperadas = diasLaborales
     }
-    
+
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
     const cuotasEsperadasConGracia = Math.max(0, cuotasEsperadas - Math.floor(diasGracia / diasEsperadosPorCuota))
     const cuotasAtrasadas = Math.max(0, cuotasEsperadasConGracia - cuotasPagadas)
-    
+
     // Días vencidos
     let diasVencidos = 0
     if (hoy > fechaFin) {
@@ -267,20 +267,20 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     } else if (cuotasAtrasadas > 0) {
       diasVencidos = Math.max(0, diasTranscurridos - (cuotasPagadas * diasEsperadosPorCuota) - diasGracia)
     }
-    
+
     // Valor en atrasos (cuotas atrasadas * valor de cuota)
     const valorEnAtrasos = cuotasAtrasadas * valorCuota
-    
+
     // Último pago
-    const ultimoPago = prestamo.pagos.length > 0 
+    const ultimoPago = prestamo.pagos.length > 0
       ? prestamo.pagos.sort((a: Pago, b: Pago) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
       : null
-    
+
     // Fecha próximo pago
     let fechaProximoPago: Date | null = null
     if (cuotasPagadas < prestamo.cuotas) {
       fechaProximoPago = new Date(fechaInicio.getTime() + (cuotasPagadas * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
-      
+
       // Para tipos especiales, ajustar al siguiente día laboral
       if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
         const diaSemana = fechaProximoPago.getDay()
@@ -291,7 +291,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         if (diaSemana === 0) fechaProximoPago.setDate(fechaProximoPago.getDate() + 1) // Si es domingo, mover a lunes
       }
     }
-    
+
     return {
       diasTranscurridos,
       cuotasPendientes,
@@ -303,7 +303,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       diasGracia: prestamo.diasGracia || 0
     }
   }
-  
+
   const infoExtendida = calcularInformacionExtendida()
 
   const prestamoFormatted = {
@@ -463,11 +463,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       'SEMESTRAL': 180,
       'ANUAL': 365
     }
-    
+
     const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
     const fechaInicio = new Date(prestamo.fechaInicio)
     const pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
-    
+
     // Si ya está completamente pagado
     if (saldoPendiente <= 0) {
       return {
@@ -478,7 +478,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         colorTexto: 'text-white'
       }
     }
-    
+
     // Verificar morosidad
     if (cuotasPagadas < Math.max(0, pagosEsperados)) {
       return {
@@ -493,7 +493,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     // Verificar si está próximo a vencer (próximo pago en 3 días)
     const fechaProximoPago = new Date(fechaInicio.getTime() + (cuotasPagadas * diasEsperados * 24 * 60 * 60 * 1000))
     const diferenciaDias = Math.floor((fechaProximoPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-    
+
     if (diferenciaDias <= 3 && diferenciaDias >= 0) {
       return {
         estado: 'PROXIMO_A_VENCER',
@@ -566,9 +566,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const onTransferenciaSaved = () => {
     setShowTransferenciaModal(false)
     cargarTransferencias() // Recargar transferencias
+    router.refresh() // Recargar datos del servidor (balance, pagos, etc.)
     toast({
       title: "Transferencia registrada",
-      description: "La transferencia se ha registrado exitosamente",
+      description: "La transferencia y el pago se han registrado exitosamente",
     })
   }
 
@@ -584,7 +585,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
   const handleSubmitRenovacion = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!montoRenovacion || !interesRenovacion || !cuotasRenovacion) {
       toast({
         title: "Error",
@@ -639,7 +640,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           title: "Crédito renovado",
           description: `El crédito se ha renovado exitosamente. Nuevo ID: ${result.prestamoNuevo.id.slice(-6).toUpperCase()}`,
         })
-        
+
         // Cerrar modal y redirigir al nuevo préstamo
         setShowRenovacionModal(false)
         router.push(`/prestamos/${result.prestamoNuevo.id}`)
@@ -679,11 +680,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const montoNum = parseFloat(montoRenovacion) || 0
     const interesNum = parseFloat(interesRenovacion) || 0
     const cuotasNum = parseInt(cuotasRenovacion) || 1
-    
+
     const montoEfectivo = montoNum - saldoPendiente
     const montoConInteres = montoNum * (1 + interesNum / 100)
     const valorCuotaNueva = montoConInteres / cuotasNum
-    
+
     return {
       montoEfectivo: Math.max(0, montoEfectivo),
       montoConInteres,
@@ -706,7 +707,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
   const handleSubmitEdicion = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!nombreEditar.trim() || !apellidoEditar.trim() || !documentoEditar.trim()) {
       toast({
         title: "Error",
@@ -739,7 +740,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           title: "Cliente actualizado",
           description: "Los datos del cliente han sido actualizados exitosamente",
         })
-        
+
         // Cerrar modal y recargar la página
         setShowEditarModal(false)
         window.location.reload()
@@ -807,10 +808,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
                 <div className="flex items-center space-x-2">
                   {/* Badge de estado de alerta */}
-                  <Badge 
-                    className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${
-                      estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
-                    }`}
+                  <Badge
+                    className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                      }`}
                   >
                     <IconoAlerta className="h-3 w-3 mr-1" />
                     {estadoAlerta.texto}
@@ -836,8 +836,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
                       title="Ver foto del cliente"
                     >
-                      <img 
-                        src={prestamo.cliente.foto} 
+                      <img
+                        src={prestamo.cliente.foto}
                         alt={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}
                         className="w-full h-full object-cover"
                       />
@@ -855,8 +855,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <h3 className="text-xl font-semibold text-gray-900">
                       {prestamo.cliente.nombre} {prestamo.cliente.apellido}
                     </h3>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className="text-xs bg-blue-100 text-blue-800"
                     >
                       {getTipoPagoText(prestamo.tipoPago)}
@@ -873,13 +873,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       <span className="font-medium">Documento:</span>
                       <span className="ml-1">{prestamo.cliente.documento}</span>
                     </div>
-                    
+
                     {/* Dirección del Cliente */}
                     <div className="flex items-start text-gray-600">
                       <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-medium text-gray-700 mb-1">Dirección Cliente:</div>
-                        <button 
+                        <button
                           onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente')}
                           className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight"
                           title="Click para abrir en Google Maps"
@@ -895,7 +895,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-orange-500" />
                         <div className="flex-1">
                           <div className="font-medium text-orange-700 mb-1">Dirección Cobro:</div>
-                          <button 
+                          <button
                             onClick={() => abrirMapa(prestamo.cliente.direccionCobro!, 'cobro')}
                             className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight"
                             title="Click para abrir en Google Maps"
@@ -909,7 +909,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     {prestamo.cliente.telefono && (
                       <div className="flex items-center text-gray-600">
                         <Phone className="h-4 w-4 mr-2" />
-                        <a 
+                        <a
                           href={`tel:${prestamo.cliente.telefono}`}
                           className="text-blue-600 hover:underline"
                         >
@@ -943,21 +943,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                   <div className="text-sm text-gray-600">Monto Prestado</div>
                 </div>
-                
+
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
                     {formatCurrency(totalPagado)}
                   </div>
                   <div className="text-sm text-gray-600">Total Pagado</div>
                 </div>
-                
+
                 <div className="text-center p-4 bg-red-50 rounded-lg">
                   <div className="text-2xl font-bold text-red-600">
                     {formatCurrency(saldoPendiente)}
                   </div>
                   <div className="text-sm text-gray-600">Saldo Pendiente</div>
                 </div>
-                
+
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">
                     {formatCurrency(valorCuota)}
@@ -994,7 +994,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <span className="font-semibold text-green-600">{cuotasPagadas}</span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cuotas atrasadas:</span>
@@ -1037,7 +1037,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Último pago:</span>
                       <span className="font-medium">
-                        {infoExtendida.ultimoPago 
+                        {infoExtendida.ultimoPago
                           ? `${formatCurrency(infoExtendida.ultimoPago.monto)} - ${formatDate(String(infoExtendida.ultimoPago.fecha))}`
                           : 'Sin pagos registrados'
                         }
@@ -1046,7 +1046,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-600">Fecha próximo pago:</span>
                       <span className="font-medium">
-                        {infoExtendida.fechaProximoPago 
+                        {infoExtendida.fechaProximoPago
                           ? formatDate(infoExtendida.fechaProximoPago.toISOString())
                           : 'Préstamo completado'
                         }
@@ -1069,7 +1069,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-600">Creado por:</span>
                       <span className="font-medium">
-                        {prestamo.usuario?.firstName && prestamo.usuario?.lastName 
+                        {prestamo.usuario?.firstName && prestamo.usuario?.lastName
                           ? `${prestamo.usuario.firstName} ${prestamo.usuario.lastName}`
                           : "Usuario"
                         }
@@ -1086,7 +1086,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <span>{progressPercentage.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-green-500 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${progressPercentage}%` }}
                   />
@@ -1112,7 +1112,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     Registrar Pago
                   </Button>
                 )}
-                
+
                 <Button
                   onClick={() => setShowTransferenciaModal(true)}
                   variant="outline"
@@ -1121,7 +1121,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <CreditCard className="h-4 w-4 mr-2" />
                   Transferencia
                 </Button>
-                
+
                 <Button
                   onClick={handleEditarCliente}
                   variant="outline"
@@ -1130,7 +1130,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <Edit className="h-4 w-4 mr-2" />
                   Editar Cliente
                 </Button>
-                
+
                 {prestamo.estado === "ACTIVO" && (
                   <Button
                     onClick={handleRenovarCredito}
@@ -1141,7 +1141,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     Renovar Crédito
                   </Button>
                 )}
-                
+
                 <Button
                   variant="outline"
                   className="flex-1 border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-400"
@@ -1150,7 +1150,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Compartir
                 </Button>
-                
+
                 {/* Botón de eliminar con diálogo de confirmación */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -1170,7 +1170,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       </div>
                       <AlertDialogDescription className="space-y-2">
                         <p>
-                          Esta acción <strong className="text-red-600">NO se puede deshacer</strong>. 
+                          Esta acción <strong className="text-red-600">NO se puede deshacer</strong>.
                           Esto eliminará permanentemente:
                         </p>
                         <ul className="list-disc list-inside space-y-1 text-sm">
@@ -1225,8 +1225,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 <div className="space-y-3">
                   {/* Mostrar pagos */}
                   {prestamo.pagos.map((pago: Pago, index: number) => (
-                    <div 
-                      key={`pago-${pago.id}`} 
+                    <div
+                      key={`pago-${pago.id}`}
                       className="flex items-center justify-between p-3 bg-green-50 rounded-lg border-l-4 border-green-500"
                     >
                       <div>
@@ -1243,7 +1243,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           {formatDateTime(String(pago.fecha))}
                         </div>
                         <div className="text-xs text-gray-400">
-                          Por: {pago.usuario?.firstName && pago.usuario?.lastName 
+                          Por: {pago.usuario?.firstName && pago.usuario?.lastName
                             ? `${pago.usuario.firstName} ${pago.usuario.lastName}`
                             : "Usuario"
                           }
@@ -1259,8 +1259,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                   {/* Mostrar transferencias */}
                   {transferencias.map((transferencia: Transferencia, index: number) => (
-                    <div 
-                      key={`transferencia-${transferencia.id}`} 
+                    <div
+                      key={`transferencia-${transferencia.id}`}
                       className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500"
                     >
                       <div>
@@ -1287,7 +1287,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           {formatDateTime(String(transferencia.fecha))}
                         </div>
                         <div className="text-xs text-gray-400">
-                          Por: {transferencia.usuario?.firstName && transferencia.usuario?.lastName 
+                          Por: {transferencia.usuario?.firstName && transferencia.usuario?.lastName
                             ? `${transferencia.usuario.firstName} ${transferencia.usuario.lastName}`
                             : "Usuario"
                           }
@@ -1303,7 +1303,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(transferencia.fotoComprobante, '_blank')}
+                            onClick={() => {
+                              setSelectedImage({
+                                url: transferencia.fotoComprobante,
+                                title: "Comprobante de Transferencia",
+                                subtitle: `Monto: ${formatCurrency(transferencia.monto)} - Ref: ${transferencia.referencia || 'S/N'}`
+                              })
+                              setShowImageModal(true)
+                            }}
                             className="text-blue-600 hover:text-blue-700"
                           >
                             <Eye className="h-4 w-4" />
