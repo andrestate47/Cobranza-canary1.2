@@ -28,10 +28,20 @@ export async function GET(
       )
     }
 
-    // Generar URL firmada
-    const signedUrl = await downloadFile(gasto.fotoComprobante)
+    // Si es Base64 o una URL local, retornarlo directamente
+    if (gasto.fotoComprobante.startsWith('data:') || gasto.fotoComprobante.startsWith('/')) {
+      return NextResponse.json({ url: gasto.fotoComprobante })
+    }
 
-    return NextResponse.json({ url: signedUrl })
+    // Generar URL firmada
+    try {
+      const signedUrl = await downloadFile(gasto.fotoComprobante)
+      return NextResponse.json({ url: signedUrl })
+    } catch (s3Error) {
+      console.error("Error de S3:", s3Error)
+      // Si falla S3 pero tenemos el string, intentamos devolverlo por si acaso es una URL externa
+      return NextResponse.json({ url: gasto.fotoComprobante })
+    }
   } catch (error) {
     console.error("Error al obtener comprobante:", error)
     return NextResponse.json(

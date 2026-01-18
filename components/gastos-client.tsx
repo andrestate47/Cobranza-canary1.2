@@ -4,10 +4,10 @@
 import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Plus,
-  Search, 
+  Search,
   Calendar,
   Receipt,
   RefreshCw,
@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import NuevoGastoModal from "@/components/nuevo-gasto-modal"
+import ImageViewerModal from "@/components/image-viewer-modal"
 
 interface Gasto {
   id: string
@@ -46,6 +47,11 @@ export default function GastosClient({ session }: GastosClientProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [fechaFiltro, setFechaFiltro] = useState("")
   const [showNuevoGasto, setShowNuevoGasto] = useState(false)
+
+  // Estado para visualización de imagen
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+
   const { toast } = useToast()
 
   const fetchGastos = async () => {
@@ -55,7 +61,7 @@ export default function GastosClient({ session }: GastosClientProps) {
       if (fechaFiltro) {
         url += `?fecha=${fechaFiltro}`
       }
-      
+
       const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
@@ -110,7 +116,16 @@ export default function GastosClient({ session }: GastosClientProps) {
       const response = await fetch(`/api/gastos/comprobante/${gastoId}`)
       if (response.ok) {
         const data = await response.json()
-        window.open(data.url, '_blank')
+
+        // Buscar el gasto para el título
+        const gasto = gastos.find(g => g.id === gastoId)
+
+        setSelectedImage({
+          url: data.url,
+          title: "Comprobante de Gasto",
+          subtitle: gasto ? `${gasto.concepto} - ${formatCurrency(gasto.monto)}` : ""
+        })
+        setShowImageModal(true)
       } else {
         toast({
           title: "Error",
@@ -218,12 +233,12 @@ export default function GastosClient({ session }: GastosClientProps) {
               />
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
               {filteredGastos.length} resultado{filteredGastos.length !== 1 ? 's' : ''}
             </div>
-            
+
             {filteredGastos.length > 0 && (
               <div className="text-lg font-semibold text-red-600">
                 Total: {formatCurrency(getTotalGastos())}
@@ -235,8 +250,8 @@ export default function GastosClient({ session }: GastosClientProps) {
         {/* Lista de gastos */}
         <div className="space-y-4">
           {filteredGastos.map((gasto, index) => (
-            <Card 
-              key={gasto.id} 
+            <Card
+              key={gasto.id}
               className="list-item animate-fadeInScale"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
@@ -279,7 +294,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <div className="text-2xl font-bold text-red-600">
                       {formatCurrency(gasto.monto)}
@@ -297,7 +312,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                 No hay gastos registrados
               </h3>
               <p className="text-gray-500 mb-6">
-                {fechaFiltro || searchTerm 
+                {fechaFiltro || searchTerm
                   ? "No se encontraron gastos que coincidan con los filtros"
                   : "Comienza registrando tu primer gasto"
                 }
@@ -320,6 +335,17 @@ export default function GastosClient({ session }: GastosClientProps) {
         onClose={() => setShowNuevoGasto(false)}
         onSuccess={onGastoSuccess}
       />
+
+      {/* Modal de visualización de imagen */}
+      {selectedImage && (
+        <ImageViewerModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          imageUrl={selectedImage.url}
+          title={selectedImage.title}
+          subtitle={selectedImage.subtitle}
+        />
+      )}
     </div>
   )
 }

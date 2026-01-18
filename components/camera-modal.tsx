@@ -25,12 +25,12 @@ interface CameraModalProps {
 type PhotoType = 'cliente' | 'dni' | null
 type PhotoMode = 'select' | 'camera' | 'upload'
 
-export default function CameraModal({ 
-  isOpen, 
-  onClose, 
-  clienteId, 
-  clienteNombre, 
-  onPhotoSaved 
+export default function CameraModal({
+  isOpen,
+  onClose,
+  clienteId,
+  clienteNombre,
+  onPhotoSaved
 }: CameraModalProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [photoType, setPhotoType] = useState<PhotoType>(null)
@@ -38,7 +38,7 @@ export default function CameraModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -47,30 +47,30 @@ export default function CameraModal({
 
   const startCamera = useCallback(async () => {
     if (!isOpen || photoMode !== 'camera') return
-    
+
     // Si ya hay un stream activo, no hacer nada
     if (streamRef.current) return
 
     setIsLoading(true)
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'user' // Preferir cámara frontal
-        } 
+          facingMode: 'environment' // Preferir cámara trasera
+        }
       })
-      
+
       streamRef.current = mediaStream
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
       }
     } catch (error: unknown) {
       console.error('Error accessing camera:', error)
-      
+
       let errorMessage = "No se pudo acceder a la cámara."
       let errorTitle = "Error de cámara"
-      
+
       // Mensajes de error específicos según el tipo
       const err = error as DOMException
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -92,14 +92,14 @@ export default function CameraModal({
         errorTitle = "Error de seguridad"
         errorMessage = "Acceso a la cámara bloqueado por seguridad.\n\nAsegúrate de estar en una conexión segura (HTTPS) o usa el botón 'Subir Archivo'."
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
         variant: "destructive",
         duration: 8000,
       })
-      
+
       // Regresar al modo de selección
       setPhotoMode('select')
     } finally {
@@ -128,7 +128,7 @@ export default function CameraModal({
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
       context.drawImage(video, 0, 0)
-      
+
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8)
       setCapturedImage(imageDataUrl)
     }
@@ -162,7 +162,7 @@ export default function CameraModal({
       }
 
       setSelectedFile(file)
-      
+
       // Crear preview de la imagen
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -194,7 +194,7 @@ export default function CameraModal({
         blob = await response.blob()
         fileName = `${photoType}-${clienteId}-${Date.now()}.jpg`
       }
-      
+
       // Crear FormData
       const formData = new FormData()
       formData.append('photo', blob, fileName)
@@ -213,13 +213,13 @@ export default function CameraModal({
           title: "Foto guardada",
           description: `La foto del ${photoType === 'cliente' ? 'cliente' : 'DNI'} se ha guardado exitosamente.`,
         })
-        
+
         // Notificar al componente padre
         onPhotoSaved?.()
-        
+
         // Resetear estados
         resetAllStates()
-        
+
         // Cerrar modal
         handleClose()
       } else {
@@ -274,7 +274,7 @@ export default function CameraModal({
     } else {
       stopCamera()
     }
-    
+
     return () => stopCamera()
   }, [isOpen, photoMode, startCamera, stopCamera])
 
@@ -298,17 +298,17 @@ export default function CameraModal({
               <Image className="h-5 w-5" />
             )}
             <span>
-              {photoMode === 'camera' ? 'Capturar Foto' : 
-               photoMode === 'upload' ? 'Subir Imagen' : 
-               'Agregar Foto'} - {clienteNombre}
+              {photoMode === 'camera' ? 'Capturar Foto' :
+                photoMode === 'upload' ? 'Subir Imagen' :
+                  'Agregar Foto'} - {clienteNombre}
             </span>
           </DialogTitle>
           <DialogDescription>
-            {photoMode === 'select' ? 
+            {photoMode === 'select' ?
               'Selecciona el tipo de foto y cómo deseas agregarla' :
               photoMode === 'camera' ?
-              'Captura la imagen usando la cámara de tu dispositivo' :
-              'Selecciona una imagen desde tu dispositivo'
+                'Captura la imagen usando la cámara de tu dispositivo' :
+                'Selecciona una imagen desde tu dispositivo'
             }
           </DialogDescription>
         </DialogHeader>
@@ -418,7 +418,7 @@ export default function CameraModal({
                   </span>
                 </Badge>
               </div>
-              
+
               {!capturedImage && (
                 <Button
                   variant="ghost"
@@ -479,7 +479,7 @@ export default function CameraModal({
                   </div>
                 </div>
               )}
-              
+
               {/* Video en vivo */}
               {!capturedImage && photoMode === 'camera' && (
                 <video
@@ -520,7 +520,7 @@ export default function CameraModal({
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
                   </Button>
-                  
+
                   {photoMode === 'camera' && (
                     <Button
                       onClick={capturePhoto}
@@ -530,7 +530,7 @@ export default function CameraModal({
                       Capturar
                     </Button>
                   )}
-                  
+
                   {photoMode === 'upload' && (
                     <Button
                       onClick={triggerFileSelect}
@@ -556,7 +556,7 @@ export default function CameraModal({
                     <RotateCcw className="h-4 w-4 mr-2" />
                     {photoMode === 'camera' ? 'Tomar otra' : 'Elegir otra'}
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     onClick={downloadPhoto}
@@ -564,7 +564,7 @@ export default function CameraModal({
                     <Download className="h-4 w-4 mr-2" />
                     Descargar
                   </Button>
-                  
+
                   <Button
                     onClick={savePhoto}
                     disabled={isSaving}

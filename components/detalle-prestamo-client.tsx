@@ -59,6 +59,7 @@ import PagoRapidoModal from "@/components/pago-rapido-modal"
 import CameraModal from "@/components/camera-modal"
 import TransferenciaModal from "@/components/transferencia-modal"
 import ImageViewerModal from "@/components/image-viewer-modal"
+import BoletaViewerModal from "@/components/boleta-viewer-modal"
 
 // Tipos basados en el modelo de Prisma
 interface Cliente {
@@ -154,6 +155,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+
+  // Estado para visualización de boleta histórica
+  const [showBoletaModal, setShowBoletaModal] = useState(false)
+  const [selectedBoletaData, setSelectedBoletaData] = useState<any>(null)
+
   const { toast } = useToast()
   const { format: formatCurrency } = useCurrency()
   const router = useRouter()
@@ -562,6 +568,99 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   useEffect(() => {
     cargarTransferencias()
   }, [])
+
+  // Función para construir la data de la boleta y mostrar el modal
+  const handleVerBoletaPago = (pago: Pago) => {
+    // 1. Calcular saldo pendiente HASTA este pago
+    // Ordenamos pagos por fecha para asegurar consistencia
+    const pagosSorted = [...prestamo.pagos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+
+    // Encontramos el índice de este pago
+    const index = pagosSorted.findIndex(p => p.id === pago.id)
+
+    // Sumamos todos los pagos hasta este (inclusive)
+    let totalPagadoHastaEste = 0
+    if (index !== -1) {
+      totalPagadoHastaEste = pagosSorted.slice(0, index + 1).reduce((sum, p) => sum + Number(p.monto), 0)
+    }
+
+    const saldoPendienteEnEseMomento = Math.max(0, montoTotal - totalPagadoHastaEste)
+
+    // Pago anterior
+    const ultimoPagoAnterior = index > 0 ? {
+      fecha: pagosSorted[index - 1].fecha,
+      monto: Number(pagosSorted[index - 1].monto)
+    } : undefined
+
+    // Construir objeto BoletaPagoData
+    const boletaData = {
+      id: pago.id,
+      monto: Number(pago.monto),
+      fecha: pago.fecha,
+      observaciones: pago.observaciones,
+      metodoPago: pago.metodoPago,
+      numeroBoleta: `BOL-${String(pago.id).padStart(6, '0')}`,
+      prestamo: {
+        id: prestamo.id,
+        monto: montoOriginal,
+        interes: prestamo.interes,
+        valorCuota: valorCuota,
+        montoTotal: montoTotal,
+        saldoPendiente: saldoPendienteEnEseMomento, // Saldo DESPUÉS de este pago
+        fechaInicio: prestamo.fechaInicio,
+        tipoPago: prestamo.tipoPago,
+        cuotas: prestamo.cuotas,
+        microseguroTipo: prestamo.microseguroTipo,
+        microseguroValor: prestamo.microseguroValor,
+        microseguroTotal: prestamo.microseguroTotal,
+        ultimoPago: ultimoPagoAnterior
+      },
+      cliente: {
+        nombre: prestamo.cliente.nombre,
+        apellido: prestamo.cliente.apellido,
+        documento: prestamo.cliente.documento,
+        telefono: prestamo.cliente.telefono,
+        direccionCliente: prestamo.cliente.direccionCliente
+      },
+      usuario: {
+        nombre: pago.usuario?.firstName && pago.usuario?.lastName
+          ? `${pago.usuario.firstName} ${pago.usuario.lastName}`
+          : pago.usuario?.name || "Usuario"
+      },
+      tipoCredito: prestamo.tipoCredito?.toLowerCase() || 'efectivo',
+      tipoPagoMetodo: pago.metodoPago.toLowerCase()
+    }
+
+    setSelectedBoletaData(boletaData)
+    setShowBoletaModal(true)
+  }
+
+  const handleVerBoletaTransferencia = async (transferencia: Transferencia) => {
+    if (!transferencia.observaciones) return
+
+    // Intentamos buscar el pago asociado a esta transferencia para tener el ID correcto
+    // Normalmente la transferencia se crea junto con un pago.
+    // Podemos buscar en los pagos uno que coincida en monto y fecha aproximada, o referencia.
+    // Como simplificación por ahora, construiremos la boleta con los datos de la transferencia,
+    // asumiendo que el ID de la transferencia puede servir para generar un número de boleta visual,
+    // o idealmente deberíamos haber guardado el pagoId en la transferencia.
+
+    // Búsqueda simple del pago correspondiente en la lista de pagos cargada
+    const pagoAsociado = prestamo.pagos.find(p =>
+      p.monto === transferencia.monto &&
+      new Date(p.fecha).getTime() === new Date(transferencia.fecha).getTime()
+    )
+
+    if (pagoAsociado) {
+      handleVerBoletaPago(pagoAsociado)
+    } else {
+      // Fallback si no encontramos el pago exacto (ej: diferencias de ms en fecha)
+      toast({
+        title: "Información",
+        description: "No se encontró el pago asociado exacto para generar la boleta completa.",
+      })
+    }
+  }
 
   const onTransferenciaSaved = () => {
     setShowTransferenciaModal(false)
@@ -1254,6 +1353,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           {pago.observaciones}
                         </div>
                       )}
+
+                      {/* Botón ver boleta */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2 text-green-600 hover:text-green-700 hover:bg-green-100"
+                        title="Ver Boleta"
+                        onClick={() => handleVerBoletaPago(pago)}
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
 
@@ -1316,6 +1426,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                             <Eye className="h-4 w-4" />
                           </Button>
                         )}
+
+                        {/* Botón ver boleta para transferencia (busca el pago asociado) */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                          title="Ver Boleta"
+                          onClick={() => handleVerBoletaTransferencia(transferencia)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1330,6 +1451,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           </Card>
         </div>
       </div>
+
+      {/* Modal de visualización de boleta */}
+      <BoletaViewerModal
+        isOpen={showBoletaModal}
+        onClose={() => setShowBoletaModal(false)}
+        data={selectedBoletaData}
+      />
 
       {/* Modal de pago rápido */}
       <PagoRapidoModal
