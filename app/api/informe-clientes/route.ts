@@ -1,10 +1,8 @@
 
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,12 +13,14 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha') || new Date().toISOString().split('T')[0]
-    
-    // Convertir fecha a rango del día
-    const fechaInicio = new Date(fecha)
-    fechaInicio.setHours(0, 0, 0, 0)
-    const fechaFin = new Date(fecha)
-    fechaFin.setHours(23, 59, 59, 999)
+
+    // Convertir fecha a rango del día CORRECTAMENTE
+    // new Date("YYYY-MM-DD") crea una fecha UTC a las 00:00
+    // new Date(y, m, d) crea una fecha LOCAL a las 00:00
+    const [year, month, day] = fecha.split('-').map(Number)
+
+    const fechaInicio = new Date(year, month - 1, day, 0, 0, 0, 0)
+    const fechaFin = new Date(year, month - 1, day, 23, 59, 59, 999)
 
     // 1. CLIENTES TOTALES
     const totalClientes = await prisma.cliente.count({
@@ -430,12 +430,12 @@ export async function GET(request: NextRequest) {
       detalles: {
         clientesVisitados: clientesVisitados.map(cliente => {
           const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
-          const totalPagado = cliente.prestamos.reduce((sum, p) => 
+          const totalPagado = cliente.prestamos.reduce((sum, p) =>
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
           )
           const saldoPendiente = totalPrestado - totalPagado
           const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date())
-          
+
           return {
             id: cliente.id,
             nombre: `${cliente.nombre} ${cliente.apellido}`,
@@ -443,7 +443,7 @@ export async function GET(request: NextRequest) {
             telefono: cliente.telefono,
             direccion: cliente.direccionCobro || cliente.direccionCliente,
             ultimaVisita: cliente.visitas[0]?.fecha || null,
-            visitadoPor: cliente.visitas[0]?.usuario ? 
+            visitadoPor: cliente.visitas[0]?.usuario ?
               `${cliente.visitas[0].usuario.firstName} ${cliente.visitas[0].usuario.lastName}` : null,
             tipoVisita: cliente.visitas[0]?.tipo || null,
             observaciones: cliente.visitas[0]?.observaciones || null,
@@ -452,24 +452,24 @@ export async function GET(request: NextRequest) {
             totalPagado,
             saldoPendiente,
             prestamosVencidos: prestamosVencidos.length,
-            diasMora: prestamosVencidos.length > 0 ? 
-              Math.max(...prestamosVencidos.map(p => 
+            diasMora: prestamosVencidos.length > 0 ?
+              Math.max(...prestamosVencidos.map(p =>
                 Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
               )) : 0
           }
         }),
-        
+
         clientesNoVisitados: clientesNoVisitados.map(cliente => {
           const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
-          const totalPagado = cliente.prestamos.reduce((sum, p) => 
+          const totalPagado = cliente.prestamos.reduce((sum, p) =>
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
           )
           const saldoPendiente = totalPrestado - totalPagado
           const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date())
           const ultimaVisita = cliente.visitas[0]?.fecha || null
-          const diasSinVisita = ultimaVisita ? 
+          const diasSinVisita = ultimaVisita ?
             Math.ceil((new Date().getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24)) : null
-          
+
           return {
             id: cliente.id,
             nombre: `${cliente.nombre} ${cliente.apellido}`,
@@ -484,20 +484,20 @@ export async function GET(request: NextRequest) {
             prestamosVencidos: prestamosVencidos.length,
             ultimaVisita,
             diasSinVisita,
-            diasMora: prestamosVencidos.length > 0 ? 
-              Math.max(...prestamosVencidos.map(p => 
+            diasMora: prestamosVencidos.length > 0 ?
+              Math.max(...prestamosVencidos.map(p =>
                 Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
               )) : 0
           }
         }),
-        
+
         prestamosVencidos: prestamosVencidos.map(prestamo => {
           const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const saldoPendiente = Number(prestamo.monto) - totalPagado
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
           const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
-          
+
           return {
             id: prestamo.id,
             cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
@@ -516,11 +516,11 @@ export async function GET(request: NextRequest) {
             ultimoPago
           }
         }),
-        
+
         nuevosClientes: nuevosClientes.map(cliente => {
           const prestamosActivos = cliente.prestamos.filter(p => p.estado === 'ACTIVO')
           const primerPrestamo = cliente.prestamos.length > 0 ? cliente.prestamos[0] : null
-          
+
           return {
             id: cliente.id,
             nombre: `${cliente.nombre} ${cliente.apellido}`,
@@ -536,12 +536,12 @@ export async function GET(request: NextRequest) {
             interesPrimerPrestamo: primerPrestamo ? Number(primerPrestamo.interes) : null
           }
         }),
-        
+
         nuevosPrestamos: nuevosPrestamos.map(prestamo => {
           const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
           const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
-          
+
           return {
             id: prestamo.id,
             cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
@@ -562,14 +562,14 @@ export async function GET(request: NextRequest) {
             pagosRealizados: prestamo.pagos.length
           }
         }),
-        
+
         cobrosHoy: cobrosHoy.map(pago => {
           const totalPagado = pago.prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const montoPrestamo = Number(pago.prestamo.monto)
           const porcentajePagado = (totalPagado / montoPrestamo * 100).toFixed(1)
           const cuotasPagadas = Math.floor(totalPagado / Number(pago.prestamo.valorCuota))
           const saldoPendiente = montoPrestamo - totalPagado
-          
+
           return {
             id: pago.id,
             cliente: `${pago.prestamo.cliente.nombre} ${pago.prestamo.cliente.apellido}`,
@@ -589,20 +589,20 @@ export async function GET(request: NextRequest) {
             observaciones: pago.observaciones
           }
         }),
-        
+
         clientesConMora: clientesConMora.map(cliente => {
           const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
-          const totalPagado = cliente.prestamos.reduce((sum, p) => 
+          const totalPagado = cliente.prestamos.reduce((sum, p) =>
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
           )
           const saldoPendiente = totalPrestado - totalPagado
-          const diasMora = Math.max(...cliente.prestamos.map(p => 
+          const diasMora = Math.max(...cliente.prestamos.map(p =>
             Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
           ))
           const ultimaVisita = cliente.visitas[0]?.fecha || null
-          const diasSinGestion = ultimaVisita ? 
+          const diasSinGestion = ultimaVisita ?
             Math.ceil((new Date().getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24)) : null
-          
+
           return {
             id: cliente.id,
             nombre: `${cliente.nombre} ${cliente.apellido}`,
@@ -632,9 +632,9 @@ export async function GET(request: NextRequest) {
           const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
           const estaVencido = new Date(prestamo.fechaFin) < new Date()
-          const diasVencido = estaVencido ? 
+          const diasVencido = estaVencido ?
             Math.ceil((new Date().getTime() - new Date(prestamo.fechaFin).getTime()) / (1000 * 60 * 60 * 24)) : 0
-          
+
           return {
             id: prestamo.id,
             cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
@@ -662,7 +662,7 @@ export async function GET(request: NextRequest) {
           const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const cuotasPagadas = prestamo.cuotas
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
-          
+
           return {
             id: prestamo.id,
             cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
@@ -690,7 +690,7 @@ export async function GET(request: NextRequest) {
           const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
           const diasVencido = Math.ceil((new Date().getTime() - new Date(prestamo.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
-          
+
           return {
             id: prestamo.id,
             cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
@@ -724,7 +724,5 @@ export async function GET(request: NextRequest) {
       { error: "Error al generar informe de clientes" },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

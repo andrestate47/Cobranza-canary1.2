@@ -5,8 +5,8 @@ import { useState, useEffect, useRef } from "react"
 import { Session } from "next-auth"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Plus,
   User,
   DollarSign,
@@ -86,7 +86,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   const router = useRouter()
   const { toast } = useToast()
   const boletaRef = useRef<HTMLDivElement>(null)
-  
+
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingClientes, setLoadingClientes] = useState(true)
@@ -94,14 +94,14 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   const [mostrarFormularioCliente, setMostrarFormularioCliente] = useState(false)
   const [editandoCliente, setEditandoCliente] = useState(false)
   const [clienteAEditar, setClienteAEditar] = useState<Cliente | null>(null)
-  
+
   // Estados para el modal de préstamo creado
   const [modalPrestamoAbierto, setModalPrestamoAbierto] = useState(false)
   const [prestamoCreado, setPrestamoCreado] = useState<PrestamoCreado | null>(null)
-  
+
   // Formulario
   const [clienteId, setClienteId] = useState("")
-  
+
   // Formulario nuevo cliente
   const [nuevoCliente, setNuevoCliente] = useState({
     codigoCliente: "",
@@ -122,15 +122,20 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   const [tipoPago, setTipoPago] = useState("DIARIO")
   const [cuotas, setCuotas] = useState("")
   const [fechaInicio, setFechaInicio] = useState(() => {
-    return new Date().toISOString().split('T')[0]
+    // Usar fecha local
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   })
   const [observaciones, setObservaciones] = useState("")
-  
+
   // Nuevos campos
   const [tipoCredito, setTipoCredito] = useState("EFECTIVO")
   const [diasGracia, setDiasGracia] = useState("0")
   const [moraCredito, setMoraCredito] = useState("0")
-  
+
   // Campos de Microseguro
   const [microseguroTipo, setMicroseguroTipo] = useState("NINGUNO")
   const [microseguroValor, setMicroseguroValor] = useState("")
@@ -175,13 +180,13 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
   const parseSpanishNumber = (value: string): number => {
     if (!value) return 0
-    
+
     // Si el valor contiene tanto puntos como comas, asumimos formato español (punto = miles, coma = decimal)
     if (value.includes('.') && value.includes(',')) {
       // Formato: 1.234.567,89 (punto para miles, coma para decimal)
       return parseFloat(value.replace(/\./g, '').replace(',', '.'))
     }
-    
+
     // Si solo contiene puntos, determinamos si es separador de miles o decimal
     if (value.includes('.')) {
       const parts = value.split('.')
@@ -194,13 +199,13 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
         return parseFloat(value)
       }
     }
-    
+
     // Si solo contiene comas, es separador decimal
     if (value.includes(',')) {
       // Formato: 1234,56 (coma como decimal)
       return parseFloat(value.replace(',', '.'))
     }
-    
+
     // Si no contiene separadores, es un número entero
     return parseFloat(value) || 0
   }
@@ -211,7 +216,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
     const cuotasNum = parseInt(cuotas) || 1
 
     const totalConInteres = montoNum + (montoNum * interesNum / 100)
-    
+
     // Calcular microseguro
     let microseguroTotalCalc = 0
     if (microseguroTipo === 'MONTO_FIJO') {
@@ -220,7 +225,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
       const porcentaje = parseSpanishNumber(microseguroValor) || 0
       microseguroTotalCalc = montoNum * (porcentaje / 100)
     }
-    
+
     const cuota = (totalConInteres + microseguroTotalCalc) / cuotasNum
 
     setMontoTotal(totalConInteres)
@@ -284,7 +289,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
     try {
       // Generar código de cliente automáticamente si no se proporciona
       const codigoGenerado = nuevoCliente.codigoCliente || `CL${String(clientes.length + 1).padStart(3, '0')}`
-      
+
       const clienteData = {
         ...nuevoCliente,
         codigoCliente: codigoGenerado
@@ -300,17 +305,20 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
       if (response.ok) {
         const clienteCreado = await response.json()
-        
+
         // Actualizar lista de clientes
         setClientes(prev => [...prev, clienteCreado])
-        
+
         // Seleccionar el cliente recién creado
         setClienteId(clienteCreado.id)
-        
+
         // Ocultar formulario y resetear
         setMostrarFormularioCliente(false)
         resetFormularioCliente()
-        
+
+        // Emitir evento para actualizar otros componentes
+        window.dispatchEvent(new CustomEvent('clienteCreado', { detail: clienteCreado }))
+
         toast({
           title: "Cliente creado",
           description: "El cliente se ha registrado exitosamente",
@@ -382,21 +390,24 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
       if (response.ok) {
         const clienteActualizado = await response.json()
-        
+
         // Actualizar lista de clientes
-        setClientes(prev => prev.map(c => 
+        setClientes(prev => prev.map(c =>
           c.id === clienteActualizado.id ? clienteActualizado : c
         ))
-        
+
         // Mantener el cliente seleccionado
         setClienteId(clienteActualizado.id)
-        
+
         // Ocultar formulario y resetear
         setMostrarFormularioCliente(false)
         setEditandoCliente(false)
         setClienteAEditar(null)
         resetFormularioCliente()
-        
+
+        // Emitir evento para actualizar otros componentes
+        window.dispatchEvent(new CustomEvent('clienteActualizado', { detail: clienteActualizado }))
+
         toast({
           title: "Cliente actualizado",
           description: "Los datos del cliente se han actualizado exitosamente",
@@ -437,7 +448,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validar que haya un cliente seleccionado (no se puede estar creando uno y enviar el préstamo a la vez)
     if (mostrarFormularioCliente) {
       toast({
@@ -447,7 +458,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
       })
       return
     }
-    
+
     if (!clienteId || !monto || !interes || !cuotas) {
       toast({
         title: "Error",
@@ -472,10 +483,10 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
     setLoading(true)
     try {
-      const microseguroValorNum = microseguroTipo !== 'NINGUNO' 
-        ? parseSpanishNumber(microseguroValor) || 0 
+      const microseguroValorNum = microseguroTipo !== 'NINGUNO'
+        ? parseSpanishNumber(microseguroValor) || 0
         : 0
-      
+
       const response = await fetch('/api/prestamos', {
         method: 'POST',
         headers: {
@@ -501,20 +512,20 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
       if (response.ok) {
         const result = await response.json()
         console.log('✅ Préstamo creado:', result)
-        
+
         // Calcular montoTotal para la visualización
         const montoTotal = result.prestamo.monto + (result.prestamo.monto * result.prestamo.interes / 100)
-        
+
         // Guardar datos del préstamo creado con información adicional
         const prestamoConDatos: PrestamoCreado = {
           ...result.prestamo,
           montoTotal
         }
-        
+
         console.log('📄 Mostrando modal de préstamo creado')
         setPrestamoCreado(prestamoConDatos)
         setModalPrestamoAbierto(true)
-        
+
         // NO redirigir inmediatamente - el usuario cerrará el modal
       } else {
         const error = await response.json()
@@ -551,7 +562,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
     console.log('🔒 Cerrando modal de préstamo...')
     setModalPrestamoAbierto(false)
     setPrestamoCreado(null)
-    
+
     // Mostrar toast y redirigir después de cerrar
     toast({
       title: "Préstamo creado",
@@ -562,17 +573,17 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
   const handleDescargarPrestamo = async () => {
     if (!boletaRef.current || !prestamoCreado) return
-    
+
     try {
       const html2canvas = (await import('html2canvas')).default
-      
+
       const canvas = await html2canvas(boletaRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
         width: 400,
         height: 600
       })
-      
+
       const link = document.createElement('a')
       link.download = `prestamo-${prestamoCreado.id}.png`
       link.href = canvas.toDataURL()
@@ -596,8 +607,24 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   const formatDateModal = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-CO')
+    // Manejar UTC vs Local
+    const dateToParse = dateString.length === 10 ? `${dateString}T00:00:00` : dateString
+
+    // Si termina en Z (UTC) y no tiene hora (es decir, media noche), podríamos querer forzar 
+    // la visualización del día correcto dependiendo de la lógica de negocio, pero 
+    // generalmente la API devuelve ISO con Z.
+    // Si la fecha es creada localmente (YYYY-MM-DD), el parseo anterior funciona.
+
+    // Para fechas que vienen de la BD (ISO strings), toLocaleDateString usará la zona horaria local.
+    // Si la BD guardó 00:00 UTC, veríamos el día anterior. 
+    // Sin embargo, para este fix rápido nos enfocamos en que las fechas seleccionadas se vean bien.
+
+    const date = new Date(dateToParse)
+    return date.toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
   }
 
   const getTipoPagoText = (tipo: string) => {
@@ -670,7 +697,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       Nuevo Cliente
                     </Button>
                   </div>
-                  
+
                   {!mostrarFormularioCliente ? (
                     <>
                       <Select value={clienteId} onValueChange={setClienteId}>
@@ -729,7 +756,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       <h3 className="font-medium text-blue-900 mb-3">
                         {editandoCliente ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
                       </h3>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="codigoCliente" className="text-sm">Código Cliente</Label>
@@ -743,7 +770,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                             disabled={creandoCliente}
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="documento" className="text-sm">Documento *</Label>
                           <Input
@@ -771,7 +798,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                             disabled={creandoCliente}
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="apellido" className="text-sm">Apellido *</Label>
                           <Input
@@ -851,7 +878,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                             disabled={creandoCliente}
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="ciudad" className="text-sm">Ciudad</Label>
                           <Input
@@ -1018,12 +1045,12 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                     <Receipt className="h-4 w-4 mr-2" />
                     Micro seguro
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="microseguroTipo">Tipo de microseguro</Label>
-                      <Select 
-                        value={microseguroTipo} 
+                      <Select
+                        value={microseguroTipo}
                         onValueChange={(value) => {
                           setMicroseguroTipo(value)
                           if (value === 'NINGUNO') {
@@ -1060,7 +1087,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           />
                         </div>
                         <div className="text-xs text-purple-600 mt-1">
-                          {microseguroTipo === 'MONTO_FIJO' 
+                          {microseguroTipo === 'MONTO_FIJO'
                             ? 'Monto fijo a cobrar por el microseguro'
                             : 'Porcentaje del monto del préstamo'
                           }
@@ -1232,7 +1259,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           <User className="h-5 w-5 text-blue-600 mr-2" />
                           <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <h4 className="text-xl font-bold text-gray-900">
                             {prestamoCreado.cliente.nombre} {prestamoCreado.cliente.apellido}
@@ -1365,7 +1392,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-48">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => console.log('WhatsApp préstamo - Por implementar')}
                         className="flex items-center space-x-2 py-3"
                       >
@@ -1377,8 +1404,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           <span className="text-xs text-gray-500">Enviar información</span>
                         </div>
                       </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
+
+                      <DropdownMenuItem
                         onClick={handleDescargarPrestamo}
                         className="flex items-center space-x-2 py-3"
                       >

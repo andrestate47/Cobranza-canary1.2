@@ -10,13 +10,13 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
     const clienteId = params.id
-    
+
     if (!clienteId) {
       return NextResponse.json({ error: "ID de cliente inválido" }, { status: 400 })
     }
@@ -26,8 +26,8 @@ export async function PUT(
 
     // Validaciones básicas
     if (!nombre?.trim() || !apellido?.trim() || !documento?.trim()) {
-      return NextResponse.json({ 
-        error: "Nombre, apellido y documento son obligatorios" 
+      return NextResponse.json({
+        error: "Nombre, apellido y documento son obligatorios"
       }, { status: 400 })
     }
 
@@ -49,8 +49,8 @@ export async function PUT(
     })
 
     if (clienteConMismoDocumento) {
-      return NextResponse.json({ 
-        error: "Ya existe otro cliente con este número de documento" 
+      return NextResponse.json({
+        error: "Ya existe otro cliente con este número de documento"
       }, { status: 400 })
     }
 
@@ -74,16 +74,73 @@ export async function PUT(
 
   } catch (error) {
     console.error("Error al actualizar cliente:", error)
-    
+
     // Error de violación de constraint único
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      return NextResponse.json({ 
-        error: "Ya existe un cliente con este documento" 
+      return NextResponse.json({
+        error: "Ya existe un cliente con este documento"
       }, { status: 400 })
     }
 
     return NextResponse.json(
-      { error: "Error interno del servidor" }, 
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
+    const clienteId = params.id
+
+    if (!clienteId) {
+      return NextResponse.json({ error: "ID de cliente inválido" }, { status: 400 })
+    }
+
+    // Verificar que el cliente existe
+    const clienteExistente = await prisma.cliente.findUnique({
+      where: { id: clienteId },
+      include: {
+        prestamos: {
+          where: { estado: 'ACTIVO' }
+        }
+      }
+    })
+
+    if (!clienteExistente) {
+      return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
+    }
+
+    // Verificar si tiene préstamos activos
+    if (clienteExistente.prestamos.length > 0) {
+      return NextResponse.json({
+        error: "No se puede eliminar un cliente con préstamos activos"
+      }, { status: 400 })
+    }
+
+    // Eliminar permanentemente el cliente
+    const clienteEliminado = await prisma.cliente.delete({
+      where: { id: clienteId }
+    })
+
+    return NextResponse.json({
+      message: "Cliente eliminado exitosamente",
+      cliente: clienteEliminado
+    })
+
+  } catch (error) {
+    console.error("Error al eliminar cliente:", error)
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
       { status: 500 }
     )
   }

@@ -4,10 +4,10 @@
 import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Users, 
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -25,7 +25,8 @@ import {
   UserPlus,
   CreditCard,
   Target,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,6 +34,16 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 
 interface PrestamoDetallado {
@@ -211,10 +222,19 @@ export default function InformeClientesClient({ session }: InformeClientesClient
   const [activeTab, setActiveTab] = useState("resumen")
   const [activePrestamoTab, setActivePrestamoTab] = useState("nuevos")
   const [fechaSeleccionada, setFechaSeleccionada] = useState(() => {
-    return new Date().toISOString().split('T')[0]
+    // Usar fecha local para evitar problemas de zona horaria con toISOString()
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   })
   const [filtroTexto, setFiltroTexto] = useState("")
   const { toast } = useToast()
+
+  // Estado para el diálogo de confirmación de eliminación
+  const [clienteAEliminar, setClienteAEliminar] = useState<{ id: string, nombre: string } | null>(null)
+  const [eliminandoCliente, setEliminandoCliente] = useState(false)
 
   const fetchInforme = async (fecha: string) => {
     setLoading(true)
@@ -246,6 +266,73 @@ export default function InformeClientesClient({ session }: InformeClientesClient
     fetchInforme(fechaSeleccionada)
   }, [fechaSeleccionada])
 
+  // Auto-refresh when clients are added, updated, or deleted
+  useEffect(() => {
+    const handleClienteChange = () => {
+      console.log('🔄 Cliente modificado, refrescando informe...')
+      fetchInforme(fechaSeleccionada)
+    }
+
+    // Listen for custom events
+    window.addEventListener('clienteCreado', handleClienteChange)
+    window.addEventListener('clienteActualizado', handleClienteChange)
+    window.addEventListener('clienteEliminado', handleClienteChange)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('clienteCreado', handleClienteChange)
+      window.removeEventListener('clienteActualizado', handleClienteChange)
+      window.removeEventListener('clienteEliminado', handleClienteChange)
+    }
+  }, [fechaSeleccionada])
+
+  const confirmarEliminacion = (clienteId: string, clienteNombre: string) => {
+    setClienteAEliminar({ id: clienteId, nombre: clienteNombre })
+  }
+
+  const hacerEliminacion = async () => {
+    if (!clienteAEliminar) return
+
+    setEliminandoCliente(true)
+    const { id: clienteId } = clienteAEliminar
+
+    try {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Cliente eliminado",
+          description: "El cliente ha sido eliminado permanentemente",
+        })
+
+        // Emitir evento para actualizar otros componentes
+        window.dispatchEvent(new CustomEvent('clienteEliminado', { detail: { id: clienteId } }))
+
+        // Refrescar el informe
+        fetchInforme(fechaSeleccionada)
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.error || "No se pudo eliminar el cliente",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error al eliminar:", error)
+      toast({
+        title: "Error",
+        description: "Error de conexión",
+        variant: "destructive",
+      })
+    } finally {
+      setEliminandoCliente(false)
+      setClienteAEliminar(null)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -255,7 +342,12 @@ export default function InformeClientesClient({ session }: InformeClientesClient
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO', {
+    // Si la fecha viene como YYYY-MM-DD (longitud 10), agregar T00:00:00 para que
+    // el navegador la interprete como hora local media noche, en lugar de UTC.
+    // Esto evita que se muestre el día anterior por diferencias horarias.
+    const dateToParse = dateString.length === 10 ? `${dateString}T00:00:00` : dateString
+
+    return new Date(dateToParse).toLocaleDateString('es-CO', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -356,7 +448,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 <TabsTrigger value="visitados" className="text-xs sm:text-sm px-2 py-2 h-auto">Visitados</TabsTrigger>
                 <TabsTrigger value="no-visitados" className="text-xs sm:text-sm px-2 py-2 h-auto">No Visitados</TabsTrigger>
                 <TabsTrigger value="vencidos" className="text-xs sm:text-sm px-2 py-2 h-auto">Vencidos</TabsTrigger>
-                <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto">Nuevos</TabsTrigger>
+                <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto">Clientes</TabsTrigger>
                 <TabsTrigger value="cobros" className="text-xs sm:text-sm px-2 py-2 h-auto">Cobros</TabsTrigger>
                 <TabsTrigger value="mora" className="text-xs sm:text-sm px-2 py-2 h-auto">Con Mora</TabsTrigger>
                 <TabsTrigger value="prestamos" className="text-xs sm:text-sm px-2 py-2 h-auto">Préstamos</TabsTrigger>
@@ -490,113 +582,113 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.clientesVisitados
-                    .filter(cliente => 
-                      filtroTexto === "" || 
+                    .filter(cliente =>
+                      filtroTexto === "" ||
                       cliente.nombre.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cliente.documento.includes(filtroTexto)
                     )
                     .map((cliente, index) => (
-                    <Card key={cliente.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Encabezado del cliente */}
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 flex-wrap">
-                                <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
-                                <Badge variant="outline" className="bg-green-50 text-green-700">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Visitado
-                                </Badge>
-                                {cliente.prestamosVencidos > 0 && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
-                                    {cliente.prestamosVencidos} vencido{cliente.prestamosVencidos !== 1 ? 's' : ''}
+                      <Card key={cliente.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Encabezado del cliente */}
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 flex-wrap">
+                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <Badge variant="outline" className="bg-green-50 text-green-700">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Visitado
                                   </Badge>
+                                  {cliente.prestamosVencidos > 0 && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      {cliente.prestamosVencidos} vencido{cliente.prestamosVencidos !== 1 ? 's' : ''}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                {cliente.telefono && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Phone className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.telefono}</span>
+                                  </div>
+                                )}
+                                {cliente.direccion && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <MapPin className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">{cliente.documento}</p>
-                              {cliente.telefono && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <Phone className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.telefono}</span>
-                                </div>
-                              )}
-                              {cliente.direccion && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <MapPin className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.direccion}</span>
-                                </div>
-                              )}
+                              <div className="text-right">
+                                <Badge variant="secondary">
+                                  {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <Badge variant="secondary">
-                                {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
-                              </Badge>
-                            </div>
-                          </div>
 
-                          {/* Información financiera */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <p className="text-xs text-gray-500">Total Prestado</p>
-                              <p className="text-sm font-semibold text-blue-600">
-                                {formatCurrency(cliente.totalPrestado)}
-                              </p>
+                            {/* Información financiera */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg">
+                              <div>
+                                <p className="text-xs text-gray-500">Total Prestado</p>
+                                <p className="text-sm font-semibold text-blue-600">
+                                  {formatCurrency(cliente.totalPrestado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Total Pagado</p>
+                                <p className="text-sm font-semibold text-green-600">
+                                  {formatCurrency(cliente.totalPagado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Saldo Pendiente</p>
+                                <p className="text-sm font-semibold text-orange-600">
+                                  {formatCurrency(cliente.saldoPendiente)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Porcentaje Pagado</p>
+                                <p className="text-sm font-semibold text-purple-600">
+                                  {((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1)}%
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Total Pagado</p>
-                              <p className="text-sm font-semibold text-green-600">
-                                {formatCurrency(cliente.totalPagado)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Saldo Pendiente</p>
-                              <p className="text-sm font-semibold text-orange-600">
-                                {formatCurrency(cliente.saldoPendiente)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Porcentaje Pagado</p>
-                              <p className="text-sm font-semibold text-purple-600">
-                                {((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1)}%
-                              </p>
-                            </div>
-                          </div>
 
-                          {/* Información de la visita */}
-                          <div className="pt-2 border-t space-y-1">
-                            {cliente.ultimaVisita && (
-                              <p className="text-sm text-green-600">
-                                <Clock className="h-3 w-3 inline mr-1" />
-                                Visitado: {formatDateTime(cliente.ultimaVisita)}
-                              </p>
-                            )}
-                            {cliente.visitadoPor && (
-                              <p className="text-sm text-gray-600">
-                                Por: {cliente.visitadoPor}
-                              </p>
-                            )}
-                            {cliente.tipoVisita && (
-                              <Badge variant="outline" className="text-xs">
-                                {cliente.tipoVisita}
-                              </Badge>
-                            )}
-                            {cliente.observaciones && (
-                              <p className="text-sm text-gray-500 italic mt-1">
-                                "{cliente.observaciones}"
-                              </p>
-                            )}
-                            {cliente.diasMora > 0 && (
-                              <p className="text-sm text-red-600 font-medium">
-                                ⚠️ Mora de {cliente.diasMora} días
-                              </p>
-                            )}
+                            {/* Información de la visita */}
+                            <div className="pt-2 border-t space-y-1">
+                              {cliente.ultimaVisita && (
+                                <p className="text-sm text-green-600">
+                                  <Clock className="h-3 w-3 inline mr-1" />
+                                  Visitado: {formatDateTime(cliente.ultimaVisita)}
+                                </p>
+                              )}
+                              {cliente.visitadoPor && (
+                                <p className="text-sm text-gray-600">
+                                  Por: {cliente.visitadoPor}
+                                </p>
+                              )}
+                              {cliente.tipoVisita && (
+                                <Badge variant="outline" className="text-xs">
+                                  {cliente.tipoVisita}
+                                </Badge>
+                              )}
+                              {cliente.observaciones && (
+                                <p className="text-sm text-gray-500 italic mt-1">
+                                  "{cliente.observaciones}"
+                                </p>
+                              )}
+                              {cliente.diasMora > 0 && (
+                                <p className="text-sm text-red-600 font-medium">
+                                  ⚠️ Mora de {cliente.diasMora} días
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                   {informe.detalles.clientesVisitados.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -616,109 +708,109 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.clientesNoVisitados
-                    .filter(cliente => 
-                      filtroTexto === "" || 
+                    .filter(cliente =>
+                      filtroTexto === "" ||
                       cliente.nombre.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cliente.documento.includes(filtroTexto)
                     )
                     .map((cliente, index) => (
-                    <Card key={cliente.id} className="animate-fadeInScale border-l-4 border-l-orange-400" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Encabezado del cliente */}
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
-                                <Badge variant="destructive">
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Pendiente
-                                </Badge>
-                                {cliente.prestamosVencidos > 0 && (
-                                  <Badge variant="destructive" className="text-xs bg-red-600">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
-                                    {cliente.prestamosVencidos} vencido{cliente.prestamosVencidos !== 1 ? 's' : ''}
+                      <Card key={cliente.id} className="animate-fadeInScale border-l-4 border-l-orange-400" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Encabezado del cliente */}
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 flex-wrap gap-1">
+                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <Badge variant="destructive">
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Pendiente
                                   </Badge>
+                                  {cliente.prestamosVencidos > 0 && (
+                                    <Badge variant="destructive" className="text-xs bg-red-600">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      {cliente.prestamosVencidos} vencido{cliente.prestamosVencidos !== 1 ? 's' : ''}
+                                    </Badge>
+                                  )}
+                                  {cliente.diasSinVisita && cliente.diasSinVisita > 7 && (
+                                    <Badge variant="outline" className="text-xs text-orange-700 border-orange-300">
+                                      {cliente.diasSinVisita} días sin visitar
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                {cliente.telefono && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Phone className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.telefono}</span>
+                                  </div>
                                 )}
-                                {cliente.diasSinVisita && cliente.diasSinVisita > 7 && (
-                                  <Badge variant="outline" className="text-xs text-orange-700 border-orange-300">
-                                    {cliente.diasSinVisita} días sin visitar
-                                  </Badge>
+                                {cliente.direccion && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <MapPin className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">{cliente.documento}</p>
-                              {cliente.telefono && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <Phone className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.telefono}</span>
-                                </div>
-                              )}
-                              {cliente.direccion && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <MapPin className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.direccion}</span>
-                                </div>
-                              )}
+                              <div className="text-right">
+                                <Badge variant="secondary">
+                                  {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <Badge variant="secondary">
-                                {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
-                              </Badge>
-                            </div>
-                          </div>
 
-                          {/* Información financiera */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                            <div>
-                              <p className="text-xs text-gray-600">Total Prestado</p>
-                              <p className="text-sm font-semibold text-blue-700">
-                                {formatCurrency(cliente.totalPrestado)}
-                              </p>
+                            {/* Información financiera */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                              <div>
+                                <p className="text-xs text-gray-600">Total Prestado</p>
+                                <p className="text-sm font-semibold text-blue-700">
+                                  {formatCurrency(cliente.totalPrestado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">Total Pagado</p>
+                                <p className="text-sm font-semibold text-green-700">
+                                  {formatCurrency(cliente.totalPagado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">Saldo Pendiente</p>
+                                <p className="text-sm font-semibold text-red-700">
+                                  {formatCurrency(cliente.saldoPendiente)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">% Pagado</p>
+                                <p className="text-sm font-semibold text-purple-700">
+                                  {cliente.totalPrestado > 0 ? ((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1) : '0'}%
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Total Pagado</p>
-                              <p className="text-sm font-semibold text-green-700">
-                                {formatCurrency(cliente.totalPagado)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Saldo Pendiente</p>
-                              <p className="text-sm font-semibold text-red-700">
-                                {formatCurrency(cliente.saldoPendiente)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">% Pagado</p>
-                              <p className="text-sm font-semibold text-purple-700">
-                                {cliente.totalPrestado > 0 ? ((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1) : '0'}%
-                              </p>
-                            </div>
-                          </div>
 
-                          {/* Alertas y última visita */}
-                          <div className="pt-2 border-t space-y-1">
-                            {cliente.ultimaVisita && (
-                              <p className="text-sm text-gray-600">
-                                <Clock className="h-3 w-3 inline mr-1" />
-                                Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString('es-CO')}
-                                {cliente.diasSinVisita && ` (hace ${cliente.diasSinVisita} días)`}
-                              </p>
-                            )}
-                            {!cliente.ultimaVisita && (
-                              <p className="text-sm text-orange-600 font-medium">
-                                ⚠️ Nunca ha sido visitado
-                              </p>
-                            )}
-                            {cliente.diasMora > 0 && (
-                              <p className="text-sm text-red-600 font-bold">
-                                🚨 Mora de {cliente.diasMora} días - REQUIERE ATENCIÓN URGENTE
-                              </p>
-                            )}
+                            {/* Alertas y última visita */}
+                            <div className="pt-2 border-t space-y-1">
+                              {cliente.ultimaVisita && (
+                                <p className="text-sm text-gray-600">
+                                  <Clock className="h-3 w-3 inline mr-1" />
+                                  Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString('es-CO')}
+                                  {cliente.diasSinVisita && ` (hace ${cliente.diasSinVisita} días)`}
+                                </p>
+                              )}
+                              {!cliente.ultimaVisita && (
+                                <p className="text-sm text-orange-600 font-medium">
+                                  ⚠️ Nunca ha sido visitado
+                                </p>
+                              )}
+                              {cliente.diasMora > 0 && (
+                                <p className="text-sm text-red-600 font-bold">
+                                  🚨 Mora de {cliente.diasMora} días - REQUIERE ATENCIÓN URGENTE
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                   {informe.detalles.clientesNoVisitados.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -738,52 +830,52 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.prestamosVencidos
-                    .filter(prestamo => 
-                      filtroTexto === "" || 
+                    .filter(prestamo =>
+                      filtroTexto === "" ||
                       prestamo.cliente.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       prestamo.documento.includes(filtroTexto)
                     )
                     .map((prestamo, index) => (
-                    <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
-                              <Badge variant="destructive">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                {prestamo.diasVencido} días vencido
-                              </Badge>
+                      <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                <Badge variant="destructive">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  {prestamo.diasVencido} días vencido
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                              {prestamo.telefono && (
+                                <div className="flex items-center space-x-1 mt-1">
+                                  <Phone className="h-3 w-3 text-gray-400" />
+                                  <span className="text-sm text-gray-600">{prestamo.telefono}</span>
+                                </div>
+                              )}
+                              {prestamo.direccion && (
+                                <div className="flex items-center space-x-1 mt-1">
+                                  <MapPin className="h-3 w-3 text-gray-400" />
+                                  <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                </div>
+                              )}
+                              <p className="text-sm text-red-600 mt-1">
+                                Venció: {new Date(prestamo.fechaVencimiento).toLocaleDateString('es-CO')}
+                              </p>
                             </div>
-                            <p className="text-sm text-gray-600">{prestamo.documento}</p>
-                            {prestamo.telefono && (
-                              <div className="flex items-center space-x-1 mt-1">
-                                <Phone className="h-3 w-3 text-gray-400" />
-                                <span className="text-sm text-gray-600">{prestamo.telefono}</span>
-                              </div>
-                            )}
-                            {prestamo.direccion && (
-                              <div className="flex items-center space-x-1 mt-1">
-                                <MapPin className="h-3 w-3 text-gray-400" />
-                                <span className="text-sm text-gray-600">{prestamo.direccion}</span>
-                              </div>
-                            )}
-                            <p className="text-sm text-red-600 mt-1">
-                              Venció: {new Date(prestamo.fechaVencimiento).toLocaleDateString('es-CO')}
-                            </p>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-red-600">
+                                {formatCurrency(prestamo.monto)}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Cuota: {formatCurrency(prestamo.valorCuota)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-red-600">
-                              {formatCurrency(prestamo.monto)}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Cuota: {formatCurrency(prestamo.valorCuota)}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                   {informe.detalles.prestamosVencidos.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -797,7 +889,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
 
               {/* TAB NUEVOS */}
               <TabsContent value="nuevos" className="space-y-4 mt-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {/* Nuevos Clientes */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
@@ -808,23 +900,36 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       {informe.detalles.nuevosClientes.map((cliente, index) => (
                         <Card key={cliente.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
                           <CardContent className="p-4">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
-                              <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                                <UserPlus className="h-3 w-3 mr-1" />
-                                Nuevo
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">{cliente.documento}</p>
-                            {cliente.telefono && (
-                              <div className="flex items-center space-x-1 mt-1">
-                                <Phone className="h-3 w-3 text-gray-400" />
-                                <span className="text-sm text-gray-600">{cliente.telefono}</span>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                    <UserPlus className="h-3 w-3 mr-1" />
+                                    Nuevo
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                {cliente.telefono && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Phone className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.telefono}</span>
+                                  </div>
+                                )}
+                                <p className="text-sm text-purple-600 mt-1">
+                                  Registrado: {formatDateTime(cliente.fechaRegistro)}
+                                </p>
                               </div>
-                            )}
-                            <p className="text-sm text-purple-600 mt-1">
-                              Registrado: {formatDateTime(cliente.fechaRegistro)}
-                            </p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => confirmarEliminacion(cliente.id, cliente.nombre)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Eliminar cliente"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </CardContent>
                         </Card>
                       ))}
@@ -839,55 +944,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                     </div>
                   </div>
 
-                  {/* Nuevos Préstamos */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">Nuevos Préstamos</h3>
-                      <Badge variant="secondary">{informe.detalles.nuevosPrestamos.length}</Badge>
-                    </div>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {informe.detalles.nuevosPrestamos.map((prestamo, index) => (
-                        <Card key={prestamo.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
-                                  <Badge variant="outline" className="bg-teal-50 text-teal-700">
-                                    <CreditCard className="h-3 w-3 mr-1" />
-                                    Nuevo
-                                  </Badge>
-                                </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
-                                <p className="text-sm text-gray-600">
-                                  Tipo: {prestamo.tipoPago} • Interés: {prestamo.interes}%
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  Por: {prestamo.creadoPor}
-                                </p>
-                                <p className="text-sm text-teal-600 mt-1">
-                                  {formatDateTime(prestamo.fechaInicio)}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-teal-600">
-                                  {formatCurrency(prestamo.monto)}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      {informe.detalles.nuevosPrestamos.length === 0 && (
-                        <Card>
-                          <CardContent className="p-6 text-center text-gray-500">
-                            <CreditCard className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            No hay préstamos nuevos hoy
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  </div>
+
                 </div>
               </TabsContent>
 
@@ -904,45 +961,45 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.cobrosHoy
-                    .filter(cobro => 
-                      filtroTexto === "" || 
+                    .filter(cobro =>
+                      filtroTexto === "" ||
                       cobro.cliente.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cobro.documento.includes(filtroTexto)
                     )
                     .map((cobro, index) => (
-                    <Card key={cobro.id} className="animate-fadeInScale border-l-4 border-l-green-400" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-semibold text-gray-900">{cobro.cliente}</h4>
-                              <Badge variant="outline" className="bg-green-50 text-green-700">
-                                <DollarSign className="h-3 w-3 mr-1" />
-                                Cobro
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">{cobro.documento}</p>
-                            <p className="text-sm text-gray-500">
-                              Por: {cobro.cobradoPor}
-                            </p>
-                            <p className="text-sm text-green-600">
-                              {formatDateTime(cobro.fecha)}
-                            </p>
-                            {cobro.observaciones && (
-                              <p className="text-sm text-gray-500 italic mt-1">
-                                "{cobro.observaciones}"
+                      <Card key={cobro.id} className="animate-fadeInScale border-l-4 border-l-green-400" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-semibold text-gray-900">{cobro.cliente}</h4>
+                                <Badge variant="outline" className="bg-green-50 text-green-700">
+                                  <DollarSign className="h-3 w-3 mr-1" />
+                                  Cobro
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">{cobro.documento}</p>
+                              <p className="text-sm text-gray-500">
+                                Por: {cobro.cobradoPor}
                               </p>
-                            )}
+                              <p className="text-sm text-green-600">
+                                {formatDateTime(cobro.fecha)}
+                              </p>
+                              {cobro.observaciones && (
+                                <p className="text-sm text-gray-500 italic mt-1">
+                                  "{cobro.observaciones}"
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-600">
+                                {formatCurrency(cobro.monto)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-green-600">
-                              {formatCurrency(cobro.monto)}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                   {informe.detalles.cobrosHoy.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -962,118 +1019,118 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.clientesConMora
-                    .filter(cliente => 
-                      filtroTexto === "" || 
+                    .filter(cliente =>
+                      filtroTexto === "" ||
                       cliente.nombre.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cliente.documento.includes(filtroTexto)
                     )
                     .sort((a, b) => b.diasMora - a.diasMora)
                     .map((cliente, index) => (
-                    <Card key={cliente.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Encabezado del cliente */}
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
-                                <Badge variant="destructive">
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                  {cliente.diasMora} días mora
+                      <Card key={cliente.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Encabezado del cliente */}
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 flex-wrap gap-1">
+                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <Badge variant="destructive">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    {cliente.diasMora} días mora
+                                  </Badge>
+                                  {cliente.cuotasVencidas > 0 && (
+                                    <Badge variant="destructive" className="text-xs bg-red-700">
+                                      {cliente.cuotasVencidas} cuotas vencidas
+                                    </Badge>
+                                  )}
+                                  {cliente.diasSinGestion && cliente.diasSinGestion > 3 && (
+                                    <Badge variant="outline" className="text-xs text-red-700 border-red-300">
+                                      Sin gestión: {cliente.diasSinGestion} días
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                {cliente.telefono && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Phone className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.telefono}</span>
+                                  </div>
+                                )}
+                                {cliente.direccion && (
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <MapPin className="h-3 w-3 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <Badge variant="outline" className="mb-2">
+                                  {cliente.prestamosEnMora} préstamo{cliente.prestamosEnMora !== 1 ? 's' : ''} en mora
                                 </Badge>
-                                {cliente.cuotasVencidas > 0 && (
-                                  <Badge variant="destructive" className="text-xs bg-red-700">
-                                    {cliente.cuotasVencidas} cuotas vencidas
-                                  </Badge>
-                                )}
-                                {cliente.diasSinGestion && cliente.diasSinGestion > 3 && (
-                                  <Badge variant="outline" className="text-xs text-red-700 border-red-300">
-                                    Sin gestión: {cliente.diasSinGestion} días
-                                  </Badge>
-                                )}
                               </div>
-                              <p className="text-sm text-gray-600">{cliente.documento}</p>
-                              {cliente.telefono && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <Phone className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.telefono}</span>
-                                </div>
-                              )}
-                              {cliente.direccion && (
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <MapPin className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{cliente.direccion}</span>
-                                </div>
-                              )}
                             </div>
-                            <div className="text-right">
-                              <Badge variant="outline" className="mb-2">
-                                {cliente.prestamosEnMora} préstamo{cliente.prestamosEnMora !== 1 ? 's' : ''} en mora
-                              </Badge>
-                            </div>
-                          </div>
 
-                          {/* Información financiera detallada */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
-                            <div>
-                              <p className="text-xs text-gray-600">Total Prestado</p>
-                              <p className="text-sm font-semibold text-blue-700">
-                                {formatCurrency(cliente.totalPrestado)}
-                              </p>
+                            {/* Información financiera detallada */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                              <div>
+                                <p className="text-xs text-gray-600">Total Prestado</p>
+                                <p className="text-sm font-semibold text-blue-700">
+                                  {formatCurrency(cliente.totalPrestado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">Total Pagado</p>
+                                <p className="text-sm font-semibold text-green-700">
+                                  {formatCurrency(cliente.totalPagado)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">Saldo Pendiente</p>
+                                <p className="text-sm font-bold text-red-700">
+                                  {formatCurrency(cliente.saldoPendiente)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-600">% Pagado</p>
+                                <p className="text-sm font-semibold text-purple-700">
+                                  {cliente.totalPrestado > 0 ? ((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1) : '0'}%
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Total Pagado</p>
-                              <p className="text-sm font-semibold text-green-700">
-                                {formatCurrency(cliente.totalPagado)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">Saldo Pendiente</p>
-                              <p className="text-sm font-bold text-red-700">
-                                {formatCurrency(cliente.saldoPendiente)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">% Pagado</p>
-                              <p className="text-sm font-semibold text-purple-700">
-                                {cliente.totalPrestado > 0 ? ((cliente.totalPagado / cliente.totalPrestado) * 100).toFixed(1) : '0'}%
-                              </p>
-                            </div>
-                          </div>
 
-                          {/* Estado de gestión */}
-                          <div className="pt-2 border-t space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">Días en mora:</span>
-                              <span className="text-sm font-bold text-red-600">{cliente.diasMora} días</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">Cuotas vencidas:</span>
-                              <span className="text-sm font-bold text-red-600">{cliente.cuotasVencidas}</span>
-                            </div>
-                            {cliente.ultimaVisita ? (
+                            {/* Estado de gestión */}
+                            <div className="pt-2 border-t space-y-2">
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600">Última gestión:</span>
-                                <span className="text-sm text-gray-900">
-                                  {new Date(cliente.ultimaVisita).toLocaleDateString('es-CO')}
-                                  {cliente.diasSinGestion && ` (hace ${cliente.diasSinGestion} días)`}
-                                </span>
+                                <span className="text-sm text-gray-600">Días en mora:</span>
+                                <span className="text-sm font-bold text-red-600">{cliente.diasMora} días</span>
                               </div>
-                            ) : (
-                              <p className="text-sm text-red-600 font-bold">
-                                ⚠️ SIN GESTIÓN REGISTRADA
-                              </p>
-                            )}
-                            {cliente.diasSinGestion && cliente.diasSinGestion > 7 && (
-                              <p className="text-sm text-red-600 font-bold bg-red-100 p-2 rounded">
-                                🚨 REQUIERE GESTIÓN INMEDIATA - {cliente.diasSinGestion} días sin contacto
-                              </p>
-                            )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">Cuotas vencidas:</span>
+                                <span className="text-sm font-bold text-red-600">{cliente.cuotasVencidas}</span>
+                              </div>
+                              {cliente.ultimaVisita ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">Última gestión:</span>
+                                  <span className="text-sm text-gray-900">
+                                    {new Date(cliente.ultimaVisita).toLocaleDateString('es-CO')}
+                                    {cliente.diasSinGestion && ` (hace ${cliente.diasSinGestion} días)`}
+                                  </span>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-red-600 font-bold">
+                                  ⚠️ SIN GESTIÓN REGISTRADA
+                                </p>
+                              )}
+                              {cliente.diasSinGestion && cliente.diasSinGestion > 7 && (
+                                <p className="text-sm text-red-600 font-bold bg-red-100 p-2 rounded">
+                                  🚨 REQUIERE GESTIÓN INMEDIATA - {cliente.diasSinGestion} días sin contacto
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                   {informe.detalles.clientesConMora.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -1146,7 +1203,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 )}
                                 <div className="mt-2 space-y-1">
                                   <p className="text-sm text-gray-600">
-                                    Tipo: <span className="font-medium">{prestamo.tipoPago}</span> • 
+                                    Tipo: <span className="font-medium">{prestamo.tipoPago}</span> •
                                     Interés: <span className="font-medium">{prestamo.interes}%</span>
                                   </p>
                                   <p className="text-sm text-gray-600">
@@ -1293,7 +1350,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 )}
                                 <div className="mt-2 space-y-1">
                                   <p className="text-sm text-gray-600">
-                                    Tipo: <span className="font-medium">{prestamo.tipoPago}</span> • 
+                                    Tipo: <span className="font-medium">{prestamo.tipoPago}</span> •
                                     Interés: <span className="font-medium">{prestamo.interes}%</span>
                                   </p>
                                   <p className="text-sm text-gray-600">
@@ -1497,6 +1554,34 @@ export default function InformeClientesClient({ session }: InformeClientesClient
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!clienteAEliminar} onOpenChange={(open) => !open && setClienteAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de eliminar a <strong>{clienteAEliminar?.nombre}</strong>.
+              <br /><br />
+              <span className="text-red-600 font-semibold">Esta acción es permanente y no se puede deshacer.</span>
+              <br />
+              El cliente se borrará de la base de datos definitivamente. Solo puedes eliminar clientes que no tengan préstamos activos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={eliminandoCliente}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                hacerEliminacion()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={eliminandoCliente}
+            >
+              {eliminandoCliente ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
