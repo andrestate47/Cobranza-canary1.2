@@ -893,7 +893,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                   {/* Nuevos Clientes */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">Nuevos Clientes</h3>
+                      <h3 className="text-lg font-semibold">Listado de Clientes</h3>
                       <Badge variant="secondary">{informe.detalles.nuevosClientes.length}</Badge>
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -904,10 +904,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2">
                                   <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
-                                  <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                                    <UserPlus className="h-3 w-3 mr-1" />
-                                    Nuevo
-                                  </Badge>
+
                                 </div>
                                 <p className="text-sm text-gray-600">{cliente.documento}</p>
                                 {cliente.telefono && (
@@ -937,7 +934,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card>
                           <CardContent className="p-6 text-center text-gray-500">
                             <UserPlus className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                            No hay clientes nuevos hoy
+                            No hay clientes registrados
                           </CardContent>
                         </Card>
                       )}

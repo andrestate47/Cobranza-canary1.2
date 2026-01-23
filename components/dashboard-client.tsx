@@ -6,11 +6,11 @@ import { signOut } from "next-auth/react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { 
-  Users, 
-  Calendar, 
-  BarChart3, 
-  Receipt, 
+import {
+  Users,
+  Calendar,
+  BarChart3,
+  Receipt,
   Plus,
   LogOut,
   User,
@@ -27,7 +27,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -93,19 +93,19 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   // Agregar Caja Chica o Viáticos según el rol
   const cajaChicaItem = user?.role === 'COBRADOR'
     ? {
-        title: "Caja Chica",
-        description: "Tu balance de efectivo diario",
-        icon: Wallet,
-        href: "/caja-chica",
-        color: "bg-teal-500 hover:bg-teal-600",
-      }
+      title: "Caja Chica",
+      description: "Tu balance de efectivo diario",
+      icon: Wallet,
+      href: "/caja-chica",
+      color: "bg-teal-500 hover:bg-teal-600",
+    }
     : {
-        title: "Viáticos/Caja/Cobradores",
-        description: "Control de ingresos y egresos",
-        icon: Wallet,
-        href: "/viaticos",
-        color: "bg-teal-500 hover:bg-teal-600",
-      }
+      title: "Viáticos/Caja/Cobradores",
+      description: "Control de ingresos y egresos",
+      icon: Wallet,
+      href: "/viaticos",
+      color: "bg-teal-500 hover:bg-teal-600",
+    }
 
   const menuItemsWithCaja = [
     ...baseMenuItems,
@@ -120,61 +120,61 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   ]
 
   // Agregar panel de administración solo para administradores y supervisores
-  const menuItems = user?.role === 'ADMINISTRADOR' 
+  const menuItems = user?.role === 'ADMINISTRADOR'
     ? [
-        ...menuItemsWithCaja,
-        {
-          title: "Gestión de Usuarios",
-          description: "Administrar usuarios y permisos",
-          icon: Shield,
-          href: "/admin/usuarios",
-          color: "bg-red-500 hover:bg-red-600",
-        },
-        {
-          title: "Gestión de Dispositivos",
-          description: "Autorizar y controlar dispositivos",
-          icon: Smartphone,
-          href: "/admin/dispositivos",
-          color: "bg-cyan-500 hover:bg-cyan-600",
-        },
-        {
-          title: "Gestión de Rutas",
-          description: "Asignar clientes a rutas de cobradores",
-          icon: MapPin,
-          href: "/admin/rutas",
-          color: "bg-yellow-500 hover:bg-yellow-600",
-        },
-        {
-          title: "Historial de Auditoría",
-          description: "Ver eliminaciones de otros usuarios",
-          icon: FileText,
-          href: "/admin/auditoria",
-          color: "bg-purple-500 hover:bg-purple-600",
-        },
-        {
-          title: "Gestión de Sueldos",
-          description: "Pagos de sueldos y avances",
-          icon: Crown,
-          href: "/gestion-sueldos",
-          color: "bg-yellow-500 hover:bg-yellow-600",
-        },
-        {
-          title: "Suscripción",
-          description: "Gestionar plan y pagos",
-          icon: Calendar,
-          href: "/admin/suscripcion",
-          color: "bg-blue-500 hover:bg-blue-600",
-        },
-        {
-          title: "Configuración",
-          description: "Moneda y ajustes del sistema",
-          icon: Settings,
-          href: "/configuracion",
-          color: "bg-gray-500 hover:bg-gray-600",
-        }
-      ]
+      ...menuItemsWithCaja,
+      {
+        title: "Gestión de Usuarios",
+        description: "Administrar usuarios y permisos",
+        icon: Shield,
+        href: "/admin/usuarios",
+        color: "bg-red-500 hover:bg-red-600",
+      },
+      {
+        title: "Gestión de Dispositivos",
+        description: "Autorizar y controlar dispositivos",
+        icon: Smartphone,
+        href: "/admin/dispositivos",
+        color: "bg-cyan-500 hover:bg-cyan-600",
+      },
+      {
+        title: "Gestión de Rutas",
+        description: "Asignar clientes a rutas de cobradores",
+        icon: MapPin,
+        href: "/admin/rutas",
+        color: "bg-yellow-500 hover:bg-yellow-600",
+      },
+      {
+        title: "Historial de Auditoría",
+        description: "Ver eliminaciones de otros usuarios",
+        icon: FileText,
+        href: "/admin/auditoria",
+        color: "bg-purple-500 hover:bg-purple-600",
+      },
+      {
+        title: "Gestión de Sueldos",
+        description: "Pagos de sueldos y avances",
+        icon: Crown,
+        href: "/gestion-sueldos",
+        color: "bg-yellow-500 hover:bg-yellow-600",
+      },
+      {
+        title: "Suscripción",
+        description: "Gestionar plan y pagos",
+        icon: Calendar,
+        href: "/admin/suscripcion",
+        color: "bg-blue-500 hover:bg-blue-600",
+      },
+      {
+        title: "Configuración",
+        description: "Moneda y ajustes del sistema",
+        icon: Settings,
+        href: "/configuracion",
+        color: "bg-gray-500 hover:bg-gray-600",
+      }
+    ]
     : user?.role === 'SUPERVISOR'
-    ? [
+      ? [
         ...menuItemsWithCaja,
         {
           title: "Gestión de Sueldos",
@@ -184,7 +184,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
           color: "bg-yellow-500 hover:bg-yellow-600",
         }
       ]
-    : menuItemsWithCaja
+      : menuItemsWithCaja
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/login" })
@@ -214,10 +214,10 @@ export default function DashboardClient({ session }: DashboardClientProps) {
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="flex items-center space-x-2"
-                      onClick={() => {}} // Ensure button is interactive
+                      onClick={() => { }} // Ensure button is interactive
                     >
                       <User className="h-4 w-4" />
                       <span>{user?.firstName || user?.name || 'Usuario'}</span>
@@ -258,7 +258,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                       </>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleSignOut}
                       className="text-red-600 focus:text-red-600"
                     >
@@ -286,25 +286,60 @@ export default function DashboardClient({ session }: DashboardClientProps) {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <div className="md:hidden bg-white border-b shadow-lg animate-slideInUp">
-          <div className="container-mobile py-4 space-y-2">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <User className="h-8 w-8 text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
-                <p className="text-sm text-gray-500">{user?.role}</p>
+        <>
+          <div
+            className="fixed inset-0 z-40 md:hidden"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="absolute top-[4.5rem] right-4 z-50 md:hidden w-64 bg-white border shadow-2xl rounded-xl animate-in slide-in-from-top-2 duration-200">
+            <div className="p-2 space-y-1">
+              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                <User className="h-6 w-6 text-gray-400" />
+                <div>
+                  <p className="font-medium text-sm text-gray-900">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-gray-500">{user?.role}</p>
+                </div>
               </div>
+
+              <div className="space-y-0.5 py-1">
+                <Link href="/perfil" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                  <User className="mr-3 h-4 w-4" />
+                  Mi Perfil
+                </Link>
+                <Link href="/perfil" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                  <Settings className="mr-3 h-4 w-4" />
+                  Configuración
+                </Link>
+
+                {(user?.role === 'ADMINISTRADOR' || user?.role === 'SUPERVISOR') && (
+                  <>
+                    <div className="h-px bg-gray-200 my-1" />
+                    {user?.role === 'ADMINISTRADOR' && (
+                      <Link href="/admin/usuarios" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                        <Shield className="mr-3 h-4 w-4" />
+                        Panel Adm.
+                      </Link>
+                    )}
+                    <Link href="/gestion-sueldos" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                      <Crown className="mr-3 h-4 w-4" />
+                      Sueldos
+                    </Link>
+                  </>
+                )}
+              </div>
+              <div className="h-px bg-gray-200 my-1" />
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleSignOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar Sesión
+              </Button>
             </div>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar Sesión
-            </Button>
           </div>
-        </div>
+        </>
       )}
 
       {/* Main Content */}
@@ -321,15 +356,14 @@ export default function DashboardClient({ session }: DashboardClientProps) {
             {user?.role === 'ADMINISTRADOR' && <Crown className="h-4 w-4 text-red-600" />}
             {user?.role === 'SUPERVISOR' && <Shield className="h-4 w-4 text-blue-600" />}
             {user?.role === 'COBRADOR' && <User className="h-4 w-4 text-green-600" />}
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-              user?.role === 'ADMINISTRADOR' 
-                ? 'bg-red-100 text-red-800' 
-                : user?.role === 'SUPERVISOR'
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${user?.role === 'ADMINISTRADOR'
+              ? 'bg-red-100 text-red-800'
+              : user?.role === 'SUPERVISOR'
                 ? 'bg-blue-100 text-blue-800'
                 : 'bg-green-100 text-green-800'
-            }`}>
+              }`}>
               {user?.role === 'ADMINISTRADOR' ? 'Administrador' :
-               user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'}
+                user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'}
             </span>
           </div>
         </div>

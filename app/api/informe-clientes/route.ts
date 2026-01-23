@@ -174,13 +174,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // 6. NUEVOS CLIENTES (creados hoy)
+    // 6. LISTA DE CLIENTES (Todos los activos para el reporte)
+    // Se cambió la lógica para mostrar todos los clientes activos en la pestaña "Clientes"
     const nuevosClientes = await prisma.cliente.findMany({
       where: {
-        createdAt: {
-          gte: fechaInicio,
-          lte: fechaFin
-        }
+        activo: true
       },
       include: {
         prestamos: {
@@ -416,7 +414,11 @@ export async function GET(request: NextRequest) {
         clientesVisitadosHoy: clientesVisitados.length,
         clientesNoVisitadosHoy: clientesNoVisitados.length,
         prestamosVencidos: prestamosVencidos.length,
-        nuevosClientesHoy: nuevosClientes.length,
+        // Filtramos para contar solo los realmente nuevos hoy
+        nuevosClientesHoy: nuevosClientes.filter(c => {
+          const cDate = new Date(c.createdAt)
+          return cDate >= fechaInicio && cDate <= fechaFin
+        }).length,
         nuevosPrestamosHoy: nuevosPrestamos.length,
         cobrosHoy: cobrosHoy.length,
         totalCobradoHoy: totalCobrado,
