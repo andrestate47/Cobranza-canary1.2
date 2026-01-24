@@ -177,7 +177,7 @@ export default function NuevoGastoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] max-w-md rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Receipt className="h-5 w-5 text-red-600" />

@@ -5,10 +5,10 @@
 import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
-  Calendar, 
-  DollarSign, 
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -321,7 +321,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
       const dataStr = JSON.stringify(datosExportacion, null, 2)
       const dataBlob = new Blob([dataStr], { type: 'application/json' })
       const url = URL.createObjectURL(dataBlob)
-      
+
       // Crear link de descarga
       const link = document.createElement('a')
       link.href = url
@@ -382,7 +382,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container-mobile">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex flex-col items-start gap-4 py-4 md:flex-row md:items-center md:justify-between md:h-16 md:py-0">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
@@ -602,9 +602,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
               <Calculator className="h-4 w-4 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${
-                reporte.metricas.utilidadNeta >= 0 ? 'text-emerald-600' : 'text-red-600'
-              }`}>
+              <div className={`text-3xl font-bold ${reporte.metricas.utilidadNeta >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
                 {formatCurrency(reporte.metricas.utilidadNeta)}
               </div>
               <p className="text-xs text-gray-600">
@@ -626,7 +625,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">{reporte.renovaciones?.generales || 0}</p>
                 <p className="text-xs text-gray-600">Renovaciones Generales</p>
@@ -686,7 +685,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{reporte.transferencias?.realizadas || 0}</p>
                 <p className="text-xs text-gray-600">Transferencias Realizadas</p>
@@ -726,7 +726,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 <p className="text-sm text-gray-600">Total en Salarios Mensuales</p>
                 <p className="text-xs text-gray-500 mt-1">{reporte.salarios?.cantidadUsuarios || 0} usuarios activos</p>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-3 bg-red-50 rounded-lg">
                   <p className="text-lg font-bold text-red-600">{reporte.salarios?.administradores?.length || 0}</p>
@@ -828,11 +828,10 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 variant={activeTab === tab.key ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-shrink-0 ${
-                  activeTab === tab.key 
-                    ? 'bg-background shadow-sm' 
-                    : 'hover:bg-background/50'
-                }`}
+                className={`flex-shrink-0 ${activeTab === tab.key
+                  ? 'bg-background shadow-sm'
+                  : 'hover:bg-background/50'
+                  }`}
               >
                 {tab.label}
               </Button>
@@ -897,9 +896,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                   <div className="border-t pt-2">
                     <div className="flex justify-between">
                       <span className="text-gray-900 font-medium">Margen de ganancia:</span>
-                      <span className={`font-bold ${
-                        reporte.metricas.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={`font-bold ${reporte.metricas.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {formatPercentage(reporte.metricas.roi)}
                       </span>
                     </div>
@@ -927,7 +925,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                           {prestamo.saldoPendiente > 0 ? "Pendiente" : "Pagado"}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         <div>
                           <span className="text-gray-600">Monto:</span>
                           <p className="font-semibold">{formatCurrency(prestamo.monto)}</p>
@@ -1035,7 +1033,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                             {renovacion.estado}
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                           <div>
                             <span className="text-gray-600">Monto Original:</span>
                             <p className="font-semibold">{formatCurrency(renovacion.montoOriginal)}</p>
@@ -1217,7 +1215,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                             </div>
                             <Badge className="bg-red-600">Administrador</Badge>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="text-center p-2 bg-white rounded">
                               <p className="text-xs text-gray-600">Pago Semanal</p>
                               <p className="text-sm font-bold text-red-600">{formatCurrency(admin.pagoSemanal)}</p>
@@ -1266,7 +1264,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                             </div>
                             <Badge className="bg-blue-600">Supervisor</Badge>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="text-center p-2 bg-white rounded">
                               <p className="text-xs text-gray-600">Pago Semanal</p>
                               <p className="text-sm font-bold text-blue-600">{formatCurrency(supervisor.pagoSemanal)}</p>
@@ -1320,7 +1318,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                             </div>
                             <Badge className="bg-green-600">Cobrador</Badge>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="text-center p-2 bg-white rounded">
                               <p className="text-xs text-gray-600">Pago Semanal</p>
                               <p className="text-sm font-bold text-green-600">{formatCurrency(cobrador.pagoSemanal)}</p>

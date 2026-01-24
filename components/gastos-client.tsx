@@ -23,6 +23,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import NuevoGastoModal from "@/components/nuevo-gasto-modal"
 import ImageViewerModal from "@/components/image-viewer-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Gasto {
   id: string
@@ -51,6 +61,10 @@ export default function GastosClient({ session }: GastosClientProps) {
   // Estado para visualización de imagen
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+
+  // Estado para eliminación
+  const [gastoAEliminar, setGastoAEliminar] = useState<{ id: string, concepto: string } | null>(null)
+  const [eliminandoGasto, setEliminandoGasto] = useState(false)
 
   const { toast } = useToast()
 
@@ -143,6 +157,48 @@ export default function GastosClient({ session }: GastosClientProps) {
     }
   }
 
+  const confirmarEliminacion = (gastoId: string, concepto: string) => {
+    setGastoAEliminar({ id: gastoId, concepto })
+  }
+
+  const hacerEliminacion = async () => {
+    if (!gastoAEliminar) return
+
+    setEliminandoGasto(true)
+    const { id } = gastoAEliminar
+
+    try {
+      const response = await fetch(`/api/gastos/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Gasto eliminado",
+          description: "El gasto ha sido eliminado correctamente",
+        })
+        fetchGastos()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Error",
+          description: error.error || "No se pudo eliminar el gasto",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error al eliminar:", error)
+      toast({
+        title: "Error",
+        description: "Error de conexión",
+        variant: "destructive",
+      })
+    } finally {
+      setEliminandoGasto(false)
+      setGastoAEliminar(null)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -176,7 +232,7 @@ export default function GastosClient({ session }: GastosClientProps) {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container-mobile">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between md:h-16 md:py-0">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
@@ -188,7 +244,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                 <h1 className="text-lg font-semibold text-gray-900">Gastos</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 self-start md:self-auto">
               <Button
                 variant="outline"
                 size="sm"
@@ -295,10 +351,23 @@ export default function GastosClient({ session }: GastosClientProps) {
                     </div>
                   </div>
 
-                  <div className="text-right">
+
+
+                  <div className="text-right flex flex-col items-end gap-2">
                     <div className="text-2xl font-bold text-red-600">
                       {formatCurrency(gasto.monto)}
                     </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 md:h-9 md:w-auto md:px-3"
+                      onClick={() => confirmarEliminacion(gasto.id, gasto.concepto)}
+                    >
+                      <Trash2 className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Eliminar</span>
+                    </Button>
+
                   </div>
                 </div>
               </CardContent>
@@ -337,15 +406,43 @@ export default function GastosClient({ session }: GastosClientProps) {
       />
 
       {/* Modal de visualización de imagen */}
-      {selectedImage && (
-        <ImageViewerModal
-          isOpen={showImageModal}
-          onClose={() => setShowImageModal(false)}
-          imageUrl={selectedImage.url}
-          title={selectedImage.title}
-          subtitle={selectedImage.subtitle}
-        />
-      )}
-    </div>
+      {
+        selectedImage && (
+          <ImageViewerModal
+            isOpen={showImageModal}
+            onClose={() => setShowImageModal(false)}
+            imageUrl={selectedImage.url}
+            title={selectedImage.title}
+            subtitle={selectedImage.subtitle}
+          />
+        )
+      }
+
+      <AlertDialog open={!!gastoAEliminar} onOpenChange={(open) => !open && setGastoAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar gasto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de eliminar el gasto <strong>"{gastoAEliminar?.concepto}"</strong>.
+              <br /><br />
+              <span className="text-red-600 font-semibold">Esta acción no se puede deshacer.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={eliminandoGasto}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                hacerEliminacion()
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={eliminandoGasto}
+            >
+              {eliminandoGasto ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div >
   )
 }
