@@ -147,6 +147,31 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     // Función para calcular fecha del próximo pago
     const calcularFechaProximoPago = (fechaInicio: string, tipoPago: string, proximaCuota: number): Date => {
       const inicioDate = new Date(fechaInicio)
+
+      // Si es la primera cuota, es la fecha de inicio
+      if (proximaCuota <= 1) return inicioDate
+
+      // Lógica precisa para días hábiles
+      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
+        let cuotasContadas = 1 // Contamos la primera cuota (fecha inicio)
+        let diaActual = new Date(inicioDate)
+
+        // Iterar hasta llegar a la cuota deseada
+        while (cuotasContadas < proximaCuota) {
+          diaActual.setDate(diaActual.getDate() + 1)
+          const diaSemana = diaActual.getDay() // 0 = Domingo, 6 = Sábado
+
+          let esDiaPago = true
+          if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
+          if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
+
+          if (esDiaPago) {
+            cuotasContadas++
+          }
+        }
+        return diaActual
+      }
+
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
 
       const fechaProxima = new Date(inicioDate)

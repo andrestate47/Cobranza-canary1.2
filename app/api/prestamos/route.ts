@@ -51,10 +51,10 @@ export async function GET(request: NextRequest) {
 
     // Procesar préstamos y calcular saldos
     const prestamosConSaldo = prestamos.map(prestamo => {
-      const totalPagado = prestamo.pagos.reduce((sum, pago) => 
+      const totalPagado = prestamo.pagos.reduce((sum, pago) =>
         sum + parseFloat(pago.monto.toString()), 0
       )
-      const montoTotal = parseFloat(prestamo.monto.toString()) + 
+      const montoTotal = parseFloat(prestamo.monto.toString()) +
         (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
       const saldoPendiente = montoTotal - totalPagado
       const cuotasPagadas = prestamo.pagos.length
@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
       // Determinar la fecha de actividad más reciente
       const fechaCreacion = prestamo.createdAt || prestamo.fechaInicio
       const fechaUltimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
-      
+
       const fechaActividadReciente = fechaUltimoPago && new Date(fechaUltimoPago) > new Date(fechaCreacion)
-        ? fechaUltimoPago 
+        ? fechaUltimoPago
         : fechaCreacion
 
       return {
@@ -93,10 +93,10 @@ export async function GET(request: NextRequest) {
 
     // AGRUPAR POR CLIENTE - ¡Esta es la clave!
     const clientesConPrestamos = new Map()
-    
+
     prestamosConSaldo.forEach(prestamo => {
       const clienteId = prestamo.cliente.id
-      
+
       if (!clientesConPrestamos.has(clienteId)) {
         clientesConPrestamos.set(clienteId, {
           cliente: prestamo.cliente,
@@ -107,13 +107,13 @@ export async function GET(request: NextRequest) {
           montoTotalPrestado: 0
         })
       }
-      
+
       const clienteData = clientesConPrestamos.get(clienteId)
       clienteData.prestamos.push(prestamo)
       clienteData.saldoTotalPendiente += prestamo.saldoPendiente
       clienteData.cuotasTotalesPagadas += prestamo.cuotasPagadas
       clienteData.montoTotalPrestado += prestamo.monto
-      
+
       // Mantener la fecha de actividad más reciente
       if (new Date(prestamo.fechaActividadReciente) > new Date(clienteData.fechaActividadReciente)) {
         clienteData.fechaActividadReciente = prestamo.fechaActividadReciente
@@ -129,8 +129,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Filtrar solo clientes con saldo pendiente si se solicita
-    const resultado = conSaldo ? 
-      clientesArray.filter(cliente => cliente.saldoTotalPendiente > 0) : 
+    const resultado = conSaldo ?
+      clientesArray.filter(cliente => cliente.saldoTotalPendiente > 0) :
       clientesArray
 
     return NextResponse.json(resultado)
@@ -146,9 +146,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("POST /api/prestamos - Iniciando creación de préstamo")
-    
+
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       console.log("Error: No hay sesión válida o ID de usuario")
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -158,14 +158,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     console.log("Datos recibidos:", body)
-    
-    const { 
-      clienteId, 
-      monto, 
-      interes, 
-      tipoPago = 'DIARIO', 
-      cuotas, 
-      fechaInicio, 
+
+    const {
+      clienteId,
+      monto,
+      interes,
+      tipoPago = 'DIARIO',
+      cuotas,
+      fechaInicio,
       observaciones,
       tipoCredito = 'EFECTIVO',
       diasGracia = 0,
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     const moraCreditoNum = parseFloat(moraCredito)
     const microseguroValorNum = parseFloat(microseguroValor)
     const microseguroTotalNum = parseFloat(microseguroTotal)
-    
+
     if (isNaN(montoNum) || isNaN(interesNum) || isNaN(cuotasNum) || isNaN(diasGraciaNum) || isNaN(moraCreditoNum) || isNaN(microseguroValorNum) || isNaN(microseguroTotalNum)) {
       console.log("Error: Valores numéricos inválidos - monto:", montoNum, "interes:", interesNum, "cuotas:", cuotasNum, "diasGracia:", diasGraciaNum, "moraCredito:", moraCreditoNum, "microseguroValor:", microseguroValorNum, "microseguroTotal:", microseguroTotalNum)
       return NextResponse.json(
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
       const clienteExistente = await prisma.cliente.findUnique({
         where: { id: clienteId }
       })
-      
+
       if (!clienteExistente) {
         console.log("Error: Cliente no encontrado con ID:", clienteId)
         return NextResponse.json(
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         )
       }
-      
+
       console.log("Cliente encontrado:", clienteExistente.nombre, clienteExistente.apellido)
     } catch (dbError) {
       console.error("Error al buscar cliente:", dbError)
@@ -262,29 +262,53 @@ export async function POST(request: NextRequest) {
 
     // Calcular fecha de fin
     const fechaFin = new Date(fechaInicio)
-    const diasPorTipo = {
-      DIARIO: 1,
-      SEMANAL: 7,
-      LUNES_A_VIERNES: 1,     // Pago diario de lunes a viernes
-      LUNES_A_SABADO: 1,      // Pago diario de lunes a sábado
-      QUINCENAL: 15,
-      CATORCENAL: 14,         // Cada 14 días
-      FIN_DE_MES: 30,
-      MENSUAL: 30,
-      TRIMESTRAL: 90,
-      CUATRIMESTRAL: 120,     // Cada 4 meses
-      SEMESTRAL: 180,
-      ANUAL: 365
-    }
-    
-    const diasAgregar = cuotasNum * (diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1)
-    fechaFin.setDate(fechaFin.getDate() + diasAgregar)
+    let diasTotalesAgregados = 0
 
-    console.log("Fechas - inicio:", fechaInicio, "fin calculada:", fechaFin, "días agregados:", diasAgregar)
+    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
+      let cuotasContadas = 0
+      let diaActual = new Date(fechaInicio)
+
+      // En la lógica original (cuotas * 1), el primer pago es "mañana".
+      // Mantenemos esa lógica: avanzamos días hasta completar las cuotas.
+      while (cuotasContadas < cuotasNum) {
+        diaActual.setDate(diaActual.getDate() + 1)
+        const diaSemana = diaActual.getDay() // 0 = Domingo, 6 = Sábado
+
+        let esDiaPago = true
+        if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
+        if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
+
+        if (esDiaPago) {
+          cuotasContadas++
+        }
+      }
+      // Calcular diferencia de días para el log
+      diasTotalesAgregados = Math.round((diaActual.getTime() - fechaFin.getTime()) / (1000 * 60 * 60 * 24))
+      fechaFin.setTime(diaActual.getTime())
+    } else {
+      const diasPorTipo = {
+        DIARIO: 1,
+        SEMANAL: 7,
+        QUINCENAL: 15,
+        CATORCENAL: 14,
+        FIN_DE_MES: 30,
+        MENSUAL: 30,
+        TRIMESTRAL: 90,
+        CUATRIMESTRAL: 120,
+        SEMESTRAL: 180,
+        ANUAL: 365
+      }
+
+      const diasMultiplicador = diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1
+      diasTotalesAgregados = cuotasNum * diasMultiplicador
+      fechaFin.setDate(fechaFin.getDate() + diasTotalesAgregados)
+    }
+
+    console.log("Fechas - inicio:", fechaInicio, "fin calculada:", fechaFin, "días naturales agregados:", diasTotalesAgregados)
 
     // Crear préstamo y registrar en caja chica usando transacción
     console.log("Creando préstamo en base de datos...")
-    
+
     try {
       const resultado = await prisma.$transaction(async (tx) => {
         // Crear el préstamo
@@ -349,30 +373,30 @@ export async function POST(request: NextRequest) {
     } catch (createError) {
       console.error("Error al crear préstamo en base de datos:", createError)
       console.error("Stack trace:", createError instanceof Error ? createError.stack : 'No stack trace')
-      
+
       // Error específico de Prisma
       if (createError && typeof createError === 'object' && 'code' in createError) {
         console.log("Código de error Prisma:", createError.code)
         if (createError.code === 'P2002') {
-          return NextResponse.json({ 
-            error: "Error de duplicación en base de datos" 
+          return NextResponse.json({
+            error: "Error de duplicación en base de datos"
           }, { status: 400 })
         }
         if (createError.code === 'P2003') {
-          return NextResponse.json({ 
-            error: "Error de referencia en base de datos - cliente no válido" 
+          return NextResponse.json({
+            error: "Error de referencia en base de datos - cliente no válido"
           }, { status: 400 })
         }
       }
-      
+
       throw createError // Re-throw para ser capturado por el catch externo
     }
   } catch (error) {
     console.error("Error general al crear préstamo:", error)
     console.error("Stack trace completo:", error instanceof Error ? error.stack : 'No stack trace')
-    
+
     return NextResponse.json(
-      { 
+      {
         error: "Error interno del servidor",
         message: error instanceof Error ? error.message : 'Error desconocido'
       },

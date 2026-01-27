@@ -209,3 +209,44 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
+    // Solo administradores pueden eliminar cierres
+    if (session.user.role !== "ADMINISTRADOR") {
+      return NextResponse.json(
+        { error: "Solo los administradores pueden eliminar cierres" },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "ID de cierre requerido" },
+        { status: 400 }
+      )
+    }
+
+    await prisma.cierreDia.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({
+      message: "Cierre eliminado exitosamente"
+    })
+  } catch (error) {
+    console.error("Error al eliminar cierre:", error)
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    )
+  }
+}

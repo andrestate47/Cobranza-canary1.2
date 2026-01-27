@@ -31,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Pencil, Save, X } from "lucide-react"
+import { Pencil, Save, X, Trash2 } from "lucide-react"
 
 interface CierreDia {
   id: string
@@ -59,6 +59,11 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
   // Estados para edición
   const [editingCierre, setEditingCierre] = useState<CierreDia | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+
+  // Estados para eliminación
+  const [deletingCierre, setDeletingCierre] = useState<CierreDia | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     totalCobrado: "",
@@ -108,6 +113,45 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
       observaciones: cierre.observaciones || ""
     })
     setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteClick = (cierre: CierreDia) => {
+    setDeletingCierre(cierre)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCierre) return
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/cierre-dia?id=${deletingCierre.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Éxito",
+          description: "Cierre eliminado correctamente",
+          variant: "default",
+        })
+        setIsDeleteDialogOpen(false)
+        setDeletingCierre(null)
+        fetchCierres() // Recargar datos
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Error al eliminar")
+      }
+    } catch (error) {
+      console.error("Error delete:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo eliminar el cierre",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleUpdateCierre = async () => {
@@ -325,15 +369,28 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                   </div>
                   <div className="flex items-center space-x-2">
                     {session.user.role === "ADMINISTRADOR" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleEditClick(cierre)}
-                      >
-                        <Pencil className="h-4 w-4 text-blue-500" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleDeleteClick(cierre)}
+                          title="Eliminar cierre"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Eliminar</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditClick(cierre)}
+                          title="Editar cierre"
+                        >
+                          <Pencil className="h-4 w-4 text-blue-500" />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      </>
                     )}
                     <Badge variant="default" className="bg-green-500">
                       <CheckCircle className="h-3 w-3 mr-1" />
@@ -509,6 +566,30 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                   <Save className="mr-2 h-4 w-4" /> Guardar Cambios
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Confirmación de Eliminación */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" /> Eliminar Cierre del Día
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas eliminar el cierre del día <strong>{deletingCierre ? formatDate(deletingCierre.fecha) : ''}</strong>?
+              <br /><br />
+              <span className="font-semibold text-red-500">Esta acción no se puede deshacer.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isSubmitting}>
+              {isSubmitting ? 'Eliminando...' : 'Sí, eliminar cierre'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -285,16 +285,30 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     // Fecha próximo pago
     let fechaProximoPago: Date | null = null
     if (cuotasPagadas < prestamo.cuotas) {
-      fechaProximoPago = new Date(fechaInicio.getTime() + (cuotasPagadas * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+        // Lógica precisa con bucle para encontrar la fecha de la siguiente cuota (cuotasPagadas + 1)
+        const targetCuota = cuotasPagadas + 1
+        let current = new Date(fechaInicio)
 
-      // Para tipos especiales, ajustar al siguiente día laboral
-      if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
-        const diaSemana = fechaProximoPago.getDay()
-        if (diaSemana === 0) fechaProximoPago.setDate(fechaProximoPago.getDate() + 1) // Si es domingo, mover a lunes
-        if (diaSemana === 6) fechaProximoPago.setDate(fechaProximoPago.getDate() + 2) // Si es sábado, mover a lunes
-      } else if (prestamo.tipoPago === 'LUNES_A_SABADO') {
-        const diaSemana = fechaProximoPago.getDay()
-        if (diaSemana === 0) fechaProximoPago.setDate(fechaProximoPago.getDate() + 1) // Si es domingo, mover a lunes
+        // Si vamos por la primera cuota, es la fecha de inicio
+        if (targetCuota <= 1) {
+          fechaProximoPago = current
+        } else {
+          let count = 1 // Inicio cuenta como 1
+          while (count < targetCuota) {
+            current.setDate(current.getDate() + 1)
+            const d = current.getDay()
+            let valid = true
+            if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+            if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+
+            if (valid) count++
+          }
+          fechaProximoPago = current
+        }
+      } else {
+        // Lógica estándar para otros tipos
+        fechaProximoPago = new Date(fechaInicio.getTime() + (cuotasPagadas * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
       }
     }
 
