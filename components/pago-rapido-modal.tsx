@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,7 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { DollarSign, User, Calculator, Loader2, Plus, Receipt, Share2, MessageCircle, ChevronDown } from "lucide-react"
+import { DollarSign, User, Calculator, Loader2, Plus, Receipt, Share2, MessageCircle, ChevronDown, CalendarIcon } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 import BoletaPago from "@/components/boleta-pago"
 import html2canvas from "html2canvas"
 
@@ -101,6 +106,7 @@ export default function PagoRapidoModal({
   const [monto, setMonto] = useState("")
   const [observaciones, setObservaciones] = useState("")
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO'>('EFECTIVO')
+  const [fecha, setFecha] = useState<Date>(new Date())
   const [loading, setLoading] = useState(false)
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
   const boletaRef = useRef<HTMLDivElement>(null)
@@ -117,23 +123,23 @@ export default function PagoRapidoModal({
   const handleMontoChange = (value: string) => {
     // Solo permitir números, punto decimal y un solo punto
     let numericValue = value.replace(/[^0-9.]/g, '')
-    
+
     // Asegurar que solo haya un punto decimal
     const parts = numericValue.split('.')
     if (parts.length > 2) {
       numericValue = parts[0] + '.' + parts.slice(1).join('')
     }
-    
+
     // Limitar a 2 decimales
     if (parts.length === 2 && parts[1].length > 2) {
       numericValue = parts[0] + '.' + parts[1].substring(0, 2)
     }
-    
+
     // Evitar que emppiece con punto
     if (numericValue.startsWith('.')) {
       numericValue = '0' + numericValue
     }
-    
+
     setMonto(numericValue)
   }
 
@@ -151,7 +157,7 @@ export default function PagoRapidoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validaciones de entrada más robustas
     if (!monto || monto.trim() === '') {
       toast({
@@ -164,7 +170,7 @@ export default function PagoRapidoModal({
 
     // Limpiar el monto de cualquier formato y validar que solo contenga números y punto decimal
     const montoLimpio = monto.replace(/[^0-9.]/g, '')
-    
+
     if (montoLimpio === '' || montoLimpio === '.') {
       toast({
         title: "Monto inválido",
@@ -175,7 +181,7 @@ export default function PagoRapidoModal({
     }
 
     const montoNumerico = parseFloat(montoLimpio)
-    
+
     if (isNaN(montoNumerico) || montoNumerico <= 0) {
       toast({
         title: "Monto inválido",
@@ -231,7 +237,8 @@ export default function PagoRapidoModal({
         prestamoId: prestamo.id,
         monto: montoNumerico,
         observaciones: observaciones.trim() || undefined,
-        metodoPago: metodoPago
+        metodoPago: metodoPago,
+        fecha: fecha ? fecha.toISOString() : undefined
       }
 
       const response = await fetch('/api/pagos', {
@@ -245,12 +252,12 @@ export default function PagoRapidoModal({
 
       if (response.ok) {
         const result = await response.json()
-        
+
         // Verificar que tenemos los datos necesarios
         if (result.pago && result.pago.numeroBoleta) {
           setPagoRegistrado(result.pago)
           setStep('boleta')
-          
+
           toast({
             title: "¡Pago registrado exitosamente!",
             description: `Se generó la boleta ${result.pago.numeroBoleta}`,
@@ -262,7 +269,7 @@ export default function PagoRapidoModal({
       } else {
         // Manejar respuestas HTTP de error
         let errorMsg = "Error al procesar el pago. Por favor intenta nuevamente."
-        
+
         try {
           const errorData = await response.json()
           if (errorData.error && typeof errorData.error === 'string') {
@@ -278,7 +285,7 @@ export default function PagoRapidoModal({
             errorMsg = "Error interno del servidor. Por favor intenta más tarde."
           }
         }
-        
+
         toast({
           title: "Error al procesar el pago",
           description: errorMsg,
@@ -288,7 +295,7 @@ export default function PagoRapidoModal({
     } catch (error) {
       // Manejar errores de red y otros errores inesperados
       let errorMsg = "Error de conexión. Verifica tu conexión a internet e intenta nuevamente."
-      
+
       if (error instanceof Error) {
         if (error.message.includes('fetch')) {
           errorMsg = "No se pudo conectar con el servidor. Verifica tu conexión a internet."
@@ -300,7 +307,7 @@ export default function PagoRapidoModal({
           errorMsg = error.message
         }
       }
-      
+
       toast({
         title: "Error de conexión",
         description: errorMsg,
@@ -316,12 +323,13 @@ export default function PagoRapidoModal({
     if (pagoRegistrado) {
       onSuccess()
     }
-    
+
     // Limpiar estado
     setStep('form')
     setMonto("")
     setObservaciones("")
     setMetodoPago('EFECTIVO')
+    setFecha(new Date())
     setPagoRegistrado(null)
     onClose()
   }
@@ -343,12 +351,12 @@ export default function PagoRapidoModal({
         logging: false,
         useCORS: true
       })
-      
+
       // Preparar mensaje para WhatsApp
       const telefono = pagoRegistrado.cliente.telefono?.replace(/\D/g, '') || ''
       const mensaje = `Hola ${pagoRegistrado.cliente.nombre}, adjunto tu boleta de pago N° ${pagoRegistrado.numeroBoleta}. ¡Gracias por tu pago! ✅`
       const mensajeCodificado = encodeURIComponent(mensaje)
-      
+
       // Nombre de archivo
       const fileName = `boleta-${pagoRegistrado.numeroBoleta}.png`
 
@@ -373,7 +381,7 @@ export default function PagoRapidoModal({
               title: `Boleta ${pagoRegistrado.numeroBoleta}`,
               text: mensaje
             })
-            
+
             toast({
               title: "¡Compartido!",
               description: "La boleta se envió correctamente",
@@ -388,7 +396,7 @@ export default function PagoRapidoModal({
 
       // Fallback: Descargar imagen y abrir WhatsApp
       const dataUrl = canvas.toDataURL('image/png', 1.0)
-      
+
       // Descargar la imagen
       const link = document.createElement('a')
       link.download = fileName
@@ -399,12 +407,12 @@ export default function PagoRapidoModal({
 
       // Esperar un momento y abrir WhatsApp
       setTimeout(() => {
-        const urlWhatsApp = telefono 
+        const urlWhatsApp = telefono
           ? `https://wa.me/${telefono}?text=${mensajeCodificado}`
           : `https://wa.me/?text=${mensajeCodificado}`
-        
+
         window.open(urlWhatsApp, '_blank')
-        
+
         toast({
           title: "Imagen descargada",
           description: "Se descargó la imagen. Ahora puedes adjuntarla en WhatsApp",
@@ -424,7 +432,7 @@ export default function PagoRapidoModal({
 
   const handleDescargarBoleta = async () => {
     if (!boletaRef.current || !pagoRegistrado) return
-    
+
     try {
       const canvas = await html2canvas(boletaRef.current, {
         scale: 2,
@@ -432,7 +440,7 @@ export default function PagoRapidoModal({
         logging: false,
         useCORS: true
       })
-      
+
       const link = document.createElement('a')
       link.download = `boleta-${pagoRegistrado.numeroBoleta}.png`
       link.href = canvas.toDataURL()
@@ -475,7 +483,7 @@ export default function PagoRapidoModal({
                   </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Cuota sugerida:</span>
@@ -506,7 +514,7 @@ export default function PagoRapidoModal({
                     disabled={loading}
                   />
                 </div>
-                
+
                 {/* Botones de monto rápido */}
                 <div className="flex gap-2 mt-2">
                   <Button
@@ -547,6 +555,41 @@ export default function PagoRapidoModal({
                     <SelectItem value="DEPOSITO">🏧 Depósito</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <Label>Fecha de Pago</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !fecha && "text-muted-foreground"
+                      )}
+                      disabled={loading}
+                    >
+                      {fecha ? (
+                        format(fecha, "PPP", { locale: es })
+                      ) : (
+                        <span>Selecciona una fecha</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fecha}
+                      onSelect={(date) => date && setFecha(date)}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      locale={es}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div>
@@ -608,7 +651,7 @@ export default function PagoRapidoModal({
               {pagoRegistrado ? (
                 <>
                   <BoletaPago ref={boletaRef} data={pagoRegistrado} />
-                  
+
                   {/* Mensaje de éxito */}
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200 text-center">
                     <div className="text-green-600 mb-2">
@@ -630,7 +673,7 @@ export default function PagoRapidoModal({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={handleCompartirWhatsApp}
                           className="flex items-center space-x-2 py-3"
                         >
@@ -642,8 +685,8 @@ export default function PagoRapidoModal({
                             <span className="text-xs text-gray-500">Enviar por WhatsApp</span>
                           </div>
                         </DropdownMenuItem>
-                        
-                        <DropdownMenuItem 
+
+                        <DropdownMenuItem
                           onClick={handleDescargarBoleta}
                           className="flex items-center space-x-2 py-3"
                         >

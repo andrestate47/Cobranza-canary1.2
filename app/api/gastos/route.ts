@@ -167,8 +167,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error al crear gasto:", error)
+    console.error("Error al crear gasto:", error)
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: `Error interno: ${(error as Error).message}` },
       { status: 500 }
     )
   }

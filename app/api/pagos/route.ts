@@ -11,12 +11,12 @@ export const dynamic = "force-dynamic"
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 === API PAGOS POST INICIADO ===')
-    
+
     const session = await getServerSession(authOptions)
     console.log('🔐 Sesión válida:', !!session)
     console.log('🔐 Usuario ID:', session?.user?.id)
     console.log('🔐 Usuario rol:', session?.user?.role)
-    
+
     if (!session) {
       console.log('❌ No hay sesión válida')
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
-    const { prestamoId, monto, observaciones, metodoPago } = body || {}
+
+    const { prestamoId, monto, observaciones, metodoPago, fecha } = body || {}
 
     // Validaciones básicas
     if (!prestamoId || !monto) {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     if (session.user.role === "COBRADOR") {
       const hoy = new Date()
       hoy.setHours(0, 0, 0, 0)
-      
+
       const cierreHoy = await prisma.cierreDia.findUnique({
         where: { fecha: hoy }
       })
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Verificar que el préstamo existe y está activo
     const prestamo = await prisma.prestamo.findUnique({
       where: { id: prestamoId },
-      include: { 
+      include: {
         cliente: true,
         pagos: {
           orderBy: { fecha: 'desc' },
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
     if (montoNumerico > saldoActual) {
       console.log('❌ Pago excede saldo pendiente')
       return NextResponse.json(
-        { 
-          error: `El monto del pago ($${montoNumerico.toLocaleString('es-CO')}) no puede ser mayor al saldo pendiente ($${saldoActual.toLocaleString('es-CO')})` 
+        {
+          error: `El monto del pago ($${montoNumerico.toLocaleString('es-CO')}) no puede ser mayor al saldo pendiente ($${saldoActual.toLocaleString('es-CO')})`
         },
         { status: 400 }
       )
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     console.log('💰 Monto a guardar:', montoNumerico, typeof montoNumerico)
     console.log('💰 PrestamoId:', prestamoId, typeof prestamoId)
     console.log('👤 UserId:', session.user.id, typeof session.user.id)
-    
+
     // Crear el pago usando el constructor Decimal de Prisma para mayor compatibilidad
     let montoDecimal: Decimal
     try {
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     let pago
     try {
       pago = await prisma.pago.create({
@@ -194,7 +194,8 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           monto: montoDecimal, // Pasar como objeto Decimal
           observaciones: observaciones?.trim() || null,
-          metodoPago: metodoFinal
+          metodoPago: metodoFinal,
+          fecha: fecha ? new Date(fecha) : undefined
         },
         include: {
           prestamo: {
@@ -213,7 +214,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (pagoError) {
       console.error('❌ Error específico creando pago:', pagoError)
-      
+
       if (pagoError instanceof Error) {
         // Error específico de validación de Decimal
         if (pagoError.message.includes('Decimal') || pagoError.message.includes('Invalid')) {
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-        
+
         // Error de foreign key (prestamoId o userId inválidos)
         if (pagoError.message.includes('Foreign key constraint')) {
           console.log('🔍 Error de clave foránea detectado:', pagoError.message)
@@ -233,7 +234,7 @@ export async function POST(request: NextRequest) {
           )
         }
       }
-      
+
       // Re-lanzar el error para que sea manejado por el catch principal
       throw pagoError
     }
@@ -256,8 +257,8 @@ export async function POST(request: NextRequest) {
     console.log('📄 Número de boleta generado:', numeroBoleta)
 
     // Obtener el último pago anterior para incluir en la boleta
-    const ultimoPagoAnterior = prestamo.pagos.length > 0 && prestamo.pagos[0].id !== pago.id 
-      ? prestamo.pagos[0] 
+    const ultimoPagoAnterior = prestamo.pagos.length > 0 && prestamo.pagos[0].id !== pago.id
+      ? prestamo.pagos[0]
       : null;
 
     const responseData = {
@@ -295,7 +296,7 @@ export async function POST(request: NextRequest) {
           direccionCliente: pago.prestamo.cliente.direccionCliente
         },
         usuario: {
-          nombre: pago.usuario.firstName && pago.usuario.lastName 
+          nombre: pago.usuario.firstName && pago.usuario.lastName
             ? `${pago.usuario.firstName} ${pago.usuario.lastName}`
             : pago.usuario.name || "Usuario"
         },
@@ -313,11 +314,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("❌ Error al registrar pago:", error)
     console.error("❌ Stack trace completo:", error instanceof Error ? error.stack : 'No disponible')
-    
+
     // Manejar diferentes tipos de errores específicamente
     if (error instanceof Error) {
       console.log('📋 Analizando tipo de error:', error.message)
-      
+
       // Error de validación de Prisma
       if (error.message.includes('Unique constraint')) {
         console.log('🔍 Error de constraint único detectado')
@@ -326,7 +327,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      
+
       // Error de conexión a base de datos
       if (error.message.includes('connection') || error.message.includes('timeout')) {
         console.log('🔍 Error de conexión detectado')
@@ -335,7 +336,7 @@ export async function POST(request: NextRequest) {
           { status: 503 }
         )
       }
-      
+
       // Error de validación de Prisma (incluye Decimal)
       if (error.message.includes('Invalid') || error.message.includes('required') || error.message.includes('Expected') || error.message.includes('validation')) {
         console.log('🔍 Error de validación de Prisma detectado')
@@ -344,7 +345,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      
+
       // Error de cast o conversión
       if (error.message.includes('cast') || error.message.includes('convert') || error.message.includes('Decimal')) {
         console.log('🔍 Error de conversión de datos detectado')
@@ -353,7 +354,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      
+
       // Error de sesión o autenticación
       if (error.message.includes('session') || error.message.includes('auth')) {
         console.log('🔍 Error de sesión detectado')
@@ -363,7 +364,7 @@ export async function POST(request: NextRequest) {
         )
       }
     }
-    
+
     // Error genérico pero más amigable
     console.log('🔍 Error genérico no categorizado')
     return NextResponse.json(
@@ -391,7 +392,7 @@ export async function GET(request: NextRequest) {
       fechaInicio.setHours(0, 0, 0, 0)
       const fechaFin = new Date(fecha)
       fechaFin.setHours(23, 59, 59, 999)
-      
+
       whereCondition.fecha = {
         gte: fechaInicio,
         lte: fechaFin
@@ -440,7 +441,7 @@ export async function GET(request: NextRequest) {
         }
       },
       usuario: {
-        nombre: pago.usuario.firstName && pago.usuario.lastName 
+        nombre: pago.usuario.firstName && pago.usuario.lastName
           ? `${pago.usuario.firstName} ${pago.usuario.lastName}`
           : pago.usuario.name || "Usuario"
       }
@@ -449,7 +450,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(pagosFormateados)
   } catch (error) {
     console.error("❌ Error al obtener pagos:", error)
-    
+
     // Manejar diferentes tipos de errores específicamente
     if (error instanceof Error) {
       // Error de conexión a base de datos
@@ -460,7 +461,7 @@ export async function GET(request: NextRequest) {
         )
       }
     }
-    
+
     // Error genérico pero más amigable
     return NextResponse.json(
       { error: "No se pudieron cargar los pagos. Por favor intenta nuevamente" },

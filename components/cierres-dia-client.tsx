@@ -4,8 +4,8 @@
 import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Calendar,
   CheckCircle,
   RefreshCw,
@@ -20,6 +20,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Pencil, Save, X } from "lucide-react"
 
 interface CierreDia {
   id: string
@@ -43,6 +55,18 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
   const [cierres, setCierres] = useState<CierreDia[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+
+  // Estados para edición
+  const [editingCierre, setEditingCierre] = useState<CierreDia | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    totalCobrado: "",
+    totalPrestado: "",
+    totalGastos: "",
+    saldoEfectivo: "",
+    observaciones: ""
+  })
 
   const fetchCierres = async () => {
     setLoading(true)
@@ -73,6 +97,62 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
   useEffect(() => {
     fetchCierres()
   }, [])
+
+  const handleEditClick = (cierre: CierreDia) => {
+    setEditingCierre(cierre)
+    setFormData({
+      totalCobrado: cierre.totalCobrado.toString(),
+      totalPrestado: cierre.totalPrestado.toString(),
+      totalGastos: cierre.totalGastos.toString(),
+      saldoEfectivo: cierre.saldoEfectivo.toString(),
+      observaciones: cierre.observaciones || ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateCierre = async () => {
+    if (!editingCierre) return
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/cierre-dia', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingCierre.id,
+          totalCobrado: formData.totalCobrado,
+          totalPrestado: formData.totalPrestado,
+          totalGastos: formData.totalGastos,
+          saldoEfectivo: formData.saldoEfectivo,
+          observaciones: formData.observaciones
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Éxito",
+          description: "Cierre actualizado correctamente",
+          variant: "default",
+        })
+        setIsEditDialogOpen(false)
+        fetchCierres() // Recargar datos
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || "Error al actualizar")
+      }
+    } catch (error) {
+      console.error("Error update:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo actualizar el cierre",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -130,13 +210,14 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                 size="sm"
                 onClick={fetchCierres}
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
+                <RefreshCw className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Actualizar</span>
               </Button>
               <Link href="/informes-dia">
                 <Button className="btn-primary" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Informe Hoy
+                  <Eye className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Ver Informe Hoy</span>
+                  <span className="md:hidden">Informe</span>
                 </Button>
               </Link>
             </div>
@@ -199,9 +280,8 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                 <Wallet className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${
-                  cierres[0]?.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <div className={`text-2xl font-bold ${cierres[0]?.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
                   {formatCurrency(cierres[0]?.saldoEfectivo || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -224,8 +304,8 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
           </div>
 
           {cierres.map((cierre, index) => (
-            <Card 
-              key={cierre.id} 
+            <Card
+              key={cierre.id}
               className="list-item animate-fadeInScale"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
@@ -243,10 +323,23 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                       {formatDateTime(cierre.createdAt)}
                     </div>
                   </div>
-                  <Badge variant="default" className="bg-green-500">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Cerrado
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    {session.user.role === "ADMINISTRADOR" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handleEditClick(cierre)}
+                      >
+                        <Pencil className="h-4 w-4 text-blue-500" />
+                        <span className="sr-only">Editar</span>
+                      </Button>
+                    )}
+                    <Badge variant="default" className="bg-green-500">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Cerrado
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Métricas del día */}
@@ -258,7 +351,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                     </div>
                     <div className="text-xs text-gray-500">Cobrado</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <TrendingDown className="h-5 w-5 text-blue-600 mx-auto mb-1" />
                     <div className="text-lg font-bold text-blue-600">
@@ -266,7 +359,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                     </div>
                     <div className="text-xs text-gray-500">Prestado</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-red-50 rounded-lg">
                     <DollarSign className="h-5 w-5 text-red-600 mx-auto mb-1" />
                     <div className="text-lg font-bold text-red-600">
@@ -274,12 +367,11 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                     </div>
                     <div className="text-xs text-gray-500">Gastos</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
                     <Wallet className="h-5 w-5 text-purple-600 mx-auto mb-1" />
-                    <div className={`text-lg font-bold ${
-                      cierre.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div className={`text-lg font-bold ${cierre.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       {formatCurrency(cierre.saldoEfectivo)}
                     </div>
                     <div className="text-xs text-gray-500">Saldo Final</div>
@@ -328,6 +420,99 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
           )}
         </div>
       </div>
+
+      {/* Modal de Edición */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Cierre del Día</DialogTitle>
+            <DialogDescription>
+              Modifica los valores del cierre. Esta acción solo la pueden realizar administradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="totalCobrado">Total Cobrado</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-2.5 text-gray-500">$</span>
+                  <Input
+                    id="totalCobrado"
+                    value={formData.totalCobrado}
+                    onChange={(e) => setFormData({ ...formData, totalCobrado: e.target.value })}
+                    className="pl-6"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="totalPrestado">Total Prestado</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-2.5 text-gray-500">$</span>
+                  <Input
+                    id="totalPrestado"
+                    value={formData.totalPrestado}
+                    onChange={(e) => setFormData({ ...formData, totalPrestado: e.target.value })}
+                    className="pl-6"
+                    type="number"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="totalGastos">Total Gastos</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-2.5 text-gray-500">$</span>
+                  <Input
+                    id="totalGastos"
+                    value={formData.totalGastos}
+                    onChange={(e) => setFormData({ ...formData, totalGastos: e.target.value })}
+                    className="pl-6"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="saldoEfectivo">Saldo Efectivo</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-2.5 text-gray-500">$</span>
+                  <Input
+                    id="saldoEfectivo"
+                    value={formData.saldoEfectivo}
+                    onChange={(e) => setFormData({ ...formData, saldoEfectivo: e.target.value })}
+                    className="pl-6"
+                    type="number"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="observaciones">Observaciones</Label>
+              <Textarea
+                id="observaciones"
+                value={formData.observaciones}
+                onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>
+              <X className="mr-2 h-4 w-4" /> Cancelar
+            </Button>
+            <Button onClick={handleUpdateCierre} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>Guardando...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> Guardar Cambios
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

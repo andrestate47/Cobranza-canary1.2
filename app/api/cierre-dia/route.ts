@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         saldoEfectivo: parseFloat(cierre.saldoEfectivo.toString()),
         observaciones: cierre.observaciones,
         usuario: {
-          nombre: cierre.usuario.firstName && cierre.usuario.lastName 
+          nombre: cierre.usuario.firstName && cierre.usuario.lastName
             ? `${cierre.usuario.firstName} ${cierre.usuario.lastName}`
             : cierre.usuario.name || "Usuario"
         }
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       observaciones: cierre.observaciones,
       createdAt: cierre.createdAt,
       usuario: {
-        nombre: cierre.usuario.firstName && cierre.usuario.lastName 
+        nombre: cierre.usuario.firstName && cierre.usuario.lastName
           ? `${cierre.usuario.firstName} ${cierre.usuario.lastName}`
           : cierre.usuario.name || "Usuario"
       }
@@ -132,6 +132,77 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cierresFormateados)
   } catch (error) {
     console.error("Error al obtener cierres:", error)
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
+    // Solo administradores pueden modificar cierres
+    if (session.user.role !== "ADMINISTRADOR") {
+      return NextResponse.json(
+        { error: "Solo los administradores pueden modificar cierres" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { id, totalCobrado, totalPrestado, totalGastos, saldoEfectivo, observaciones } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "ID de cierre requerido" },
+        { status: 400 }
+      )
+    }
+
+    const cierre = await prisma.cierreDia.update({
+      where: { id },
+      data: {
+        totalCobrado: parseFloat(totalCobrado),
+        totalPrestado: parseFloat(totalPrestado),
+        totalGastos: parseFloat(totalGastos),
+        saldoEfectivo: parseFloat(saldoEfectivo),
+        observaciones: observaciones?.trim()
+      },
+      include: {
+        usuario: {
+          select: {
+            firstName: true,
+            lastName: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      message: "Cierre actualizado exitosamente",
+      cierre: {
+        id: cierre.id,
+        fecha: cierre.fecha,
+        totalCobrado: parseFloat(cierre.totalCobrado.toString()),
+        totalPrestado: parseFloat(cierre.totalPrestado.toString()),
+        totalGastos: parseFloat(cierre.totalGastos.toString()),
+        saldoEfectivo: parseFloat(cierre.saldoEfectivo.toString()),
+        observaciones: cierre.observaciones,
+        usuario: {
+          nombre: cierre.usuario.firstName && cierre.usuario.lastName
+            ? `${cierre.usuario.firstName} ${cierre.usuario.lastName}`
+            : cierre.usuario.name || "Usuario"
+        }
+      }
+    })
+  } catch (error) {
+    console.error("Error al actualizar cierre:", error)
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }

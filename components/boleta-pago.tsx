@@ -59,7 +59,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     console.log('📋 cliente:', data?.cliente)
     console.log('📋 monto:', data?.monto)
     console.log('📋 === FIN BOLETA INFO ===')
-    
+
     const formatCurrency = (amount: number) => {
       return new Intl.NumberFormat('es-CO', {
         style: 'currency',
@@ -106,24 +106,24 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     // Función para calcular cuotas atrasadas
     const calcularCuotasAtrasadas = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, totalCuotas: number): number => {
       if (cuotasPagadas >= totalCuotas) return 0
-      
+
       const inicioDate = new Date(fechaInicio)
       const hoy = new Date()
       const diasTranscurridos = Math.floor((hoy.getTime() - inicioDate.getTime()) / (1000 * 60 * 60 * 24))
-      
+
       let cuotasQueDeberianEstarPagadas = 0
-      
+
       if (tipoPago === 'LUNES_A_VIERNES') {
         // Contar solo días laborales (lunes a viernes)
-        cuotasQueDeberianEstarPagadas = Math.floor(diasTranscurridos * 5/7)
+        cuotasQueDeberianEstarPagadas = Math.floor(diasTranscurridos * 5 / 7)
       } else if (tipoPago === 'LUNES_A_SABADO') {
         // Contar lunes a sábado
-        cuotasQueDeberianEstarPagadas = Math.floor(diasTranscurridos * 6/7)
+        cuotasQueDeberianEstarPagadas = Math.floor(diasTranscurridos * 6 / 7)
       } else {
         const diasEntrePagos = getDiasEntrePagos(tipoPago)
         cuotasQueDeberianEstarPagadas = Math.floor(diasTranscurridos / diasEntrePagos)
       }
-      
+
       const atrasadas = Math.max(0, Math.min(cuotasQueDeberianEstarPagadas - cuotasPagadas, totalCuotas - cuotasPagadas))
       return atrasadas
     }
@@ -133,14 +133,14 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const inicioDate = new Date(fechaInicio)
       const hoy = new Date()
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
-      
+
       let fechaUltimaCuotaEsperada = new Date(inicioDate)
       fechaUltimaCuotaEsperada.setDate(fechaUltimaCuotaEsperada.getDate() + (cuotasPagadas * diasEntrePagos))
-      
+
       if (hoy > fechaUltimaCuotaEsperada) {
         return Math.floor((hoy.getTime() - fechaUltimaCuotaEsperada.getTime()) / (1000 * 60 * 60 * 24))
       }
-      
+
       return 0
     }
 
@@ -148,10 +148,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const calcularFechaProximoPago = (fechaInicio: string, tipoPago: string, proximaCuota: number): Date => {
       const inicioDate = new Date(fechaInicio)
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
-      
+
       const fechaProxima = new Date(inicioDate)
       fechaProxima.setDate(fechaProxima.getDate() + ((proximaCuota - 1) * diasEntrePagos))
-      
+
       return fechaProxima
     }
 
@@ -186,7 +186,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const cuotasPagadas = Math.floor(totalPagado / data.prestamo.valorCuota)
     const totalCuotas = data.prestamo.cuotas || Math.ceil(data.prestamo.montoTotal / data.prestamo.valorCuota)
     const progresoPrecentaje = ((totalPagado / data.prestamo.montoTotal) * 100).toFixed(1)
-    
+
     // Nuevos cálculos adicionales
     const cuotasPendientes = totalCuotas - cuotasPagadas
     const cuotasAtrasadas = calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas)
@@ -220,7 +220,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 <User className="h-5 w-5 text-blue-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="text-xl font-bold text-gray-900">
                   {data.cliente.nombre} {data.cliente.apellido}
@@ -303,7 +303,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <span className="text-gray-600">Monto total:</span>
                   <span className="font-medium">{formatCurrency(data.prestamo.montoTotal)}</span>
                 </div>
-                
+
                 {/* Información del Microseguro */}
                 {data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'NINGUNO' && data.prestamo.microseguroTotal && data.prestamo.microseguroTotal > 0 && (
                   <>
@@ -324,7 +324,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                           {data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto:' : 'Porcentaje:'}
                         </span>
                         <span className="font-medium text-purple-700">
-                          {data.prestamo.microseguroTipo === 'MONTO_FIJO' 
+                          {data.prestamo.microseguroTipo === 'MONTO_FIJO'
                             ? formatCurrency(data.prestamo.microseguroValor || 0)
                             : `${data.prestamo.microseguroValor}%`
                           }
@@ -339,9 +339,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     </div>
                   </>
                 )}
-                
+
                 <Separator className="my-2" />
-                
+
                 {/* Estado de cuotas */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total cuotas:</span>
@@ -361,9 +361,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     {cuotasAtrasadas}
                   </span>
                 </div>
-                
+
                 <Separator className="my-2" />
-                
+
                 {/* Estado de atraso */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Días vencidos:</span>
@@ -377,9 +377,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     {formatCurrency(valorEnAtraso)}
                   </span>
                 </div>
-                
+
                 <Separator className="my-2" />
-                
+
                 {/* Información de fechas */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Fecha inicio:</span>
@@ -393,7 +393,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <span className="text-gray-600">Fecha próximo pago:</span>
                   <span className="font-medium text-blue-600">{formatDateOnly(fechaProximoPago)}</span>
                 </div>
-                
+
                 {/* Información del último pago */}
                 {data.prestamo.ultimoPago && (
                   <>
@@ -410,10 +410,14 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     </div>
                   </>
                 )}
-                
+
                 <Separator className="my-2" />
-                
+
                 {/* Información del pago actual */}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Fecha del pago:</span>
+                  <span className="font-medium text-blue-600">{formatDate(data.fecha)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Método de pago actual:</span>
                   <span className="font-medium capitalize">{data.tipoPagoMetodo || 'Efectivo'}</span>
