@@ -649,6 +649,41 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setShowBoletaModal(true)
   }
 
+  const handleDeletePago = async (pagoId: string) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este pago? Esta acción revertirá el saldo.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/pagos/${pagoId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Pago eliminado",
+          description: "El pago ha sido eliminado y el saldo actualizado.",
+        })
+        // Recargar la página para mostrar los datos actualizados
+        window.location.reload()
+      } else {
+        const errorData = await response.json()
+        toast({
+          title: "Error",
+          description: errorData.error || "No se pudo eliminar el pago",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error al eliminar pago:", error)
+      toast({
+        title: "Error",
+        description: "Error de conexión al eliminar el pago",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleVerBoletaTransferencia = async (transferencia: Transferencia) => {
     if (!transferencia.observaciones) return
 
@@ -1362,22 +1397,35 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           }
                         </div>
                       </div>
-                      {pago.observaciones && (
-                        <div className="text-sm text-gray-600 max-w-xs">
-                          {pago.observaciones}
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {pago.observaciones && (
+                          <div className="text-sm text-gray-600 max-w-xs text-right">
+                            {pago.observaciones}
+                          </div>
+                        )}
 
-                      {/* Botón ver boleta */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="ml-2 text-green-600 hover:text-green-700 hover:bg-green-100"
-                        title="Ver Boleta"
-                        onClick={() => handleVerBoletaPago(pago)}
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
+                        {/* Botón ver boleta */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                          title="Ver Boleta"
+                          onClick={() => handleVerBoletaPago(pago)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+
+                        {/* Botón eliminar pago */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-100"
+                          title="Eliminar Pago"
+                          onClick={() => handleDeletePago(pago.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
 
