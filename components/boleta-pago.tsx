@@ -3,7 +3,9 @@
 "use client"
 
 import { forwardRef } from "react"
-import { Receipt, Calendar, User, DollarSign, CreditCard } from "lucide-react"
+import { Receipt, Calendar as CalendarIcon, User, DollarSign, CreditCard } from "lucide-react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
@@ -69,19 +71,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     }
 
     const formatDate = (dateString: string) => {
-      const date = new Date(dateString)
-      return date.toLocaleString('es-CO', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      if (!dateString) return ''
+      return format(new Date(dateString), "dd/MM/yyyy, hh:mm a", { locale: es })
     }
 
     const formatDateOnly = (dateString: string | Date) => {
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-CO')
+      if (!dateString) return ''
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: es })
     }
 
     // Función para obtener días entre pagos según el tipo

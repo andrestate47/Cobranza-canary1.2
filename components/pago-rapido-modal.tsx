@@ -581,7 +581,15 @@ export default function PagoRapidoModal({
                     <Calendar
                       mode="single"
                       selected={fecha}
-                      onSelect={(date) => date && setFecha(date)}
+                      onSelect={(selectedDate) => {
+                        if (selectedDate) {
+                          // Preservar la hora actual al cambiar la fecha para evitar problemas de zona horaria (00:00)
+                          const newDate = new Date(selectedDate)
+                          const now = new Date()
+                          newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
+                          setFecha(newDate)
+                        }
+                      }}
                       disabled={(date) =>
                         date < new Date("1900-01-01")
                       }
