@@ -109,6 +109,7 @@ export default function PagoRapidoModal({
   const [fecha, setFecha] = useState<Date>(new Date())
   const [loading, setLoading] = useState(false)
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const boletaRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
@@ -457,7 +458,7 @@ export default function PagoRapidoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={step === 'boleta' ? "sm:max-w-2xl max-h-[90vh] overflow-y-auto" : "sm:max-w-md"}>
+      <DialogContent className={cn("max-h-[90vh] overflow-y-auto transition-all duration-300", step === 'boleta' ? "sm:max-w-2xl" : "sm:max-w-md md:max-w-xl")}>
         {step === 'form' && (
           <>
             <DialogHeader>
@@ -498,8 +499,8 @@ export default function PagoRapidoModal({
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-1">
                 <Label htmlFor="monto">Monto del pago *</Label>
                 <div className="relative mt-1">
                   <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -539,27 +540,9 @@ export default function PagoRapidoModal({
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="metodoPago">Método de Pago *</Label>
-                <Select
-                  value={metodoPago}
-                  onValueChange={(value: 'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO') => setMetodoPago(value)}
-                  disabled={loading}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Selecciona método de pago" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EFECTIVO">💵 Efectivo</SelectItem>
-                    <SelectItem value="TRANSFERENCIA">🏦 Transferencia</SelectItem>
-                    <SelectItem value="DEPOSITO">🏧 Depósito</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-2 md:col-span-1">
                 <Label>Fecha de Pago</Label>
-                <Popover>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
@@ -588,6 +571,7 @@ export default function PagoRapidoModal({
                           const now = new Date()
                           newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
                           setFecha(newDate)
+                          setIsCalendarOpen(false)
                         }
                       }}
                       disabled={(date) =>
@@ -600,7 +584,25 @@ export default function PagoRapidoModal({
                 </Popover>
               </div>
 
-              <div>
+              <div className="md:col-span-2">
+                <Label htmlFor="metodoPago">Método de Pago *</Label>
+                <Select
+                  value={metodoPago}
+                  onValueChange={(value: 'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO') => setMetodoPago(value)}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Selecciona método de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EFECTIVO">💵 Efectivo</SelectItem>
+                    <SelectItem value="TRANSFERENCIA">🏦 Transferencia</SelectItem>
+                    <SelectItem value="DEPOSITO">🏧 Depósito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="md:col-span-2">
                 <Label htmlFor="observaciones">Observaciones</Label>
                 <Textarea
                   id="observaciones"
@@ -612,7 +614,7 @@ export default function PagoRapidoModal({
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end space-x-3 pt-4 md:col-span-2">
                 <Button
                   type="button"
                   variant="outline"
