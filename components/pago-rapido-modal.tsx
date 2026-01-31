@@ -458,7 +458,7 @@ export default function PagoRapidoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={cn("max-h-[90vh] overflow-y-auto transition-all duration-300", step === 'boleta' ? "sm:max-w-2xl" : "sm:max-w-md md:max-w-xl")}>
+      <DialogContent className={cn("max-h-[90vh] overflow-y-auto transition-all duration-300", step === 'boleta' ? "sm:max-w-2xl" : "sm:max-w-md sm:max-w-xl")}>
         {step === 'form' && (
           <>
             <DialogHeader>
@@ -499,55 +499,59 @@ export default function PagoRapidoModal({
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-1">
-                <Label htmlFor="monto">Monto del pago *</Label>
-                <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="monto"
-                    type="text"
-                    value={monto}
-                    onChange={(e) => handleMontoChange(e.target.value)}
-                    placeholder="0"
-                    className="pl-10"
-                    required
-                    disabled={loading}
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Columna Izquierda: Monto */}
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="monto">Monto del pago *</Label>
+                  <div className="relative mt-1">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="monto"
+                      type="text"
+                      value={monto}
+                      onChange={(e) => handleMontoChange(e.target.value)}
+                      placeholder="0"
+                      className="pl-10 h-10"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
 
-                {/* Botones de monto rápido */}
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={setPagoCuota}
-                    disabled={loading}
-                  >
-                    <Calculator className="h-3 w-3 mr-1" />
-                    Cuota
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={setPagoCompleto}
-                    disabled={loading}
-                  >
-                    Pago Total
-                  </Button>
+                  {/* Botones de monto rápido */}
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={setPagoCuota}
+                      disabled={loading}
+                    >
+                      <Calculator className="h-3 w-3 mr-1" />
+                      Cuota
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={setPagoCompleto}
+                      disabled={loading}
+                    >
+                      Pago Total
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-2 md:col-span-1">
-                <Label>Fecha de Pago</Label>
+              {/* Columna Derecha: Fecha */}
+              <div>
+                <Label className="block mb-1">Fecha de Pago</Label>
                 <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full pl-3 text-left font-normal",
+                        "w-full pl-3 text-left font-normal h-10",
                         !fecha && "text-muted-foreground"
                       )}
                       disabled={loading}
@@ -566,7 +570,6 @@ export default function PagoRapidoModal({
                       selected={fecha}
                       onSelect={(selectedDate) => {
                         if (selectedDate) {
-                          // Preservar la hora actual al cambiar la fecha para evitar problemas de zona horaria (00:00)
                           const newDate = new Date(selectedDate)
                           const now = new Date()
                           newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
@@ -584,14 +587,15 @@ export default function PagoRapidoModal({
                 </Popover>
               </div>
 
-              <div className="md:col-span-2">
+              {/* Fila Completa Intermedia: Método de Pago */}
+              <div className="sm:col-span-2">
                 <Label htmlFor="metodoPago">Método de Pago *</Label>
                 <Select
                   value={metodoPago}
                   onValueChange={(value: 'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO') => setMetodoPago(value)}
                   disabled={loading}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-10">
                     <SelectValue placeholder="Selecciona método de pago" />
                   </SelectTrigger>
                   <SelectContent>
@@ -602,19 +606,20 @@ export default function PagoRapidoModal({
                 </Select>
               </div>
 
-              <div className="md:col-span-2">
+              {/* Fila Completa Inferior: Observaciones */}
+              <div className="sm:col-span-2">
                 <Label htmlFor="observaciones">Observaciones</Label>
                 <Textarea
                   id="observaciones"
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
                   placeholder="Observaciones opcionales..."
-                  className="mt-1"
+                  className="mt-1 min-h-[80px]"
                   disabled={loading}
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 md:col-span-2">
+              <div className="flex justify-end space-x-3 pt-2 sm:col-span-2">
                 <Button
                   type="button"
                   variant="outline"
