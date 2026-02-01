@@ -77,7 +77,33 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     const formatDateOnly = (dateString: string | Date) => {
       if (!dateString) return ''
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: es })
+
+      try {
+        const fechaStr = String(dateString)
+        const fechaIso = fechaStr.includes('T') ? fechaStr.split('T')[0] : fechaStr
+
+        if (fechaIso.includes('-')) {
+          const [year, month, day] = fechaIso.split('-')
+          // Construir fecha UTC mediodía
+          const fecha = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0))
+          return new Intl.DateTimeFormat('es-CO', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC'
+          }).format(fecha)
+        }
+      } catch (e) {
+        console.error("Error formatting date only:", e)
+      }
+
+      const date = new Date(dateString)
+      return new Intl.DateTimeFormat('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC'
+      }).format(date)
     }
 
     // Función para obtener días entre pagos según el tipo

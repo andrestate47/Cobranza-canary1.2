@@ -607,24 +607,34 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   const formatDateModal = (dateString: string) => {
-    // Manejar UTC vs Local
-    const dateToParse = dateString.length === 10 ? `${dateString}T00:00:00` : dateString
+    if (!dateString) return ''
+    try {
+      const fechaStr = String(dateString)
+      const fechaIso = fechaStr.includes('T') ? fechaStr.split('T')[0] : fechaStr
 
-    // Si termina en Z (UTC) y no tiene hora (es decir, media noche), podríamos querer forzar 
-    // la visualización del día correcto dependiendo de la lógica de negocio, pero 
-    // generalmente la API devuelve ISO con Z.
-    // Si la fecha es creada localmente (YYYY-MM-DD), el parseo anterior funciona.
+      if (fechaIso.includes('-')) {
+        const [year, month, day] = fechaIso.split('-')
+        // Construimos la fecha en UTC al mediodía (12:00) para evitar bordes de cambio de día
+        const fecha = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0))
+        return new Intl.DateTimeFormat('es-CO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC'
+        }).format(fecha)
+      }
+    } catch (e) {
+      console.error("Error formateando fecha modal:", e)
+    }
 
-    // Para fechas que vienen de la BD (ISO strings), toLocaleDateString usará la zona horaria local.
-    // Si la BD guardó 00:00 UTC, veríamos el día anterior. 
-    // Sin embargo, para este fix rápido nos enfocamos en que las fechas seleccionadas se vean bien.
-
-    const date = new Date(dateToParse)
-    return date.toLocaleDateString('es-CO', {
+    // Fallback
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat('es-CO', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
-    })
+      day: 'numeric',
+      timeZone: 'UTC'
+    }).format(date)
   }
 
   const getTipoPagoText = (tipo: string) => {

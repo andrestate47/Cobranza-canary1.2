@@ -33,13 +33,13 @@ export default function LoginForm() {
 
       if (result?.error) {
         let errorMessage = "Credenciales incorrectas. Por favor, verifica tu email y contraseña."
-        
+
         if (result.error.includes("desactivado")) {
           errorMessage = "Tu cuenta ha sido desactivada. Contacta al administrador para reactivarla."
         } else if (result.error.includes("Tiempo de uso")) {
           errorMessage = result.error
         }
-        
+
         toast({
           title: "Error de autenticación",
           description: errorMessage,
@@ -50,8 +50,8 @@ export default function LoginForm() {
         const session = await getSession()
         const userName = session?.user?.firstName || session?.user?.name || "Usuario"
         const userRole = session?.user?.role === 'ADMINISTRADOR' ? 'Administrador' :
-                         session?.user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'
-        
+          session?.user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'
+
         toast({
           title: `¡Bienvenido, ${userName}!`,
           description: `Sesión iniciada como ${userRole}.`,
@@ -71,7 +71,7 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="animate-fadeInScale shadow-2xl">
+    <Card className="animate-fadeInScale shadow-2xl bg-white border-gray-200">
       <CardHeader className="text-center space-y-2">
         <div className="mx-auto w-28 h-28 mb-14 relative">
           <Image
@@ -83,53 +83,54 @@ export default function LoginForm() {
             priority
           />
         </div>
-        <CardTitle className="text-2xl font-bold text-gray-800">
+        <CardTitle className="text-2xl font-bold text-black">
           B.&.D.S.C
         </CardTitle>
-        <CardDescription className="text-gray-600">
+        <CardDescription className="text-slate-500">
           Ingresa tus credenciales para acceder al sistema
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="email" className="text-sm font-semibold text-slate-800">
               Correo electrónico
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <User className="absolute left-3 top-3 h-4 w-4 text-slate-600" style={{ color: '#475569' }} />
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@ejemplo.com"
-                className="pl-10 h-12"
+                className="pl-10 h-12 text-slate-900 border-slate-300 bg-white placeholder:text-slate-500"
                 required
                 disabled={isLoading}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="password" className="text-sm font-semibold text-slate-800">
               Contraseña
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-600" style={{ color: '#475569' }} />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="pl-10 pr-12 h-12"
+                className="pl-10 pr-12 h-12 text-slate-900 border-slate-300 bg-white placeholder:text-slate-500"
                 required
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-3 h-4 w-4 text-slate-600 hover:text-slate-800"
+                style={{ color: '#475569' }}
                 disabled={isLoading}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -151,7 +152,7 @@ export default function LoginForm() {
             )}
           </Button>
         </form>
-        
+
         {/* Información de cuentas de demostración */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <h3 className="text-sm font-semibold text-blue-800 mb-2">📝 Cuentas de Demostración</h3>

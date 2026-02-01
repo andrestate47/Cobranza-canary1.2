@@ -183,7 +183,34 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [direccionCobroEditar, setDireccionCobroEditar] = useState("")
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO')
+    if (!dateString) return ''
+    try {
+      // Parseo manual de la cadena ISO (YYYY-MM-DD...) para evitar conversiones de zona horaria automáticas
+      // Tomamos la parte de la fecha antes de la T
+      const fechaIso = String(dateString).split('T')[0]
+      if (fechaIso.includes('-')) {
+        const [year, month, day] = fechaIso.split('-')
+        // Construimos la fecha en UTC al mediodía (12:00) para evitar bordes de cambio de día
+        const fecha = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0))
+        return new Intl.DateTimeFormat('es-CO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC'
+        }).format(fecha)
+      }
+    } catch (e) {
+      console.error("Error formateando fecha:", e)
+    }
+
+    // Fallback
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC'
+    }).format(date)
   }
 
   const formatDateTime = (dateString: string) => {

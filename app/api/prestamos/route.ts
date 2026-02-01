@@ -321,7 +321,12 @@ export async function POST(request: NextRequest) {
             tipoPago,
             cuotas: cuotasNum,
             valorCuota,
-            fechaInicio: new Date(fechaInicio),
+            // Parsear fecha manualmente y establecer a mediodía UTC para evitar problemas de zona horaria
+            fechaInicio: (() => {
+              const dateStr = String(fechaInicio).split('T')[0];
+              const [y, m, d] = dateStr.split('-').map(Number);
+              return new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0));
+            })(),
             fechaFin,
             observaciones: observaciones?.trim() || null,
             tipoCredito,
