@@ -230,7 +230,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     // Calcular totales dinámicos
     const totalPagado = data.prestamo.montoTotal - data.prestamo.saldoPendiente
-    const cuotasPagadas = Math.floor(totalPagado / data.prestamo.valorCuota)
+    const cuotasPagadas = data.prestamo.valorCuota > 0 ? totalPagado / data.prestamo.valorCuota : 0
     const totalCuotas = data.prestamo.cuotas || Math.ceil(data.prestamo.montoTotal / data.prestamo.valorCuota)
     const progresoPrecentaje = ((totalPagado / data.prestamo.montoTotal) * 100).toFixed(1)
 
@@ -396,7 +396,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Cuotas pagadas:</span>
-                  <span className="font-medium text-green-600">{cuotasPagadas}</span>
+                  <span className="font-medium text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Cuotas pendientes:</span>
@@ -405,7 +405,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 <div className="flex justify-between">
                   <span className="text-gray-600">Cuotas atrasadas:</span>
                   <span className={`font-medium ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {cuotasAtrasadas}
+                    {Number(cuotasAtrasadas.toFixed(2))}
                   </span>
                 </div>
 

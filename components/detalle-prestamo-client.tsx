@@ -299,18 +299,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
     const cuotasEsperadasConGracia = Math.max(0, cuotasEsperadas - Math.floor(diasGracia / diasEsperadosPorCuota))
-    const cuotasAtrasadas = Math.max(0, cuotasEsperadasConGracia - cuotasPagadas)
+
+    // Calculamos las cuotas pagadas financieramente para mayor precisión
+    const cuotasPagadasFinancial = valorCuota > 0 ? totalPagado / valorCuota : 0
+    const cuotasAtrasadas = Math.max(0, cuotasEsperadasConGracia - cuotasPagadasFinancial)
 
     // Días vencidos
     let diasVencidos = 0
     if (hoyMidnight > fechaFinMidnight) {
       diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / (1000 * 60 * 60 * 24))
     } else if (cuotasAtrasadas > 0) {
-      diasVencidos = Math.max(0, diasTranscurridos - (cuotasPagadas * diasEsperadosPorCuota) - diasGracia)
+      diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (cuotasPagadasFinancial * diasEsperadosPorCuota) - diasGracia))
     }
 
-    // Valor en atrasos (cuotas atrasadas * valor de cuota)
-    const valorEnAtrasos = cuotasAtrasadas * valorCuota
+    // Valor en atrasos
+    const valorEnAtrasos = Math.max(0, Math.round((cuotasAtrasadas * valorCuota) * 100) / 100)
 
     // Último pago
     const ultimoPago = prestamo.pagos.length > 0
@@ -1182,7 +1185,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cuotas atrasadas:</span>
                     <span className={`font-semibold ${infoExtendida.cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {infoExtendida.cuotasAtrasadas}
+                      {Number(infoExtendida.cuotasAtrasadas.toFixed(2))}
                     </span>
                   </div>
                   <div className="flex justify-between">
