@@ -523,8 +523,35 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
 
     const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+
     const fechaInicio = new Date(prestamo.fechaInicio)
-    const pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+
+    // Cálculo mejorado de pagos esperados excluyendo días no hábiles
+    let pagosEsperados = 0
+    const fechaInicioMidnight = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate())
+    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+
+    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+      let current = new Date(fechaInicioMidnight)
+      // Comenzamos desde el día siguiente al inicio, ya que el primer pago es después
+      current.setDate(current.getDate() + 1)
+
+      while (current <= hoyMidnight) {
+        const diaSemana = current.getDay()
+        let esDiaHabil = true
+
+        if (prestamo.tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaHabil = false // Excluir Domingo
+        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaHabil = false // Excluir Sáb y Dom
+
+        if (esDiaHabil) {
+          pagosEsperados++
+        }
+        current.setDate(current.getDate() + 1)
+      }
+    } else {
+      // Cálculo estándar para otros tipos de pago
+      pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+    }
 
     // Si ya está completamente pagado
     if (saldoPendiente <= 0) {
