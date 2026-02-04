@@ -271,9 +271,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Para tipos de pago especiales, ajustar cálculo
     if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
-      // Contar solo días laborales (lunes a viernes)
+      // Contar solo días laborales (lunes a viernes) EXCLUYENDO la fecha de inicio
       let diasLaborales = 0
       const fechaActual = new Date(fechaInicioMidnight)
+      fechaActual.setDate(fechaActual.getDate() + 1) // Empezar a contar desde el día siguiente
+
       while (fechaActual <= hoyMidnight) {
         const diaSemana = fechaActual.getDay() // 0 = domingo, 1 = lunes, ..., 6 = sábado
         if (diaSemana >= 1 && diaSemana <= 5) {
@@ -283,9 +285,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       }
       cuotasEsperadas = diasLaborales
     } else if (prestamo.tipoPago === 'LUNES_A_SABADO') {
-      // Contar solo días laborales (lunes a sábado)
+      // Contar solo días laborales (lunes a sábado) EXCLUYENDO la fecha de inicio
       let diasLaborales = 0
       const fechaActual = new Date(fechaInicioMidnight)
+      fechaActual.setDate(fechaActual.getDate() + 1) // Empezar a contar desde el día siguiente
+
       while (fechaActual <= hoyMidnight) {
         const diaSemana = fechaActual.getDay() // 0 = domingo
         if (diaSemana !== 0) {
@@ -298,6 +302,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
+    // Si cuotasEsperadas < 0 por alguna razón (fechas futuras), usar 0
+    cuotasEsperadas = Math.max(0, cuotasEsperadas)
     const cuotasEsperadasConGracia = Math.max(0, cuotasEsperadas - Math.floor(diasGracia / diasEsperadosPorCuota))
 
     // Calculamos las cuotas pagadas financieramente para mayor precisión
@@ -1654,7 +1660,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="montoRenovacion">Nuevo Monto *</Label>
                 <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="montoRenovacion"
                     type="number"
@@ -1675,14 +1681,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="interesRenovacion">Interés (%) *</Label>
                 <div className="relative mt-1">
-                  <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="interesRenovacion"
                     type="number"
                     step="0.01"
                     value={interesRenovacion}
                     onChange={(e) => setInteresRenovacion(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-white"
                     required
                     disabled={renovando}
                     min="0"
@@ -1736,7 +1742,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   type="date"
                   value={fechaInicioRenovacion}
                   onChange={(e) => setFechaInicioRenovacion(e.target.value)}
-                  className="mt-1"
+                  onClick={(e) => {
+                    try {
+                      if (typeof (e.target as HTMLInputElement).showPicker === 'function') {
+                        (e.target as HTMLInputElement).showPicker()
+                      }
+                    } catch (error) {
+                      console.log('showPicker not supported', error)
+                    }
+                  }}
+                  className="mt-1 cursor-pointer"
                   required
                   disabled={renovando}
                 />
@@ -1866,7 +1881,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 <div>
                   <Label htmlFor="nombreEditar">Nombre *</Label>
                   <div className="relative mt-1">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                     <Input
                       id="nombreEditar"
                       type="text"
@@ -1898,7 +1913,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="documentoEditar">Documento *</Label>
                 <div className="relative mt-1">
-                  <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="documentoEditar"
                     type="text"
@@ -1915,7 +1930,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="telefonoEditar">Teléfono</Label>
                 <div className="relative mt-1">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="telefonoEditar"
                     type="tel"
@@ -1931,7 +1946,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="direccionClienteEditar">Dirección del Cliente</Label>
                 <div className="relative mt-1">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="direccionClienteEditar"
                     type="text"
@@ -1947,7 +1962,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div>
                 <Label htmlFor="direccionCobroEditar">Dirección de Cobro</Label>
                 <div className="relative mt-1">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="direccionCobroEditar"
                     type="text"

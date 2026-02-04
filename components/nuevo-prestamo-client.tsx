@@ -966,7 +966,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 <div>
                   <Label htmlFor="monto">Monto del préstamo *</Label>
                   <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                     <Input
                       id="monto"
                       type="text"
@@ -984,14 +984,14 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 <div>
                   <Label htmlFor="interes">Interés (%) *</Label>
                   <div className="relative mt-1">
-                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                     <Input
                       id="interes"
                       type="text"
                       value={interes}
                       onChange={(e) => handleInteresChange(e.target.value)}
                       placeholder="Ej: 15 o 15,5"
-                      className="pl-10"
+                      className="pl-10 !bg-white"
                       required
                       disabled={loading}
                     />
@@ -1085,7 +1085,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           {microseguroTipo === 'MONTO_FIJO' ? 'Monto del microseguro' : 'Porcentaje (%)'}
                         </Label>
                         <div className="relative mt-1">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                           <Input
                             id="microseguroValor"
                             type="text"
@@ -1160,13 +1160,22 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 <div>
                   <Label htmlFor="fechaInicio">Fecha de inicio *</Label>
                   <div className="relative mt-1">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                     <Input
                       id="fechaInicio"
                       type="date"
                       value={fechaInicio}
                       onChange={(e) => setFechaInicio(e.target.value)}
-                      className="pl-10"
+                      onClick={(e) => {
+                        try {
+                          if (typeof (e.target as HTMLInputElement).showPicker === 'function') {
+                            (e.target as HTMLInputElement).showPicker()
+                          }
+                        } catch (error) {
+                          console.log('showPicker not supported', error)
+                        }
+                      }}
+                      className="pl-10 !bg-white cursor-pointer"
                       required
                       disabled={loading}
                     />
