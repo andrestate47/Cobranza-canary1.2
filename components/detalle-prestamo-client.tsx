@@ -315,7 +315,26 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     if (hoyMidnight > fechaFinMidnight) {
       diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / (1000 * 60 * 60 * 24))
     } else if (cuotasAtrasadas > 0) {
-      diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (cuotasPagadasFinancial * diasEsperadosPorCuota) - diasGracia))
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+        // Calculamos días laborales transcurridos para restar correctamente las cuotas pagadas
+        let diasLaboralesTranscurridos = 0
+        const current = new Date(fechaInicioMidnight)
+        current.setDate(current.getDate() + 1)
+
+        while (current <= hoyMidnight) {
+          const day = current.getDay()
+          if (prestamo.tipoPago === 'LUNES_A_SABADO') {
+            if (day !== 0) diasLaboralesTranscurridos++
+          } else if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
+            if (day !== 0 && day !== 6) diasLaboralesTranscurridos++
+          }
+          current.setDate(current.getDate() + 1)
+        }
+
+        diasVencidos = Math.max(0, Math.floor(diasLaboralesTranscurridos - cuotasPagadasFinancial - diasGracia))
+      } else {
+        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (cuotasPagadasFinancial * diasEsperadosPorCuota) - diasGracia))
+      }
     }
 
     // Valor en atrasos

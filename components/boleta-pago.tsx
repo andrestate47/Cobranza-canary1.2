@@ -127,43 +127,38 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     // Función para calcular cuotas atrasadas
     const calcularCuotasAtrasadas = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, totalCuotas: number, fechaReferencia: string): number => {
-      if (cuotasPagadas >= totalCuotas) return 0
+      // Normalizar fecha de inicio usando componentes locales
+      const fechaInicioStr = String(fechaInicio).split('T')[0]
+      const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
+      const inicioNormalized = new Date(yI, mI - 1, dI)
 
-      const inicioDate = new Date(fechaInicio)
-      // Normalizar inicio a mediodía/UTC para evitar problemas de zona horaria si la fecha viene como string YYYY-MM-DD
-      const inicioNormalized = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate())
-
-      const referenciaDate = new Date(fechaReferencia)
-      const referenciaNormalized = new Date(referenciaDate.getFullYear(), referenciaDate.getMonth(), referenciaDate.getDate())
+      // Normalizar fecha de referencia
+      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
+      const referenciaNormalized = new Date(yR, mR - 1, dR)
 
       // Si la referencia es anterior al inicio, no hay atraso
       if (referenciaNormalized < inicioNormalized) return 0
+
+      // Si cuotas pagadas supera el total, no hay atraso
+      if (cuotasPagadas >= totalCuotas) return 0
 
       let cuotasEsperadas = 0
       const oneDay = 1000 * 60 * 60 * 24
       const diasTranscurridos = Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / oneDay)
 
-      if (tipoPago === 'LUNES_A_VIERNES') {
-        // Contar solo días laborales (lunes a viernes) EXCLUYENDO start date
+      if (tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'LUNES_A_SABADO') {
         let diasLaborales = 0
         const current = new Date(inicioNormalized)
-        current.setDate(current.getDate() + 1)
+        current.setDate(current.getDate() + 1) // Empezar a contar desde el día siguiente al inicio
 
         while (current <= referenciaNormalized) {
           const day = current.getDay()
-          if (day >= 1 && day <= 5) diasLaborales++
-          current.setDate(current.getDate() + 1)
-        }
-        cuotasEsperadas = diasLaborales
-      } else if (tipoPago === 'LUNES_A_SABADO') {
-        // Contar lunes a sábado EXCLUYENDO start date
-        let diasLaborales = 0
-        const current = new Date(inicioNormalized)
-        current.setDate(current.getDate() + 1)
-
-        while (current <= referenciaNormalized) {
-          const day = current.getDay()
-          if (day !== 0) diasLaborales++
+          if (tipoPago === 'LUNES_A_VIERNES') {
+            if (day !== 0 && day !== 6) diasLaborales++
+          } else { // LUNES_A_SABADO
+            if (day !== 0) diasLaborales++
+          }
           current.setDate(current.getDate() + 1)
         }
         cuotasEsperadas = diasLaborales
@@ -178,61 +173,61 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     // Función para calcular días vencidos
     const calcularDiasVencidos = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, fechaReferencia: string): number => {
-      const inicioDate = new Date(fechaInicio)
-      const referenciaDate = new Date(fechaReferencia)
-      const diasEntrePagos = getDiasEntrePagos(tipoPago)
+      const fechaInicioStr = String(fechaInicio).split('T')[0]
+      const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
+      const inicioNormalized = new Date(yI, mI - 1, dI)
 
-      let fechaUltimaCuotaEsperada = new Date(inicioDate)
-
-      // Ajuste para tipos especiales, estimación simple para 'fechaUltimaCuotaEsperada' no es trivial con lógica de días hábiles, 
-      // pero mantenemos la lógica base o usamos una aproximación segura si es complejo reimplementar todo el calendario inverso.
-      // Para consistencia con 'calcularCuotasAtrasadas', si ya calculamos cuotas esperadas allá, podríamos derivar esto.
-      // Por ahora, usamos la lógica estándar corregida con la fecha de referencia.
+      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
+      const referenciaNormalized = new Date(yR, mR - 1, dR)
 
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
-        // Aproximación segura: Si hay atraso, contamos días desde la "fecha ideal" de la cuota pagada
-        // Si es complejo, simplificamos: Dias vencidos = Dias transcurridos - Dias cubiertos por pagos
-        // Esta es la lógica que usamos en el componente principal
+        let diasLaboralesTranscurridos = 0
+        const current = new Date(inicioNormalized)
+        current.setDate(current.getDate() + 1)
 
-        const inicioNormalized = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate())
-        const referenciaNormalized = new Date(referenciaDate.getFullYear(), referenciaDate.getMonth(), referenciaDate.getDate())
-        const diasTranscurridos = Math.max(0, Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / (1000 * 60 * 60 * 24)))
+        while (current <= referenciaNormalized) {
+          const day = current.getDay()
+          if (tipoPago === 'LUNES_A_SABADO') {
+            if (day !== 0) diasLaboralesTranscurridos++
+          } else if (tipoPago === 'LUNES_A_VIERNES') {
+            if (day !== 0 && day !== 6) diasLaboralesTranscurridos++
+          }
+          current.setDate(current.getDate() + 1)
+        }
 
-        // Estimamos días cubiertos (1 cuota = 1 día hábil aprox = 1 día calendario en este contexto de "días de deuda")
-        // Una lógica más simple es:
-        // Si hay cuotas atrasadas, ¿cuánto tiempo ha pasado desde que debió pagarse la siguiente cuota?
-        // Pero para mantener consistencia visual con el panel principal:
-        // Usamos la lógica de "días descubiertos" -> Dias totales - (Cuotas pagadas * frecuencia)
-        // Nota: Esto funciona bien para pago diario.
-
-        const diasCubiertos = cuotasPagadas * 1 // 1 día por cuota para diarios
-        const diasVencidos = Math.max(0, diasTranscurridos - diasCubiertos)
-
-        // Corrección: Solo mostramos días vencidos si realmente hay cuotas atrasadas.
-        // Pero necesitamos saber si hay cuotas atrasadas aquí.
-        // Mejor simplificamos: si la fecha referencia > fecha esperada de cuota (pagada + 1)
-        return diasVencidos // Esto puede no ser exacto al 100% pero es consistente con "Días sin cobertura"
+        const diasCubiertos = cuotasPagadas // 1 cuota cubre 1 día laboral
+        const diasVencidos = Math.max(0, diasLaboralesTranscurridos - diasCubiertos)
+        return diasVencidos
       }
 
-      fechaUltimaCuotaEsperada.setDate(fechaUltimaCuotaEsperada.getDate() + (cuotasPagadas * diasEntrePagos))
+      // Para otros pagos (Diario, Semanal, etc)
+      const diasEntrePagos = getDiasEntrePagos(tipoPago)
+      const ultimaCuotaEsperada = new Date(inicioNormalized)
+      ultimaCuotaEsperada.setDate(ultimaCuotaEsperada.getDate() + (cuotasPagadas * diasEntrePagos))
 
-      if (referenciaDate > fechaUltimaCuotaEsperada) {
-        return Math.floor((referenciaDate.getTime() - fechaUltimaCuotaEsperada.getTime()) / (1000 * 60 * 60 * 24))
+      if (referenciaNormalized > ultimaCuotaEsperada) {
+        return Math.floor((referenciaNormalized.getTime() - ultimaCuotaEsperada.getTime()) / (1000 * 60 * 60 * 24))
       }
 
       return 0
     }
 
     // Función para calcular fecha del próximo pago
+    // Función para calcular fecha del próximo pago
     const calcularFechaProximoPago = (fechaInicio: string, tipoPago: string, proximaCuota: number): Date => {
-      const inicioDate = new Date(fechaInicio)
+      // Normalizar fecha de inicio para evitar problemas de zona horaria
+      // Asumimos que la fecha viene como YYYY-MM-DD o ISO. Tomamos los componentes locales.
+      const fechaStr = String(fechaInicio).split('T')[0]
+      const [year, month, day] = fechaStr.split('-').map(Number)
+      const inicioDate = new Date(year, month - 1, day) // Fecha local mediodía no necesario aqui, usamos contadores de dias
 
-      // Si es la primera cuota, es la fecha de inicio
-      if (proximaCuota <= 1) return inicioDate
+      // Si es cuota 0 o negativa, devolver inicio
+      if (proximaCuota < 1) return inicioDate
 
       // Lógica precisa para días hábiles
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
-        let cuotasContadas = 1 // Contamos la primera cuota (fecha inicio)
+        let cuotasContadas = 0
         let diaActual = new Date(inicioDate)
 
         // Iterar hasta llegar a la cuota deseada
@@ -254,17 +249,20 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
 
       const fechaProxima = new Date(inicioDate)
-      fechaProxima.setDate(fechaProxima.getDate() + ((proximaCuota - 1) * diasEntrePagos))
+      fechaProxima.setDate(fechaProxima.getDate() + (proximaCuota * diasEntrePagos))
 
       return fechaProxima
     }
 
     // Función para calcular días transcurridos
     const calcularDiasTranscurridos = (fechaInicio: string, fechaReferencia: string): number => {
-      const inicioDate = new Date(fechaInicio)
-      const referenciaDate = new Date(fechaReferencia)
-      const inicioNormalized = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate())
-      const referenciaNormalized = new Date(referenciaDate.getFullYear(), referenciaDate.getMonth(), referenciaDate.getDate())
+      const fechaInicioStr = String(fechaInicio).split('T')[0]
+      const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
+      const inicioNormalized = new Date(yI, mI - 1, dI)
+
+      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
+      const referenciaNormalized = new Date(yR, mR - 1, dR)
 
       return Math.max(0, Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / (1000 * 60 * 60 * 24)))
     }
@@ -295,8 +293,20 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const progresoPrecentaje = ((totalPagado / data.prestamo.montoTotal) * 100).toFixed(1)
 
     // Nuevos cálculos adicionales
-    const cuotasPendientes = totalCuotas - cuotasPagadas
+    // Nuevos cálculos adicionales
+    // IMPORTANTE: Usamos Math.floor para cuotasPagadas para cálculos de "cuotas completas" en la lógica de atraso
+    // pero mantenemos el decimal para el progreso visual.
+    const cuotasPagadasEnteras = Math.floor(cuotasPagadas)
+
+    const cuotasPendientes = Math.max(0, totalCuotas - cuotasPagadas)
+
+    // Calcular atraso REAL AL MOMENTO DEL PAGO
+    // Si estamos viendo un recibo histórico, 'cuotasPagadas' debería ser el acumulado HASTA ese pago.
+    // data.prestamo.saldoPendiente viene ya calculado para ese momento histórico en handleVerBoletaPago,
+    // por lo tanto 'cuotasPagadas' derivada de ahí es correcta para ese momento.
+
     const cuotasAtrasadas = calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, data.fecha as string)
+
     // Para días vencidos, refinamos: solo si hay atraso
     let diasVencidos = 0
     if (cuotasAtrasadas > 0) {

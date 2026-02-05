@@ -4,12 +4,12 @@
 import { useState, useEffect } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
-import { 
-  ArrowLeft, 
-  Search, 
-  Phone, 
-  MapPin, 
-  DollarSign, 
+import {
+  ArrowLeft,
+  Search,
+  Phone,
+  MapPin,
+  DollarSign,
   Calendar,
   User,
   Filter,
@@ -92,7 +92,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   const [showPagoModal, setShowPagoModal] = useState(false)
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [showImageModal, setShowImageModal] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<{url: string, title: string, subtitle?: string} | null>(null)
+  const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
   const { toast } = useToast()
   const { format: formatCurrency } = useCurrency()
 
@@ -175,10 +175,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   // Función para calcular el estado de alerta del cliente
   const calcularEstadoCliente = (clienteData: ClienteConPrestamos) => {
     // Verificar si algún préstamo está completamente vencido
-    const tienePrestamoVencido = clienteData.prestamos.some(prestamo => 
+    const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
       prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date()
     )
-    
+
     if (tienePrestamoVencido) {
       return {
         estado: 'VENCIDO',
@@ -193,7 +193,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     const hoy = new Date()
     const prestamosConAtraso = clienteData.prestamos.filter(prestamo => {
       if (prestamo.saldoPendiente <= 0) return false // Ya está pagado
-      
+
       // Calcular días desde el último pago esperado
       const diasPorTipo = {
         'DIARIO': 1,
@@ -209,14 +209,33 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         'SEMESTRAL': 180,
         'ANUAL': 365
       }
-      
+
       const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
       const fechaInicio = new Date(prestamo.fechaInicio)
-      const pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
-      
+
+      let pagosEsperados = 0
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+        const fechaInicioMidnight = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate())
+        const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+        let current = new Date(fechaInicioMidnight)
+        current.setDate(current.getDate() + 1)
+
+        while (current <= hoyMidnight) {
+          const day = current.getDay()
+          if (prestamo.tipoPago === 'LUNES_A_SABADO') {
+            if (day !== 0) pagosEsperados++
+          } else if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
+            if (day !== 0 && day !== 6) pagosEsperados++
+          }
+          current.setDate(current.getDate() + 1)
+        }
+      } else {
+        pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+      }
+
       return prestamo.cuotasPagadas < Math.max(0, pagosEsperados)
     })
-    
+
     if (prestamosConAtraso.length > 0) {
       return {
         estado: 'MOROSO',
@@ -230,7 +249,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     // Verificar si está próximo a vencer (en los próximos 3 días)
     const proximoAVencer = clienteData.prestamos.some(prestamo => {
       if (prestamo.saldoPendiente <= 0) return false
-      
+
       const diasPorTipo = {
         'DIARIO': 1,
         'SEMANAL': 7,
@@ -245,17 +264,17 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         'SEMESTRAL': 180,
         'ANUAL': 365
       }
-      
+
       const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
       const fechaInicio = new Date(prestamo.fechaInicio)
       const pagosRealizados = prestamo.cuotasPagadas
       const fechaProximoPago = new Date(fechaInicio.getTime() + (pagosRealizados * diasEsperados * 24 * 60 * 60 * 1000))
-      
+
       const diferenciaDias = Math.floor((fechaProximoPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-      
+
       return diferenciaDias <= 3 && diferenciaDias >= 0
     })
-    
+
     if (proximoAVencer) {
       return {
         estado: 'PROXIMO_A_VENCER',
@@ -278,7 +297,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
   // Función para obtener información adicional del tipo de pago
   const getTipoPagoBadge = (clienteData: ClienteConPrestamos) => {
-    const prestamoMasReciente = clienteData.prestamos.sort((a, b) => 
+    const prestamoMasReciente = clienteData.prestamos.sort((a, b) =>
       new Date(b.fechaActividadReciente).getTime() - new Date(a.fechaActividadReciente).getTime()
     )[0]
 
@@ -297,10 +316,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       'SEMESTRAL': { texto: 'Semestral', color: 'bg-pink-100 text-pink-800' },
       'ANUAL': { texto: 'Anual', color: 'bg-yellow-100 text-yellow-800' }
     }
-    
-    return badges[tipoPago as keyof typeof badges] || { 
-      texto: tipoPago, 
-      color: 'bg-gray-100 text-gray-800' 
+
+    return badges[tipoPago as keyof typeof badges] || {
+      texto: tipoPago,
+      color: 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -332,10 +351,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       // Crear URL de Google Maps
       const direccionFormateada = encodeURIComponent(direccionLimpia)
       const url = `https://www.google.com/maps/search/?api=1&query=${direccionFormateada}`
-      
+
       // Intentar abrir en nueva pestaña
       const nuevaVentana = window.open(url, '_blank', 'noopener,noreferrer')
-      
+
       // Verificar si se bloqueó la popup
       if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
         // Si se bloqueó, intentar navegar en la misma pestaña
@@ -344,7 +363,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           description: "Tu navegador bloqueó la ventana emergente. Abriendo en la misma pestaña...",
           variant: "default",
         })
-        
+
         // Usar un timeout para que el usuario vea el mensaje
         setTimeout(() => {
           window.location.href = url
@@ -438,7 +457,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <Button
               variant={soloConSaldo ? "default" : "outline"}
@@ -448,7 +467,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
               <Filter className="h-4 w-4" />
               <span>{soloConSaldo ? "Solo con saldo" : "Todos los préstamos"}</span>
             </Button>
-            
+
             <div className="text-sm text-gray-500">
               {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''}
             </div>
@@ -462,15 +481,15 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             const estadoAlerta = calcularEstadoCliente(clienteData)
             const tipoPagoInfo = getTipoPagoBadge(clienteData)
             const IconoAlerta = estadoAlerta.icono
-            
+
             return (
-              <Card 
-                key={clienteData.cliente.id} 
+              <Card
+                key={clienteData.cliente.id}
                 className="list-item animate-fadeInScale"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <Collapsible 
-                  open={isExpanded} 
+                <Collapsible
+                  open={isExpanded}
                   onOpenChange={() => toggleCardExpansion(clienteData.cliente.id)}
                 >
                   <CardContent className="p-4">
@@ -484,8 +503,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                               className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
                               title="Ver foto del cliente"
                             >
-                              <img 
-                                src={clienteData.cliente.foto} 
+                              <img
+                                src={clienteData.cliente.foto}
                                 alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
                                 className="w-full h-full object-cover"
                               />
@@ -504,15 +523,14 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                               <h3 className="font-semibold text-gray-900 truncate">
                                 {clienteData.cliente.nombre} {clienteData.cliente.apellido}
                               </h3>
-                              <Badge 
-                                className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${
-                                  estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
-                                }`}
+                              <Badge
+                                className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                                  }`}
                               >
                                 {estadoAlerta.texto}
                               </Badge>
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={`text-xs ${tipoPagoInfo.color}`}
                               >
                                 {tipoPagoInfo.texto}
@@ -539,7 +557,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                           </div>
                         </div>
                       </div>
-                      
+
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="ml-2 p-2">
                           {isExpanded ? (
@@ -560,7 +578,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             <DollarSign className="h-4 w-4 mr-2 text-green-600" />
                             Préstamos de {clienteData.cliente.nombre} ({clienteData.prestamos.length})
                           </h4>
-                          
+
                           {clienteData.prestamos.map((prestamo, prestamoIndex) => {
                             const fechaInicio = new Date(prestamo.fechaInicio).toLocaleDateString('es-CO', {
                               year: 'numeric',
@@ -572,7 +590,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                               month: 'short',
                               day: 'numeric'
                             })
-                            
+
                             return (
                               <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
                                 {/* Header del préstamo */}
@@ -581,29 +599,28 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     <Badge variant="outline" className="text-xs font-semibold bg-white">
                                       Préstamo #{prestamoIndex + 1}
                                     </Badge>
-                                    <Badge 
-                                      variant="default" 
-                                      className={`text-xs ${
-                                        prestamo.tipoPago === 'DIARIO' ? 'bg-blue-400' :
-                                        prestamo.tipoPago === 'SEMANAL' ? 'bg-green-400' :
-                                        prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-400' :
-                                        prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-400' :
-                                        prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-400' :
-                                        prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-400' :
-                                        prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-400' :
-                                        prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-400' :
-                                        prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-400' :
-                                        prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-400' :
-                                        prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-400' :
-                                        prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-400' : 'bg-gray-400'
-                                      }`}
+                                    <Badge
+                                      variant="default"
+                                      className={`text-xs ${prestamo.tipoPago === 'DIARIO' ? 'bg-blue-400' :
+                                          prestamo.tipoPago === 'SEMANAL' ? 'bg-green-400' :
+                                            prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-400' :
+                                              prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-400' :
+                                                prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-400' :
+                                                  prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-400' :
+                                                    prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-400' :
+                                                      prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-400' :
+                                                        prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-400' :
+                                                          prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-400' :
+                                                            prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-400' :
+                                                              prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-400' : 'bg-gray-400'
+                                        }`}
                                     >
                                       {prestamo.tipoPago === 'FIN_DE_MES' ? 'Fin de Mes' :
-                                       prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'Lun-Vie' :
-                                       prestamo.tipoPago === 'LUNES_A_SABADO' ? 'Lun-Sáb' :
-                                       prestamo.tipoPago === 'CATORCENAL' ? 'Catorcenal' :
-                                       prestamo.tipoPago === 'CUATRIMESTRAL' ? 'Cuatrimestral' :
-                                       prestamo.tipoPago}
+                                        prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'Lun-Vie' :
+                                          prestamo.tipoPago === 'LUNES_A_SABADO' ? 'Lun-Sáb' :
+                                            prestamo.tipoPago === 'CATORCENAL' ? 'Catorcenal' :
+                                              prestamo.tipoPago === 'CUATRIMESTRAL' ? 'Cuatrimestral' :
+                                                prestamo.tipoPago}
                                     </Badge>
                                     {prestamo.tipoCredito && (
                                       <Badge variant="secondary" className="text-xs">
@@ -641,7 +658,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                       {clienteData.cliente.codigoCliente} • {clienteData.cliente.documento}
                                     </span>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2 text-xs">
                                     {clienteData.cliente.telefono && (
                                       <div className="flex items-center gap-1">
@@ -663,7 +680,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     <div className="flex items-start gap-1 text-xs">
                                       <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
                                       <div className="flex-1">
-                                        <button 
+                                        <button
                                           onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente')}
                                           className="text-blue-600 hover:underline text-left"
                                         >
@@ -684,7 +701,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                         <MapPin className="h-3 w-3 mt-0.5 text-orange-600 flex-shrink-0" />
                                         <div className="flex-1">
                                           <span className="text-gray-500 mr-1">Cobro:</span>
-                                          <button 
+                                          <button
                                             onClick={() => abrirMapa(clienteData.cliente.direccionCobro!, 'cobro')}
                                             className="text-orange-600 hover:underline text-left"
                                           >
@@ -723,7 +740,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     <p className="text-xs text-gray-500">Total: {formatCurrency(prestamo.montoTotal)}</p>
                                   </div>
                                 </div>
-                                
+
                                 {/* Detalles del pago */}
                                 <div className="grid grid-cols-2 gap-2 text-xs bg-white rounded-lg p-3 border border-gray-200">
                                   <div>
@@ -776,7 +793,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     <p className="text-gray-700 mt-1">{prestamo.observaciones}</p>
                                   </div>
                                 )}
-                                
+
                                 {/* Barra de progreso individual */}
                                 <div className="space-y-1">
                                   <div className="flex justify-between text-xs text-gray-600">
@@ -786,10 +803,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
+                                    <div
                                       className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500 shadow-sm"
-                                      style={{ 
-                                        width: `${getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas)}%` 
+                                      style={{
+                                        width: `${getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas)}%`
                                       }}
                                     />
                                   </div>
@@ -813,7 +830,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                 No hay clientes
               </h3>
               <p className="text-gray-500 mb-6">
-                {soloConSaldo 
+                {soloConSaldo
                   ? "No se encontraron préstamos con saldo pendiente"
                   : "No se encontraron préstamos que coincidan con la búsqueda"
                 }
