@@ -314,7 +314,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     }
 
     const valorEnAtraso = cuotasAtrasadas * data.prestamo.valorCuota
-    const fechaProximoPago = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas + 1)
+    const fechaProximoPago = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
     const diasTranscurridos = calcularDiasTranscurridos(data.prestamo.fechaInicio, data.fecha as string)
 
     return (
