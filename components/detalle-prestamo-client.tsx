@@ -245,7 +245,24 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Días transcurridos
     const oneDay = 1000 * 60 * 60 * 24
-    const diasTranscurridos = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / oneDay))
+    let diasTranscurridos = 0
+
+    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+      let current = new Date(fechaInicioMidnight)
+      current.setDate(current.getDate() + 1) // Empezar a contar desde el día siguiente
+
+      while (current <= hoyMidnight) {
+        const d = current.getDay()
+        let valid = true
+        if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+
+        if (valid) diasTranscurridos++
+        current.setDate(current.getDate() + 1)
+      }
+    } else {
+      diasTranscurridos = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / oneDay))
+    }
 
     // Cuotas pendientes
     const cuotasPendientes = Math.max(0, prestamo.cuotas - cuotasPagadas)
@@ -269,37 +286,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const diasEsperadosPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
     let cuotasEsperadas = Math.floor(diasTranscurridos / diasEsperadosPorCuota)
 
-    // Para tipos de pago especiales, ajustar cálculo
-    if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
-      // Contar solo días laborales (lunes a viernes) EXCLUYENDO la fecha de inicio
-      let diasLaborales = 0
-      const fechaActual = new Date(fechaInicioMidnight)
-      fechaActual.setDate(fechaActual.getDate() + 1) // Empezar a contar desde el día siguiente
-
-      while (fechaActual <= hoyMidnight) {
-        const diaSemana = fechaActual.getDay() // 0 = domingo, 1 = lunes, ..., 6 = sábado
-        if (diaSemana >= 1 && diaSemana <= 5) {
-          diasLaborales++
-        }
-        fechaActual.setDate(fechaActual.getDate() + 1)
-      }
-      cuotasEsperadas = diasLaborales
-    } else if (prestamo.tipoPago === 'LUNES_A_SABADO') {
-      // Contar solo días laborales (lunes a sábado) EXCLUYENDO la fecha de inicio
-      let diasLaborales = 0
-      const fechaActual = new Date(fechaInicioMidnight)
-      fechaActual.setDate(fechaActual.getDate() + 1) // Empezar a contar desde el día siguiente
-
-      while (fechaActual <= hoyMidnight) {
-        const diaSemana = fechaActual.getDay() // 0 = domingo
-        if (diaSemana !== 0) {
-          diasLaborales++
-        }
-        fechaActual.setDate(fechaActual.getDate() + 1)
-      }
-      cuotasEsperadas = diasLaborales
-    }
-
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
     // Si cuotasEsperadas < 0 por alguna razón (fechas futuras), usar 0
@@ -317,21 +303,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     } else if (cuotasAtrasadas > 0) {
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
         // Calculamos días laborales transcurridos para restar correctamente las cuotas pagadas
-        let diasLaboralesTranscurridos = 0
-        const current = new Date(fechaInicioMidnight)
-        current.setDate(current.getDate() + 1)
-
-        while (current <= hoyMidnight) {
-          const day = current.getDay()
-          if (prestamo.tipoPago === 'LUNES_A_SABADO') {
-            if (day !== 0) diasLaboralesTranscurridos++
-          } else if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
-            if (day !== 0 && day !== 6) diasLaboralesTranscurridos++
-          }
-          current.setDate(current.getDate() + 1)
-        }
-
-        diasVencidos = Math.max(0, Math.floor(diasLaboralesTranscurridos - cuotasPagadasFinancial - diasGracia))
+        // Nota: diasTranscurridos ya contiene el cálculo correcto de días hábiles para estos tipos
+        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - cuotasPagadasFinancial - diasGracia))
       } else {
         diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (cuotasPagadasFinancial * diasEsperadosPorCuota) - diasGracia))
       }
@@ -352,23 +325,18 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         // Lógica precisa con bucle para encontrar la fecha de la siguiente cuota (cuotasPagadas + 1)
         const targetCuota = cuotasPagadas + 1
         let current = new Date(fechaInicioMidnight)
+        let count = 0 // Iniciar en 0 para que la primera cuota sea el primer día válido DESPUÉS de fechaInicio
 
-        // Si vamos por la primera cuota, es la fecha de inicio
-        if (targetCuota <= 1) {
-          fechaProximoPago = current
-        } else {
-          let count = 1 // Inicio cuenta como 1
-          while (count < targetCuota) {
-            current.setDate(current.getDate() + 1)
-            const d = current.getDay()
-            let valid = true
-            if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
-            if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+        while (count < targetCuota) {
+          current.setDate(current.getDate() + 1)
+          const d = current.getDay()
+          let valid = true
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
 
-            if (valid) count++
-          }
-          fechaProximoPago = current
+          if (valid) count++
         }
+        fechaProximoPago = current
       } else {
         // Lógica estándar para otros tipos
         fechaProximoPago = new Date(fechaInicioMidnight.getTime() + (cuotasPagadas * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
