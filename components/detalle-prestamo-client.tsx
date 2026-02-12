@@ -304,9 +304,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
         // Calculamos días laborales transcurridos para restar correctamente las cuotas pagadas
         // Nota: diasTranscurridos ya contiene el cálculo correcto de días hábiles para estos tipos
-        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - cuotasPagadasFinancial - diasGracia))
+        const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
+        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - proximaCuotaIdx - diasGracia))
       } else {
-        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (cuotasPagadasFinancial * diasEsperadosPorCuota) - diasGracia))
+        const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
+        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (proximaCuotaIdx * diasEsperadosPorCuota) - diasGracia))
       }
     }
 
@@ -339,7 +341,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         fechaProximoPago = current
       } else {
         // Lógica estándar para otros tipos
-        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + (cuotasPagadas * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
+        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((cuotasPagadas + 1) * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
       }
     }
 
