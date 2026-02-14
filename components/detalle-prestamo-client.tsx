@@ -284,7 +284,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
 
     const diasEsperadosPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-    let cuotasEsperadas = Math.floor(diasTranscurridos / diasEsperadosPorCuota)
+    // Ajustamos para que la cuota del día actual no cuente como esperada/vencida hasta que pase el día
+    // Si diasTranscurridos es 0 o 1 (primer día), esperamos 0 cuotas vencidas
+    let cuotasEsperadas = Math.floor(Math.max(0, diasTranscurridos - 1) / diasEsperadosPorCuota)
 
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
