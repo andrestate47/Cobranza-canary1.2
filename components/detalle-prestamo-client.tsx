@@ -237,17 +237,20 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
 
     // Interpretar fecha de inicio en tiempo local y normalizar a medianoche
-    const fechaInicioRaw = new Date(prestamo.fechaInicio)
-    const fechaInicioMidnight = new Date(fechaInicioRaw.getFullYear(), fechaInicioRaw.getMonth(), fechaInicioRaw.getDate())
+    // Usamos split para evitar problemas de zona horaria que pueden retroceder un día
+    const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
+    const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
+    const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
 
-    const fechaFinRaw = new Date(prestamo.fechaFin)
-    const fechaFinMidnight = new Date(fechaFinRaw.getFullYear(), fechaFinRaw.getMonth(), fechaFinRaw.getDate())
+    const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
+    const [finYear, finMonth, finDay] = fechaFinStr.split('-').map(Number)
+    const fechaFinMidnight = new Date(finYear, finMonth - 1, finDay)
 
     // Días transcurridos
     const oneDay = 1000 * 60 * 60 * 24
     let diasTranscurridos = 0
 
-    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
       current.setDate(current.getDate() + 1) // Empezar a contar desde el día siguiente
 
@@ -256,6 +259,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         let valid = true
         if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
         if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+        // DIARIO: Asumimos que también excluye domingos basado en el reporte del usuario, comportándose como Lunes a Sábado
+        if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
         if (valid) diasTranscurridos++
         current.setDate(current.getDate() + 1)
@@ -303,7 +308,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     if (hoyMidnight > fechaFinMidnight) {
       diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / (1000 * 60 * 60 * 24))
     } else if (cuotasAtrasadas > 0) {
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         // Calculamos días laborales transcurridos para restar correctamente las cuotas pagadas
         // Nota: diasTranscurridos ya contiene el cálculo correcto de días hábiles para estos tipos
         const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
@@ -325,7 +330,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     // Fecha próximo pago
     let fechaProximoPago: Date | null = null
     if (cuotasPagadas < prestamo.cuotas) {
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         // Lógica precisa con bucle para encontrar la fecha de la siguiente cuota (cuotasPagadas + 1)
         const targetCuota = cuotasPagadas + 1
         let current = new Date(fechaInicioMidnight)
@@ -337,6 +342,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           let valid = true
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
           if (valid) count++
         }
@@ -528,7 +534,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const fechaInicioMidnight = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate())
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
 
-    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
+    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
       // Comenzamos desde el día siguiente al inicio, ya que el primer pago es después
       current.setDate(current.getDate() + 1)
@@ -539,6 +545,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
         if (prestamo.tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaHabil = false // Excluir Domingo
         if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaHabil = false // Excluir Sáb y Dom
+        if (prestamo.tipoPago === 'DIARIO' && diaSemana === 0) esDiaHabil = false // Excluir Domingo
 
         if (esDiaHabil) {
           pagosEsperados++
