@@ -496,67 +496,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   // Función para calcular el estado de alerta del préstamo
+  // Función para calcular el estado de alerta del préstamo
   const calcularEstadoPrestamo = () => {
-    // Verificar si el préstamo está completamente vencido
-    if (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date()) {
-      return {
-        estado: 'VENCIDO',
-        icono: XCircle,
-        color: 'bg-red-500',
-        texto: 'Préstamo Vencido',
-        colorTexto: 'text-white'
-      }
-    }
-
-    // Verificar morosidad (pagos atrasados)
-    const hoy = new Date()
-    const diasPorTipo = {
-      'DIARIO': 1,
-      'SEMANAL': 7,
-      'LUNES_A_VIERNES': 1, // Pago diario de lunes a viernes
-      'LUNES_A_SABADO': 1,  // Pago diario de lunes a sábado
-      'QUINCENAL': 15,
-      'CATORCENAL': 14,     // Cada 14 días
-      'FIN_DE_MES': 30,
-      'MENSUAL': 30,
-      'TRIMESTRAL': 90,
-      'CUATRIMESTRAL': 120, // Cada 4 meses
-      'SEMESTRAL': 180,
-      'ANUAL': 365
-    }
-
-    const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-
-    const fechaInicio = new Date(prestamo.fechaInicio)
-
-    // Cálculo mejorado de pagos esperados excluyendo días no hábiles
-    let pagosEsperados = 0
-    const fechaInicioMidnight = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate())
-    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-
-    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-      let current = new Date(fechaInicioMidnight)
-      // Comenzamos desde el día siguiente al inicio, ya que el primer pago es después
-      current.setDate(current.getDate() + 1)
-
-      while (current <= hoyMidnight) {
-        const diaSemana = current.getDay()
-        let esDiaHabil = true
-
-        if (prestamo.tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaHabil = false // Excluir Domingo
-        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaHabil = false // Excluir Sáb y Dom
-        if (prestamo.tipoPago === 'DIARIO' && diaSemana === 0) esDiaHabil = false // Excluir Domingo
-
-        if (esDiaHabil) {
-          pagosEsperados++
-        }
-        current.setDate(current.getDate() + 1)
-      }
-    } else {
-      // Cálculo estándar para otros tipos de pago
-      pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
-    }
-
     // Si ya está completamente pagado
     if (saldoPendiente <= 0) {
       return {
@@ -568,8 +509,26 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       }
     }
 
-    // Verificar morosidad
-    if (cuotasPagadas < Math.max(0, pagosEsperados)) {
+    // Verificar si el préstamo está completamente vencido por fecha
+    const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
+    const [finYear, finMonth, finDay] = fechaFinStr.split('-').map(Number)
+    const fechaFinMidnight = new Date(finYear, finMonth - 1, finDay)
+    const hoy = new Date()
+    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+
+    if (prestamo.estado === 'VENCIDO' || fechaFinMidnight < hoyMidnight) {
+      return {
+        estado: 'VENCIDO',
+        icono: XCircle,
+        color: 'bg-red-500',
+        texto: 'Préstamo Vencido',
+        colorTexto: 'text-white'
+      }
+    }
+
+    // Verificar morosidad usando la info extendida ya calculada
+    // infoExtendida ya maneja la lógica de días hábiles, exclusión de hoy, y timezone correcto
+    if (infoExtendida.cuotasAtrasadas > 0) {
       return {
         estado: 'MOROSO',
         icono: AlertTriangle,
@@ -580,16 +539,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
 
     // Verificar si está próximo a vencer (próximo pago en 3 días)
-    const fechaProximoPago = new Date(fechaInicio.getTime() + (cuotasPagadas * diasEsperados * 24 * 60 * 60 * 1000))
-    const diferenciaDias = Math.floor((fechaProximoPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+    if (infoExtendida.fechaProximoPago) {
+      const fechaProximo = new Date(infoExtendida.fechaProximoPago)
+      const fechaProximoMidnight = new Date(fechaProximo.getFullYear(), fechaProximo.getMonth(), fechaProximo.getDate())
 
-    if (diferenciaDias <= 3 && diferenciaDias >= 0) {
-      return {
-        estado: 'PROXIMO_A_VENCER',
-        icono: Clock,
-        color: 'bg-yellow-500',
-        texto: 'Próximo Pago Cerca',
-        colorTexto: 'text-white'
+      const diffTime = fechaProximoMidnight.getTime() - hoyMidnight.getTime()
+      const diferenciaDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      if (diferenciaDias <= 3 && diferenciaDias >= 0) {
+        return {
+          estado: 'PROXIMO_A_VENCER',
+          icono: Clock,
+          color: 'bg-yellow-500',
+          texto: 'Próximo Pago Cerca',
+          colorTexto: 'text-white'
+        }
       }
     }
 
