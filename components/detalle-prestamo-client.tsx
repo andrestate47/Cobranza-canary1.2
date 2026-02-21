@@ -248,6 +248,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // 1. Calcular días transcurridos totales (incluyendo hoy si es día hábil)
     // 2. Calcular cuotas esperadas (todos los días hábiles previos a hoy)
+    const oneDay = 1000 * 60 * 60 * 24
     let diasHabilesTotales = 0
     let cuotasEsperadas = 0
 
