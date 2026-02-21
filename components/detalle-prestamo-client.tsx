@@ -246,76 +246,89 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const [finYear, finMonth, finDay] = fechaFinStr.split('-').map(Number)
     const fechaFinMidnight = new Date(finYear, finMonth - 1, finDay)
 
-    // Días transcurridos
-    const oneDay = 1000 * 60 * 60 * 24
-    let diasTranscurridos = 0
+    // 1. Calcular días transcurridos totales (incluyendo hoy si es día hábil)
+    // 2. Calcular cuotas esperadas (todos los días hábiles previos a hoy)
+    let diasHabilesTotales = 0
+    let cuotasEsperadas = 0
 
     if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
-      current.setDate(current.getDate() + 1) // Empezar a contar desde el día siguiente
+      current.setDate(current.getDate() + 1) // Primer pago esperado el día después de inicio
 
       while (current <= hoyMidnight) {
         const d = current.getDay()
         let valid = true
         if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
         if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
-        // DIARIO: Asumimos que también excluye domingos basado en el reporte del usuario, comportándose como Lunes a Sábado
         if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
-        if (valid) diasTranscurridos++
+        if (valid) {
+          diasHabilesTotales++
+          // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
+          if (current < hoyMidnight) {
+            cuotasEsperadas++
+          }
+        }
         current.setDate(current.getDate() + 1)
       }
     } else {
-      diasTranscurridos = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / oneDay))
+      // Lógica para pagos no diarios (Semanal, Quincenal, etc.)
+      const totalDiasCalendario = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / oneDay))
+      diasHabilesTotales = totalDiasCalendario
+
+      const diasPorTipo = {
+        'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+        'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+      }
+      const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+
+      // Para pagos periódicos, una cuota se espera cada X días.
+      // Si han pasado 7 días y el pago es semanal, se espera 1 cuota (la del día 7)
+      // Solo contamos cuotas cuyo vencimiento ya pasó (antes de hoy)
+      cuotasEsperadas = Math.floor(Math.max(0, totalDiasCalendario - 1) / diasPorCuota)
     }
 
-    // Cuotas pendientes
+    const diasTranscurridos = diasHabilesTotales
     const cuotasPendientes = Math.max(0, prestamo.cuotas - cuotasPagadas)
-
-    // Calcular cuotas esperadas basado en el tipo de pago
-    const diasPorTipo = {
-      'DIARIO': 1,
-      'SEMANAL': 7,
-      'LUNES_A_VIERNES': 1, // Se cuenta solo días laborales
-      'LUNES_A_SABADO': 1,  // Se cuenta solo días laborales
-      'QUINCENAL': 15,
-      'CATORCENAL': 14,
-      'FIN_DE_MES': 30,
-      'MENSUAL': 30,
-      'TRIMESTRAL': 90,
-      'CUATRIMESTRAL': 120,
-      'SEMESTRAL': 180,
-      'ANUAL': 365
-    }
-
-    const diasEsperadosPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-    // Ajustamos para que la cuota del día actual no cuente como esperada/vencida hasta que pase el día
-    // Si diasTranscurridos es 0 o 1 (primer día), esperamos 0 cuotas vencidas
-    let cuotasEsperadas = Math.floor(Math.max(0, diasTranscurridos - 1) / diasEsperadosPorCuota)
 
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
-    // Si cuotasEsperadas < 0 por alguna razón (fechas futuras), usar 0
-    cuotasEsperadas = Math.max(0, cuotasEsperadas)
-    const cuotasEsperadasConGracia = Math.max(0, cuotasEsperadas - Math.floor(diasGracia / diasEsperadosPorCuota))
-
-    // Calculamos las cuotas pagadas financieramente para mayor precisión
     const cuotasPagadasFinancial = valorCuota > 0 ? totalPagado / valorCuota : 0
-    const cuotasAtrasadas = Math.max(0, cuotasEsperadasConGracia - cuotasPagadasFinancial)
+    const cuotasAtrasadas = Math.max(0, cuotasEsperadas - cuotasPagadasFinancial)
 
     // Días vencidos
     let diasVencidos = 0
     if (hoyMidnight > fechaFinMidnight) {
-      diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / (1000 * 60 * 60 * 24))
+      diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / oneDay)
     } else if (cuotasAtrasadas > 0) {
+      // El atraso se cuenta desde el día que venció la primera cuota no pagada
+      // Para simplificar y ser consistentes con el reporte del usuario:
+      // Si debe 1 cuota, lleva 1 o más días vencido
+      const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
+
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        // Calculamos días laborales transcurridos para restar correctamente las cuotas pagadas
-        // Nota: diasTranscurridos ya contiene el cálculo correcto de días hábiles para estos tipos
-        const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
-        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - proximaCuotaIdx - diasGracia))
+        // Buscamos la fecha en que venció la cuota que le tocaba pagar (proximaCuotaIdx)
+        let current = new Date(fechaInicioMidnight)
+        let count = 0
+        while (count < proximaCuotaIdx) {
+          current.setDate(current.getDate() + 1)
+          const d = current.getDay()
+          let valid = true
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
+          if (valid) count++
+        }
+        // current ahora es la fecha de vencimiento de la cuota pendiente
+        diasVencidos = Math.max(0, Math.floor((hoyMidnight.getTime() - current.getTime()) / oneDay) - diasGracia)
       } else {
-        const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
-        diasVencidos = Math.max(0, Math.floor(diasTranscurridos - (proximaCuotaIdx * diasEsperadosPorCuota) - diasGracia))
+        const diasPorTipo = {
+          'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+          'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+        }
+        const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+        const fechaVencimientoCuota = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
+        diasVencidos = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaVencimientoCuota.getTime()) / oneDay) - diasGracia)
       }
     }
 

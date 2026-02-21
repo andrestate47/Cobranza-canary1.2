@@ -211,29 +211,33 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       }
 
       const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-      const fechaInicio = new Date(prestamo.fechaInicio)
+      const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
+      const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
+      const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
+      const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
 
       let pagosEsperados = 0
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES') {
-        const fechaInicioMidnight = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate())
-        const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         let current = new Date(fechaInicioMidnight)
         current.setDate(current.getDate() + 1)
 
         while (current <= hoyMidnight) {
           const day = current.getDay()
-          if (prestamo.tipoPago === 'LUNES_A_SABADO') {
-            if (day !== 0) pagosEsperados++
-          } else if (prestamo.tipoPago === 'LUNES_A_VIERNES') {
-            if (day !== 0 && day !== 6) pagosEsperados++
-          }
+          let valid = true
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && day === 0) valid = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (day === 0 || day === 6)) valid = false
+          if (prestamo.tipoPago === 'DIARIO' && day === 0) valid = false
+
+          if (valid) pagosEsperados++
           current.setDate(current.getDate() + 1)
         }
       } else {
-        pagosEsperados = Math.floor((hoy.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+        pagosEsperados = Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
       }
 
-      return prestamo.cuotasPagadas < Math.max(0, pagosEsperados)
+      // Excluimos la cuota que vence hoy para no marcarla como atrasada inmediatamente
+      const cuotasVencidasEfectivas = Math.max(0, pagosEsperados - 1)
+      return prestamo.cuotasPagadas < cuotasVencidasEfectivas
     })
 
     if (prestamosConAtraso.length > 0) {
@@ -266,11 +270,32 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       }
 
       const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-      const fechaInicio = new Date(prestamo.fechaInicio)
+      const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
+      const [year, month, day] = fechaInicioStr.split('-').map(Number)
+      const fechaInicioMidnight = new Date(year, month - 1, day)
       const pagosRealizados = prestamo.cuotasPagadas
-      const fechaProximoPago = new Date(fechaInicio.getTime() + (pagosRealizados * diasEsperados * 24 * 60 * 60 * 1000))
 
-      const diferenciaDias = Math.floor((fechaProximoPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+      let fechaProximoPago: Date
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
+        const targetCuota = pagosRealizados + 1
+        let current = new Date(fechaInicioMidnight)
+        let count = 0
+        while (count < targetCuota) {
+          current.setDate(current.getDate() + 1)
+          const d = current.getDay()
+          let valid = true
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
+          if (valid) count++
+        }
+        fechaProximoPago = current
+      } else {
+        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((pagosRealizados + 1) * diasEsperados * 24 * 60 * 60 * 1000))
+      }
+
+      const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+      const diferenciaDias = Math.ceil((fechaProximoPago.getTime() - hoyMidnight.getTime()) / (1000 * 60 * 60 * 24))
 
       return diferenciaDias <= 3 && diferenciaDias >= 0
     })
@@ -602,17 +627,17 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     <Badge
                                       variant="default"
                                       className={`text-xs ${prestamo.tipoPago === 'DIARIO' ? 'bg-blue-400' :
-                                          prestamo.tipoPago === 'SEMANAL' ? 'bg-green-400' :
-                                            prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-400' :
-                                              prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-400' :
-                                                prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-400' :
-                                                  prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-400' :
-                                                    prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-400' :
-                                                      prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-400' :
-                                                        prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-400' :
-                                                          prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-400' :
-                                                            prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-400' :
-                                                              prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-400' : 'bg-gray-400'
+                                        prestamo.tipoPago === 'SEMANAL' ? 'bg-green-400' :
+                                          prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-400' :
+                                            prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-400' :
+                                              prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-400' :
+                                                prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-400' :
+                                                  prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-400' :
+                                                    prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-400' :
+                                                      prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-400' :
+                                                        prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-400' :
+                                                          prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-400' :
+                                                            prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-400' : 'bg-gray-400'
                                         }`}
                                     >
                                       {prestamo.tipoPago === 'FIN_DE_MES' ? 'Fin de Mes' :
