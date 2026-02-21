@@ -363,7 +363,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         fechaProximoPago = current
       } else {
         // Lógica estándar para otros tipos
-        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((cuotasPagadas + 1) * diasEsperadosPorCuota * 24 * 60 * 60 * 1000))
+        const diasPorTipo = {
+          'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+          'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+        }
+        const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((cuotasPagadas + 1) * diasPorCuota * oneDay))
       }
     }
 
