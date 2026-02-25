@@ -220,6 +220,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         let current = new Date(fechaInicioMidnight)
         current.setDate(current.getDate() + 1)
+        let skippedFirst = false
 
         while (current <= hoyMidnight) {
           const day = current.getDay()
@@ -228,7 +229,13 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (day === 0 || day === 6)) valid = false
           if (prestamo.tipoPago === 'DIARIO' && day === 0) valid = false
 
-          if (valid) pagosEsperados++
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              pagosEsperados++
+            }
+          }
           current.setDate(current.getDate() + 1)
         }
       } else {
@@ -277,9 +284,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
       let fechaProximoPago: Date
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        const targetCuota = pagosRealizados + 1
+        const targetCuota = Math.floor(pagosRealizados) + 1
         let current = new Date(fechaInicioMidnight)
         let count = 0
+        let skippedFirst = false
         while (count < targetCuota) {
           current.setDate(current.getDate() + 1)
           const d = current.getDay()
@@ -287,7 +295,13 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
-          if (valid) count++
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              count++
+            }
+          }
         }
         fechaProximoPago = current
       } else {
@@ -605,16 +619,24 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                           </h4>
 
                           {clienteData.prestamos.map((prestamo, prestamoIndex) => {
-                            const fechaInicio = new Date(prestamo.fechaInicio).toLocaleDateString('es-CO', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })
-                            const fechaFin = new Date(prestamo.fechaFin).toLocaleDateString('es-CO', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })
+                            const formatFechaUTC = (dateString: string) => {
+                              try {
+                                const [y, m, d] = String(dateString).split('T')[0].split('-').map(Number)
+                                // Usamos mediodía UTC como punto medio seguro
+                                const date = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
+                                return date.toLocaleDateString('es-CO', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  timeZone: 'UTC'
+                                })
+                              } catch (e) {
+                                return String(dateString).split('T')[0]
+                              }
+                            }
+
+                            const fechaInicio = formatFechaUTC(prestamo.fechaInicio)
+                            const fechaFin = formatFechaUTC(prestamo.fechaFin)
 
                             return (
                               <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">

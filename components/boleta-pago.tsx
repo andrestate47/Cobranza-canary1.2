@@ -150,14 +150,21 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       if (tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'LUNES_A_SABADO') {
         let diasLaborales = 0
         const current = new Date(inicioNormalized)
-        current.setDate(current.getDate() + 1) // Empezar a contar desde el día siguiente al inicio
+        current.setDate(current.getDate() + 1)
+        let skippedFirst = false
 
         while (current <= referenciaNormalized) {
           const day = current.getDay()
-          if (tipoPago === 'LUNES_A_VIERNES') {
-            if (day !== 0 && day !== 6) diasLaborales++
-          } else { // LUNES_A_SABADO
-            if (day !== 0) diasLaborales++
+          let valid = false
+          if (tipoPago === 'LUNES_A_VIERNES' && day !== 0 && day !== 6) valid = true
+          if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
+
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              diasLaborales++
+            }
           }
           current.setDate(current.getDate() + 1)
         }
@@ -185,13 +192,20 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         let diasLaboralesTranscurridos = 0
         const current = new Date(inicioNormalized)
         current.setDate(current.getDate() + 1)
+        let skippedFirst = false
 
         while (current <= referenciaNormalized) {
           const day = current.getDay()
-          if (tipoPago === 'LUNES_A_SABADO') {
-            if (day !== 0) diasLaboralesTranscurridos++
-          } else if (tipoPago === 'LUNES_A_VIERNES') {
-            if (day !== 0 && day !== 6) diasLaboralesTranscurridos++
+          let valid = false
+          if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
+          if (tipoPago === 'LUNES_A_VIERNES' && (day !== 0 && day !== 6)) valid = true
+
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              diasLaboralesTranscurridos++
+            }
           }
           current.setDate(current.getDate() + 1)
         }
@@ -214,7 +228,6 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     }
 
     // Función para calcular fecha del próximo pago
-    // Función para calcular fecha del próximo pago
     const calcularFechaProximoPago = (fechaInicio: string, tipoPago: string, proximaCuota: number): Date => {
       // Normalizar fecha de inicio para evitar problemas de zona horaria
       // Asumimos que la fecha viene como YYYY-MM-DD o ISO. Tomamos los componentes locales.
@@ -226,12 +239,15 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       if (proximaCuota < 1) return inicioDate
 
       // Lógica precisa para días hábiles
-      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
+      let fechaProximoPago: Date
+      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
+        const targetCuota = Math.floor(proximaCuota)
         let cuotasContadas = 0
         let diaActual = new Date(inicioDate)
+        let skippedFirst = false
 
         // Iterar hasta llegar a la cuota deseada
-        while (cuotasContadas < proximaCuota) {
+        while (cuotasContadas < targetCuota) {
           diaActual.setDate(diaActual.getDate() + 1)
           const diaSemana = diaActual.getDay() // 0 = Domingo, 6 = Sábado
 
@@ -240,7 +256,11 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
 
           if (esDiaPago) {
-            cuotasContadas++
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              cuotasContadas++
+            }
           }
         }
         return diaActual
@@ -528,7 +548,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Fecha último pago:</span>
-                      <span className="font-medium">{formatDateOnly(data.prestamo.ultimoPago.fecha)}</span>
+                      <span className="font-medium">{formatDate(data.prestamo.ultimoPago.fecha)}</span>
                     </div>
                   </>
                 )}

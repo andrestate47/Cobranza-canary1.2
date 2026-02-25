@@ -217,6 +217,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     return new Date(dateString).toLocaleString('es-CO')
   }
 
+  const formatDateLocal = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return ''
+    return new Intl.DateTimeFormat('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date)
+  }
+
   // Calcular totales
   const montoOriginal = prestamo.monto
   const interesAmount = (montoOriginal * prestamo.interes) / 100
@@ -225,10 +236,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     sum + Number(pago.monto), 0
   )
   const saldoPendiente = montoTotal - totalPagado
-  const cuotasPagadas = prestamo.pagos.length
   const valorCuota = prestamo.valorCuota
+  const cuotasPagadas = valorCuota > 0 ? totalPagado / valorCuota : 0
 
-  const progressPercentage = Math.min((cuotasPagadas / prestamo.cuotas) * 100, 100)
+  const progressPercentage = Math.min((totalPagado / montoTotal) * 100, 100)
 
   // Calcular información extendida del préstamo
   const calcularInformacionExtendida = () => {
@@ -254,7 +265,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
-      current.setDate(current.getDate() + 1) // Primer pago esperado el día después de inicio
+      current.setDate(current.getDate() + 1)
+      let skippedFirst = false
 
       while (current <= hoyMidnight) {
         const d = current.getDay()
@@ -264,10 +276,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
         if (valid) {
-          diasHabilesTotales++
-          // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
-          if (current < hoyMidnight) {
-            cuotasEsperadas++
+          if (!skippedFirst) {
+            skippedFirst = true
+          } else {
+            diasHabilesTotales++
+            // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
+            if (current < hoyMidnight) {
+              cuotasEsperadas++
+            }
           }
         }
         current.setDate(current.getDate() + 1)
@@ -311,6 +327,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         // Buscamos la fecha en que venció la cuota que le tocaba pagar (proximaCuotaIdx)
         let current = new Date(fechaInicioMidnight)
         let count = 0
+        let skippedFirst = false
         while (count < proximaCuotaIdx) {
           current.setDate(current.getDate() + 1)
           const d = current.getDay()
@@ -318,7 +335,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
-          if (valid) count++
+
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              count++
+            }
+          }
         }
         // current ahora es la fecha de vencimiento de la cuota pendiente
         diasVencidos = Math.max(0, Math.floor((hoyMidnight.getTime() - current.getTime()) / oneDay) - diasGracia)
@@ -345,10 +369,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     let fechaProximoPago: Date | null = null
     if (cuotasPagadas < prestamo.cuotas) {
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        // Lógica precisa con bucle para encontrar la fecha de la siguiente cuota (cuotasPagadas + 1)
-        const targetCuota = cuotasPagadas + 1
+        const targetCuota = Math.floor(cuotasPagadas) + 1
         let current = new Date(fechaInicioMidnight)
-        let count = 0 // Iniciar en 0 para que la primera cuota sea el primer día válido DESPUÉS de fechaInicio
+        let count = 0
+        let skippedFirst = false
 
         while (count < targetCuota) {
           current.setDate(current.getDate() + 1)
@@ -358,7 +382,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
-          if (valid) count++
+          if (valid) {
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              count++
+            }
+          }
         }
         fechaProximoPago = current
       } else {
@@ -1191,7 +1221,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cuotas pagadas:</span>
-                    <span className="font-semibold text-green-600">{cuotasPagadas}</span>
+                    <span className="font-semibold text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
                   </div>
                 </div>
 
@@ -1238,7 +1268,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       <span className="text-gray-600">Último pago:</span>
                       <span className="font-medium">
                         {infoExtendida.ultimoPago
-                          ? `${formatCurrency(infoExtendida.ultimoPago.monto)} - ${formatDate(String(infoExtendida.ultimoPago.fecha))}`
+                          ? `${formatCurrency(infoExtendida.ultimoPago.monto)} - ${formatDateLocal(infoExtendida.ultimoPago.fecha)}`
                           : 'Sin pagos registrados'
                         }
                       </span>
@@ -1247,7 +1277,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       <span className="text-gray-600">Fecha próximo pago:</span>
                       <span className="font-medium">
                         {infoExtendida.fechaProximoPago
-                          ? formatDate(infoExtendida.fechaProximoPago.toISOString())
+                          ? formatDateLocal(infoExtendida.fechaProximoPago)
                           : 'Préstamo completado'
                         }
                       </span>

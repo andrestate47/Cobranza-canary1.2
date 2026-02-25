@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
       const montoTotal = parseFloat(prestamo.monto.toString()) +
         (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
       const saldoPendiente = montoTotal - totalPagado
-      const cuotasPagadas = prestamo.pagos.length
+      const cuotasPagadas = parseFloat(prestamo.valorCuota.toString()) > 0
+        ? totalPagado / parseFloat(prestamo.valorCuota.toString())
+        : 0
 
       // Determinar la fecha de actividad más reciente
       const fechaCreacion = prestamo.createdAt || prestamo.fechaInicio
@@ -267,6 +269,7 @@ export async function POST(request: NextRequest) {
     if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
       let cuotasContadas = 0
       let diaActual = new Date(fechaInicio)
+      let skippedFirst = false
 
       // En la lógica original (cuotas * 1), el primer pago es "mañana".
       // Mantenemos esa lógica: avanzamos días hasta completar las cuotas.
@@ -279,7 +282,11 @@ export async function POST(request: NextRequest) {
         if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
 
         if (esDiaPago) {
-          cuotasContadas++
+          if (!skippedFirst) {
+            skippedFirst = true
+          } else {
+            cuotasContadas++
+          }
         }
       }
       // Calcular diferencia de días para el log
