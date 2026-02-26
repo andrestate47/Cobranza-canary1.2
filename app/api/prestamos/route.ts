@@ -262,24 +262,27 @@ export async function POST(request: NextRequest) {
 
     console.log("Cálculos - montoTotal:", montoTotal, "interesTotal:", interesTotal, "valorCuota:", valorCuota, "tipoCredito:", tipoCredito, "diasGracia:", diasGraciaNum, "moraCredito:", moraCreditoNum)
 
-    // Calcular fecha de fin
-    const fechaFin = new Date(fechaInicio)
+    // Calcular fecha de fin (Usar mediodía UTC para evitar desfases horarios locales de AWS/Vercel)
+    const fechaInicioStr = String(fechaInicio).split('T')[0];
+    const [inicioY, inicioM, inicioD] = fechaInicioStr.split('-').map(Number);
+    const fechaFin = new Date(Date.UTC(inicioY, inicioM - 1, inicioD, 12, 0, 0, 0));
     let diasTotalesAgregados = 0
 
-    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
+    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
       let cuotasContadas = 0
-      let diaActual = new Date(fechaInicio)
+      let diaActual = new Date(Date.UTC(inicioY, inicioM - 1, inicioD, 12, 0, 0, 0));
       let skippedFirst = false
 
       // En la lógica original (cuotas * 1), el primer pago es "mañana".
       // Mantenemos esa lógica: avanzamos días hasta completar las cuotas.
       while (cuotasContadas < cuotasNum) {
-        diaActual.setDate(diaActual.getDate() + 1)
-        const diaSemana = diaActual.getDay() // 0 = Domingo, 6 = Sábado
+        diaActual.setUTCDate(diaActual.getUTCDate() + 1)
+        const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
 
         let esDiaPago = true
         if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
         if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
+        if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
 
         if (esDiaPago) {
           if (!skippedFirst) {

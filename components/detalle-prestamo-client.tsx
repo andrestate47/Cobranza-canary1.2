@@ -244,18 +244,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   // Calcular información extendida del préstamo
   const calcularInformacionExtendida = () => {
     const hoy = new Date()
-    // Normalizar a medianoche para cálculo estricto de días calendario sin horas
-    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    // Normalizar a medianoche UTC
+    const hoyMidnight = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 12, 0, 0))
 
-    // Interpretar fecha de inicio en tiempo local y normalizar a medianoche
-    // Usamos split para evitar problemas de zona horaria que pueden retroceder un día
+    // Interpretar fecha de inicio explícita de la base de datos como mediodía UTC
     const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
     const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
-    const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
+    const fechaInicioMidnight = new Date(Date.UTC(inicioYear, inicioMonth - 1, inicioDay, 12, 0, 0))
 
     const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
     const [finYear, finMonth, finDay] = fechaFinStr.split('-').map(Number)
-    const fechaFinMidnight = new Date(finYear, finMonth - 1, finDay)
+    const fechaFinMidnight = new Date(Date.UTC(finYear, finMonth - 1, finDay, 12, 0, 0))
 
     // 1. Calcular días transcurridos totales (incluyendo hoy si es día hábil)
     // 2. Calcular cuotas esperadas (todos los días hábiles previos a hoy)
@@ -265,11 +264,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
-      current.setDate(current.getDate() + 1)
+      current.setUTCDate(current.getUTCDate() + 1)
       let skippedFirst = false
 
       while (current <= hoyMidnight) {
-        const d = current.getDay()
+        const d = current.getUTCDay()
         let valid = true
         if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
         if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
@@ -286,7 +285,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             }
           }
         }
-        current.setDate(current.getDate() + 1)
+        current.setUTCDate(current.getUTCDate() + 1)
       }
     } else {
       // Lógica para pagos no diarios (Semanal, Quincenal, etc.)
@@ -329,8 +328,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         let count = 0
         let skippedFirst = false
         while (count < proximaCuotaIdx) {
-          current.setDate(current.getDate() + 1)
-          const d = current.getDay()
+          current.setUTCDate(current.getUTCDate() + 1)
+          const d = current.getUTCDay()
           let valid = true
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
@@ -375,8 +374,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         let skippedFirst = false
 
         while (count < targetCuota) {
-          current.setDate(current.getDate() + 1)
-          const d = current.getDay()
+          current.setUTCDate(current.getUTCDate() + 1)
+          const d = current.getUTCDay()
           let valid = true
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false

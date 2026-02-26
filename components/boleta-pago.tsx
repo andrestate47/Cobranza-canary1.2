@@ -127,15 +127,15 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     // Función para calcular cuotas atrasadas
     const calcularCuotasAtrasadas = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, totalCuotas: number, fechaReferencia: string): number => {
-      // Normalizar fecha de inicio usando componentes locales
+      // Normalizar fecha de inicio usando componentes locales en UTC mediodía
       const fechaInicioStr = String(fechaInicio).split('T')[0]
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
-      const inicioNormalized = new Date(yI, mI - 1, dI)
+      const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
       // Normalizar fecha de referencia
       const fechaRefStr = String(fechaReferencia).split('T')[0]
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
-      const referenciaNormalized = new Date(yR, mR - 1, dR)
+      const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
       // Si la referencia es anterior al inicio, no hay atraso
       if (referenciaNormalized < inicioNormalized) return 0
@@ -147,17 +147,18 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const oneDay = 1000 * 60 * 60 * 24
       const diasTranscurridos = Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / oneDay)
 
-      if (tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'LUNES_A_SABADO') {
+      if (tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'LUNES_A_SABADO' || tipoPago === 'DIARIO') {
         let diasLaborales = 0
         const current = new Date(inicioNormalized)
-        current.setDate(current.getDate() + 1)
+        current.setUTCDate(current.getUTCDate() + 1)
         let skippedFirst = false
 
         while (current <= referenciaNormalized) {
-          const day = current.getDay()
+          const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_VIERNES' && day !== 0 && day !== 6) valid = true
           if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
+          if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
           if (valid) {
             if (!skippedFirst) {
@@ -166,7 +167,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               diasLaborales++
             }
           }
-          current.setDate(current.getDate() + 1)
+          current.setUTCDate(current.getUTCDate() + 1)
         }
         cuotasEsperadas = diasLaborales
       } else {
@@ -182,23 +183,24 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const calcularDiasVencidos = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, fechaReferencia: string): number => {
       const fechaInicioStr = String(fechaInicio).split('T')[0]
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
-      const inicioNormalized = new Date(yI, mI - 1, dI)
+      const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
       const fechaRefStr = String(fechaReferencia).split('T')[0]
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
-      const referenciaNormalized = new Date(yR, mR - 1, dR)
+      const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
-      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES') {
+      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
         let diasLaboralesTranscurridos = 0
         const current = new Date(inicioNormalized)
-        current.setDate(current.getDate() + 1)
+        current.setUTCDate(current.getUTCDate() + 1)
         let skippedFirst = false
 
         while (current <= referenciaNormalized) {
-          const day = current.getDay()
+          const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
           if (tipoPago === 'LUNES_A_VIERNES' && (day !== 0 && day !== 6)) valid = true
+          if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
           if (valid) {
             if (!skippedFirst) {
@@ -207,7 +209,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               diasLaboralesTranscurridos++
             }
           }
-          current.setDate(current.getDate() + 1)
+          current.setUTCDate(current.getUTCDate() + 1)
         }
 
         const diasCubiertos = cuotasPagadas // 1 cuota cubre 1 día laboral
@@ -218,7 +220,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       // Para otros pagos (Diario, Semanal, etc)
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
       const ultimaCuotaEsperada = new Date(inicioNormalized)
-      ultimaCuotaEsperada.setDate(ultimaCuotaEsperada.getDate() + (cuotasPagadas * diasEntrePagos))
+      ultimaCuotaEsperada.setUTCDate(ultimaCuotaEsperada.getUTCDate() + (cuotasPagadas * diasEntrePagos))
 
       if (referenciaNormalized > ultimaCuotaEsperada) {
         return Math.floor((referenciaNormalized.getTime() - ultimaCuotaEsperada.getTime()) / (1000 * 60 * 60 * 24))
@@ -233,7 +235,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       // Asumimos que la fecha viene como YYYY-MM-DD o ISO. Tomamos los componentes locales.
       const fechaStr = String(fechaInicio).split('T')[0]
       const [year, month, day] = fechaStr.split('-').map(Number)
-      const inicioDate = new Date(year, month - 1, day) // Fecha local mediodía no necesario aqui, usamos contadores de dias
+      const inicioDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
 
       // Si es cuota 0 o negativa, devolver inicio
       if (proximaCuota < 1) return inicioDate
@@ -248,12 +250,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
         // Iterar hasta llegar a la cuota deseada
         while (cuotasContadas < targetCuota) {
-          diaActual.setDate(diaActual.getDate() + 1)
-          const diaSemana = diaActual.getDay() // 0 = Domingo, 6 = Sábado
+          diaActual.setUTCDate(diaActual.getUTCDate() + 1)
+          const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
 
           let esDiaPago = true
           if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
           if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
+          if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
 
           if (esDiaPago) {
             if (!skippedFirst) {
@@ -269,7 +272,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
 
       const fechaProxima = new Date(inicioDate)
-      fechaProxima.setDate(fechaProxima.getDate() + (proximaCuota * diasEntrePagos))
+      fechaProxima.setUTCDate(fechaProxima.getUTCDate() + (proximaCuota * diasEntrePagos))
 
       return fechaProxima
     }
