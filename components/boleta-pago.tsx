@@ -192,10 +192,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
         let diasLaboralesTranscurridos = 0
         const current = new Date(inicioNormalized)
-        current.setUTCDate(current.getUTCDate() + 1)
-        let skippedFirst = false
 
-        while (current <= referenciaNormalized) {
+        while (current < referenciaNormalized) {
+          current.setUTCDate(current.getUTCDate() + 1)
           const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
@@ -203,13 +202,8 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
           if (valid) {
-            if (!skippedFirst) {
-              skippedFirst = true
-            } else {
-              diasLaboralesTranscurridos++
-            }
+            diasLaboralesTranscurridos++
           }
-          current.setUTCDate(current.getUTCDate() + 1)
         }
 
         const diasCubiertos = cuotasPagadas // 1 cuota cubre 1 día laboral
@@ -246,7 +240,6 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         const targetCuota = Math.floor(proximaCuota)
         let cuotasContadas = 0
         let diaActual = new Date(inicioDate)
-        let skippedFirst = false
 
         // Iterar hasta llegar a la cuota deseada
         while (cuotasContadas < targetCuota) {
@@ -259,11 +252,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
 
           if (esDiaPago) {
-            if (!skippedFirst) {
-              skippedFirst = true
-            } else {
-              cuotasContadas++
-            }
+            cuotasContadas++
           }
         }
         return diaActual

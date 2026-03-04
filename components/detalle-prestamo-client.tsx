@@ -326,7 +326,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         // Buscamos la fecha en que venció la cuota que le tocaba pagar (proximaCuotaIdx)
         let current = new Date(fechaInicioMidnight)
         let count = 0
-        let skippedFirst = false
         while (count < proximaCuotaIdx) {
           current.setUTCDate(current.getUTCDate() + 1)
           const d = current.getUTCDay()
@@ -336,11 +335,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
           if (valid) {
-            if (!skippedFirst) {
-              skippedFirst = true
-            } else {
-              count++
-            }
+            count++
           }
         }
         // current ahora es la fecha de vencimiento de la cuota pendiente
@@ -371,7 +366,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         const targetCuota = Math.floor(cuotasPagadas) + 1
         let current = new Date(fechaInicioMidnight)
         let count = 0
-        let skippedFirst = false
 
         while (count < targetCuota) {
           current.setUTCDate(current.getUTCDate() + 1)
@@ -382,11 +376,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
           if (valid) {
-            if (!skippedFirst) {
-              skippedFirst = true
-            } else {
-              count++
-            }
+            count++
           }
         }
         fechaProximoPago = current
