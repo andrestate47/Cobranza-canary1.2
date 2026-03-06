@@ -174,9 +174,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
   // Función para calcular el estado de alerta del cliente
   const calcularEstadoCliente = (clienteData: ClienteConPrestamos) => {
-    // Verificar si algún préstamo está completamente vencido
+    // Verificar si algún préstamo está completamente vencido y no ha sido pagado
     const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
-      prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date()
+      prestamo.saldoPendiente > 0 && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date())
     )
 
     if (tienePrestamoVencido) {

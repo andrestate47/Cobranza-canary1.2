@@ -402,8 +402,21 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Function to check if a loan has actually missing payments
+    const hasSaldoPendiente = (prestamo: any) => {
+      const pagado = prestamo.pagos.reduce((sum: any, pago: any) => sum + Number(pago.monto), 0)
+      return Number(prestamo.monto) - pagado > 0
+    }
+
     // Calcular totales de cobros
     const totalCobrado = cobrosHoy.reduce((sum, pago) => sum + Number(pago.monto), 0)
+
+    const prestamosVencidosReales = prestamosVencidos.filter(hasSaldoPendiente)
+    const prestamosEnMoraListaReales = prestamosEnMoraLista.filter(hasSaldoPendiente)
+    const clientesConMoraReales = clientesConMora.map(cliente => ({
+      ...cliente,
+      prestamos: cliente.prestamos.filter(hasSaldoPendiente)
+    })).filter(c => c.prestamos.length > 0)
 
     // Construir respuesta
     const informe = {
@@ -413,7 +426,7 @@ export async function GET(request: NextRequest) {
         totalPrestamos: prestamosData._count.id,
         clientesVisitadosHoy: clientesVisitados.length,
         clientesNoVisitadosHoy: clientesNoVisitados.length,
-        prestamosVencidos: prestamosVencidos.length,
+        prestamosVencidos: prestamosVencidosReales.length,
         // Filtramos para contar solo los realmente nuevos hoy
         nuevosClientesHoy: nuevosClientes.filter(c => {
           const cDate = new Date(c.createdAt)
@@ -422,12 +435,12 @@ export async function GET(request: NextRequest) {
         nuevosPrestamosHoy: nuevosPrestamos.length,
         cobrosHoy: cobrosHoy.length,
         totalCobradoHoy: totalCobrado,
-        clientesConMora: clientesConMora.length,
+        clientesConMora: clientesConMoraReales.length,
         // Nuevas estadísticas de préstamos
         prestamosCancelados,
         prestamosNuevosHoyCount: prestamosNuevosHoy,
-        prestamosVencidosCount: prestamosVencidosTotal,
-        prestamosEnMora: clientesConMora.reduce((sum, cliente) => sum + cliente.prestamos.length, 0)
+        prestamosVencidosCount: prestamosVencidosReales.length,
+        prestamosEnMora: clientesConMoraReales.reduce((sum, cliente) => sum + cliente.prestamos.length, 0)
       },
       detalles: {
         clientesVisitados: clientesVisitados.map(cliente => {
@@ -436,7 +449,7 @@ export async function GET(request: NextRequest) {
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
           )
           const saldoPendiente = totalPrestado - totalPagado
-          const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date())
+          const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date() && hasSaldoPendiente(p))
 
           return {
             id: cliente.id,
@@ -467,7 +480,7 @@ export async function GET(request: NextRequest) {
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
           )
           const saldoPendiente = totalPrestado - totalPagado
-          const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date())
+          const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date() && hasSaldoPendiente(p))
           const ultimaVisita = cliente.visitas[0]?.fecha || null
           const diasSinVisita = ultimaVisita ?
             Math.ceil((new Date().getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24)) : null
@@ -493,7 +506,7 @@ export async function GET(request: NextRequest) {
           }
         }),
 
-        prestamosVencidos: prestamosVencidos.map(prestamo => {
+        prestamosVencidos: prestamosVencidosReales.map(prestamo => {
           const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const saldoPendiente = Number(prestamo.monto) - totalPagado
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
@@ -592,7 +605,7 @@ export async function GET(request: NextRequest) {
           }
         }),
 
-        clientesConMora: clientesConMora.map(cliente => {
+        clientesConMora: clientesConMoraReales.map(cliente => {
           const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
           const totalPagado = cliente.prestamos.reduce((sum, p) =>
             sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
@@ -685,7 +698,7 @@ export async function GET(request: NextRequest) {
           }
         }),
 
-        prestamosEnMoraLista: prestamosEnMoraLista.map(prestamo => {
+        prestamosEnMoraLista: prestamosEnMoraListaReales.map(prestamo => {
           const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
           const saldoPendiente = Number(prestamo.monto) - totalPagado
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
