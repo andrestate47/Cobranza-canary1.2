@@ -1,0 +1,8 @@
+www.bydscgroup.com {
+  redir https://bydscgroup.com{uri} permanent
+}
+
+bydscgroup.com {
+  reverse_proxy 127.0.0.1:3030
+  encode gzip
+}

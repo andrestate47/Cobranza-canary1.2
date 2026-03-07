@@ -220,8 +220,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         let current = new Date(fechaInicioMidnight)
         current.setDate(current.getDate() + 1)
+        let skippedFirst = false
 
-        while (current < hoyMidnight) {
+        while (current <= hoyMidnight) {
           const day = current.getDay()
           let valid = true
           if (prestamo.tipoPago === 'LUNES_A_SABADO' && day === 0) valid = false
@@ -229,7 +230,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           if (prestamo.tipoPago === 'DIARIO' && day === 0) valid = false
 
           if (valid) {
-            pagosEsperados++
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              pagosEsperados++
+            }
           }
           current.setDate(current.getDate() + 1)
         }
@@ -282,6 +287,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         const targetCuota = Math.floor(pagosRealizados) + 1
         let current = new Date(fechaInicioMidnight)
         let count = 0
+        let skippedFirst = false
         while (count < targetCuota) {
           current.setDate(current.getDate() + 1)
           const d = current.getDay()
@@ -290,7 +296,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
           if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
           if (valid) {
-            count++
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              count++
+            }
           }
         }
         fechaProximoPago = current

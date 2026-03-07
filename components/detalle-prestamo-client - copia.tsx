@@ -265,6 +265,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
       let current = new Date(fechaInicioMidnight)
       current.setUTCDate(current.getUTCDate() + 1)
+      let skippedFirst = false
 
       while (current <= hoyMidnight) {
         const d = current.getUTCDay()
@@ -274,10 +275,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
         if (valid) {
-          diasHabilesTotales++
-          // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
-          if (current < hoyMidnight) {
-            cuotasEsperadas++
+          if (!skippedFirst) {
+            skippedFirst = true
+          } else {
+            diasHabilesTotales++
+            // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
+            if (current < hoyMidnight) {
+              cuotasEsperadas++
+            }
           }
         }
         current.setUTCDate(current.getUTCDate() + 1)

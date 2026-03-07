@@ -151,8 +151,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         let diasLaborales = 0
         const current = new Date(inicioNormalized)
         current.setUTCDate(current.getUTCDate() + 1)
+        let skippedFirst = false
 
-        while (current < referenciaNormalized) {
+        while (current <= referenciaNormalized) {
           const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_VIERNES' && day !== 0 && day !== 6) valid = true
@@ -160,7 +161,11 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
           if (valid) {
-            diasLaborales++
+            if (!skippedFirst) {
+              skippedFirst = true
+            } else {
+              diasLaborales++
+            }
           }
           current.setUTCDate(current.getUTCDate() + 1)
         }
