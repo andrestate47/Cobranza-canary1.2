@@ -144,14 +144,15 @@ export async function POST(
         }
       })
 
-      // Si había saldo pendiente, registrar un pago automático en el nuevo préstamo
+      // Si había saldo pendiente, registrar un pago automático en el PRÉSTAMO ANTERIOR para dejarlo en cero
       if (saldoPendiente > 0) {
         await tx.pago.create({
           data: {
-            prestamoId: nuevoPrestamo.id,
+            prestamoId: id, // El id del préstamo anterior (params)
             userId: session.user.id,
             monto: saldoPendiente,
-            observaciones: `Descuento por saldo pendiente del préstamo anterior ${prestamoAnterior.id}`,
+            metodoPago: "EFECTIVO",
+            observaciones: `Liquidación por renovación hacia nuevo préstamo ${nuevoPrestamo.id}`,
             fecha: new Date()
           }
         })
