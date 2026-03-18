@@ -556,13 +556,13 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
               </div>
             </div>
 
-            {/* Resumen de Renovaciones */}
+            {/* Resumen de Refinanciamientos */}
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Renovaciones</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Refinanciamientos</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="animate-fadeInScale">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Renovación Clientes</CardTitle>
+                    <CardTitle className="text-sm font-medium">Refinanciamiento Clientes</CardTitle>
                     <RefreshCw className="h-4 w-4 text-cyan-600" />
                   </CardHeader>
                   <CardContent>
@@ -570,14 +570,14 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                       {informe.resumenRenovaciones.renovacionClientes}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Clientes con renovaciones
+                      Clientes con refinanciamientos
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Clientes por Renovar</CardTitle>
+                    <CardTitle className="text-sm font-medium">Clientes por Refinanciar</CardTitle>
                     <Calendar className="h-4 w-4 text-yellow-600" />
                   </CardHeader>
                   <CardContent>
@@ -592,7 +592,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Renovación Pendientes</CardTitle>
+                    <CardTitle className="text-sm font-medium">Refinanciamiento Pendientes</CardTitle>
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   </CardHeader>
                   <CardContent>
@@ -607,7 +607,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.3s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Renovaciones Realizadas</CardTitle>
+                    <CardTitle className="text-sm font-medium">Refinanciamientos Realizados</CardTitle>
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
@@ -615,7 +615,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                       {informe.resumenRenovaciones.renovacionesRealizadas}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Renovados hoy
+                      Refinanciados hoy
                     </p>
                   </CardContent>
                 </Card>

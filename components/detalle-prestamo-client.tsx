@@ -496,7 +496,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       case "VENCIDO":
         return <Badge className="bg-red-500">Vencido</Badge>
       case "RENOVADO":
-        return <Badge className="bg-blue-500">Renovado</Badge>
+        return <Badge className="bg-blue-500">Refinanciado</Badge>
       default:
         return <Badge variant="outline">{estado}</Badge>
     }
@@ -1387,7 +1387,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     className="flex-1 border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-400"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Renovar Crédito
+                    Refinanciar Crédito
                   </Button>
                 )}
 
@@ -1664,16 +1664,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         onTransferenciaSaved={onTransferenciaSaved}
       />
 
-      {/* Modal de renovación de crédito */}
+      {/* Modal de refinanciamiento de crédito */}
       <Dialog open={showRenovacionModal} onOpenChange={handleCancelRenovacion}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2 text-orange-600">
               <RefreshCw className="h-5 w-5" />
-              <span>Renovar Crédito</span>
+              <span>Refinanciar Crédito</span>
             </DialogTitle>
             <DialogDescription>
-              Renueva el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
+              Refinancia el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
             </DialogDescription>
           </DialogHeader>
 
@@ -1809,7 +1809,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   id="observacionesRenovacion"
                   value={observacionesRenovacion}
                   onChange={(e) => setObservacionesRenovacion(e.target.value)}
-                  placeholder="Observaciones opcionales sobre la renovación..."
+                  placeholder="Observaciones opcionales sobre el refinanciamiento..."
                   className="mt-1"
                   disabled={renovando}
                 />
@@ -1818,7 +1818,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               {/* Resumen de cálculos */}
               {montoRenovacion && interesRenovacion && cuotasRenovacion && (
                 <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <h4 className="font-semibold text-orange-900 mb-2">Resumen de Renovación:</h4>
+                  <h4 className="font-semibold text-orange-900 mb-2">Resumen de Refinanciamiento:</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-orange-700">Nuevo monto:</span>
@@ -1866,12 +1866,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 {renovando ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Renovando...
+                    Refinanciando...
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Renovar Crédito
+                    Refinanciar Crédito
                   </>
                 )}
               </Button>

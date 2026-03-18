@@ -117,8 +117,8 @@ export async function POST(
         data: { 
           estado: "RENOVADO",
           observaciones: prestamoAnterior.observaciones 
-            ? `${prestamoAnterior.observaciones} | RENOVADO el ${new Date().toISOString().split('T')[0]}`
-            : `RENOVADO el ${new Date().toISOString().split('T')[0]}`
+            ? `${prestamoAnterior.observaciones} | REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
+            : `REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
         }
       })
 
@@ -136,8 +136,8 @@ export async function POST(
           fechaFin: fechaFin,
           estado: "ACTIVO",
           observaciones: observaciones 
-            ? `RENOVACIÓN de ${prestamoAnterior.id} | ${observaciones}`
-            : `RENOVACIÓN de ${prestamoAnterior.id}`
+            ? `REFINANCIAMIENTO de ${prestamoAnterior.id} | ${observaciones}`
+            : `REFINANCIAMIENTO de ${prestamoAnterior.id}`
         },
         include: {
           cliente: true
@@ -152,7 +152,7 @@ export async function POST(
             userId: session.user.id,
             monto: saldoPendiente,
             metodoPago: "EFECTIVO",
-            observaciones: `Liquidación por renovación hacia nuevo préstamo ${nuevoPrestamo.id}`,
+            observaciones: `Liquidación por refinanciamiento hacia nuevo préstamo ${nuevoPrestamo.id}`,
             fecha: new Date()
           }
         })
@@ -166,7 +166,7 @@ export async function POST(
           monto: montoEfectivo,
           saldoAnterior: 0,
           saldoNuevo: 0,
-          observaciones: `Renovación préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
+          observaciones: `Refinanciamiento préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
           asignadoPor: {
             connect: { id: session.user.id }
           }
@@ -177,7 +177,7 @@ export async function POST(
     })
 
     return NextResponse.json({
-      message: "Préstamo renovado exitosamente",
+      message: "Préstamo refinanciado exitosamente",
       prestamoAnterior: {
         id: prestamoAnterior.id,
         saldoPendiente: saldoPendiente
