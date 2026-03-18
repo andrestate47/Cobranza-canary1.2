@@ -60,6 +60,7 @@ export default function TransferenciaModal({
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
 
   // Nuevos estados para la boleta
   const [step, setStep] = useState<'form' | 'boleta'>('form')
@@ -241,7 +242,8 @@ export default function TransferenciaModal({
           banco: banco.trim() || null,
           referencia: referencia.trim() || null,
           observaciones: observaciones.trim() || null,
-          fotoComprobante
+          fotoComprobante,
+          fecha: fecha ? new Date(fecha).toISOString() : new Date().toISOString()
         }),
       })
 
@@ -425,6 +427,29 @@ export default function TransferenciaModal({
                     disabled={loading}
                   />
                 </div>
+              </div>
+
+              {/* Fecha */}
+              <div>
+                <Label htmlFor="fecha">Fecha de transferencia *</Label>
+                <Input
+                  id="fecha"
+                  type="date"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  className="mt-1 cursor-pointer"
+                  onClick={(e) => {
+                    try {
+                      if (typeof (e.target as HTMLInputElement).showPicker === 'function') {
+                        (e.target as HTMLInputElement).showPicker()
+                      }
+                    } catch (error) {
+                      console.log('showPicker not supported', error)
+                    }
+                  }}
+                  required
+                  disabled={loading}
+                />
               </div>
 
               {/* Banco */}

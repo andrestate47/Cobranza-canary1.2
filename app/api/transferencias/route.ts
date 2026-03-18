@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante } = body
+    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fecha } = body
 
     // 1. Validaciones básicas
     if (!prestamoId || !monto || !fotoComprobante) {
@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const fechaPago = fecha ? new Date(fecha) : new Date()
 
     // 2. Ejecutar todo dentro de una transacción
     const resultado = await prisma.$transaction(async (tx: any) => {
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
           referencia: referencia?.trim() || null,
           fotoComprobante,
           observaciones: observaciones?.trim() || null,
+          fecha: fechaPago
         }
       })
 
@@ -75,6 +78,7 @@ export async function POST(request: NextRequest) {
           prestamoId,
           userId: session.user.id,
           monto: montoNum,
+          fecha: fechaPago,
           metodoPago: "TRANSFERENCIA",
           observaciones: `Transferencia ID: ${nuevaTransferencia.id}. Ref: ${referencia || 'S/N'}. ${observaciones || ''}`.trim().substring(0, 191) // Asegurar que cabe en DB
         }
