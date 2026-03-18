@@ -181,6 +181,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [telefonoEditar, setTelefonoEditar] = useState("")
   const [direccionClienteEditar, setDireccionClienteEditar] = useState("")
   const [direccionCobroEditar, setDireccionCobroEditar] = useState("")
+  const [montoEditar, setMontoEditar] = useState("")
 
   const formatDate = (dateString: string) => {
     if (!dateString) return ''
@@ -605,9 +606,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
   // Función para abrir Google Maps con la dirección
   const abrirMapa = (direccion: string, tipo: string) => {
-    const direccionFormateada = encodeURIComponent(direccion)
-    const url = `https://www.google.com/maps/search/?api=1&query=${direccionFormateada}`
-    window.open(url, '_blank')
+    // Si la dirección ya es un enlace de Google Maps, abrirlo directamente
+    if (direccion.startsWith('http')) {
+      window.open(direccion, '_blank')
+    } else {
+      const direccionFormateada = encodeURIComponent(direccion)
+      const url = `https://www.google.com/maps/search/?api=1&query=${direccionFormateada}`
+      window.open(url, '_blank')
+    }
   }
 
   // Función para compartir por WhatsApp
@@ -951,6 +957,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setTelefonoEditar(prestamo.cliente.telefono || "")
     setDireccionClienteEditar(prestamo.cliente.direccionCliente || "")
     setDireccionCobroEditar(prestamo.cliente.direccionCobro || "")
+    setMontoEditar(prestamo.monto.toString())
     setShowEditarModal(true)
   }
 
@@ -968,7 +975,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     setEditando(true)
     try {
-      const response = await fetch(`/api/clientes/${prestamo.cliente.id}`, {
+      const clienteUpdateResponse = await fetch(`/api/clientes/${prestamo.cliente.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -983,24 +990,55 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         }),
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        toast({
-          title: "Cliente actualizado",
-          description: "Los datos del cliente han sido actualizados exitosamente",
-        })
-
-        // Cerrar modal y recargar la página
-        setShowEditarModal(false)
-        window.location.reload()
-      } else {
-        const error = await response.json()
+      if (!clienteUpdateResponse.ok) {
+        const error = await clienteUpdateResponse.json()
         toast({
           title: "Error",
           description: error.error || "No se pudo actualizar el cliente",
           variant: "destructive",
         })
+        setEditando(false)
+        return
       }
+
+      // Si el monto del préstamo cambió, actualizar también el préstamo
+      const montoNum = parseFloat(montoEditar)
+      if (!isNaN(montoNum) && montoNum !== Number(prestamo.monto)) {
+        const prestamoUpdateResponse = await fetch(`/api/prestamos/${prestamo.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            monto: montoNum,
+            interes: prestamo.interes, // Mantener interés actual
+            tipoPago: prestamo.tipoPago, // Mantener tipo de pago actual
+            cuotas: prestamo.cuotas, // Mantener cuotas actuales
+            fechaInicio: prestamo.fechaInicio, // Mantener fecha de inicio actual
+            observaciones: prestamo.observaciones // Mantener observaciones actuales
+          }),
+        })
+
+        if (!prestamoUpdateResponse.ok) {
+          const error = await prestamoUpdateResponse.json()
+          toast({
+            title: "Error",
+            description: error.error || "No se pudo actualizar el monto del préstamo",
+            variant: "destructive",
+          })
+          setEditando(false)
+          return
+        }
+      }
+
+      toast({
+        title: "Datos actualizados",
+        description: "La información ha sido actualizada exitosamente",
+      })
+
+      // Cerrar modal y recargar la página
+      setShowEditarModal(false)
+      window.location.reload()
     } catch (error) {
       console.error("Error:", error)
       toast({
@@ -1022,6 +1060,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setTelefonoEditar("")
     setDireccionClienteEditar("")
     setDireccionCobroEditar("")
+    setMontoEditar("")
   }
 
   return (
@@ -2006,7 +2045,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
 
               <div>
-                <Label htmlFor="direccionCobroEditar">Dirección de Cobro</Label>
+                <Label htmlFor="direccionCobroEditar">Dirección de Cobro / Google Maps</Label>
                 <div className="relative mt-1">
                   <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
@@ -2014,11 +2053,30 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     type="text"
                     value={direccionCobroEditar}
                     onChange={(e) => setDireccionCobroEditar(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 text-xs sm:text-sm"
                     disabled={editando}
-                    placeholder="Dirección para cobros (si es diferente)"
+                    placeholder="Pega link de Google Maps o escribe la dirección"
                   />
                 </div>
+                <p className="text-[10px] text-gray-500 mt-1">Puedes pegar directamente el enlace de Google Maps compartido.</p>
+              </div>
+
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                <Label htmlFor="montoEditar" className="text-purple-900 font-semibold">Monto del Préstamo</Label>
+                <div className="relative mt-1">
+                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
+                  <Input
+                    id="montoEditar"
+                    type="number"
+                    step="0.01"
+                    value={montoEditar}
+                    onChange={(e) => setMontoEditar(e.target.value)}
+                    className="pl-10 border-purple-300 focus:ring-purple-500 font-bold"
+                    disabled={editando}
+                    placeholder="Monto original del préstamo"
+                  />
+                </div>
+                <p className="text-[10px] text-purple-700 mt-1">Advertencia: Cambiar el monto recalculará las cuotas pero no afectará los pagos ya registrados.</p>
               </div>
             </div>
 
@@ -2046,7 +2104,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 ) : (
                   <>
                     <Edit className="h-4 w-4 mr-2" />
-                    Actualizar Cliente
+                    Actualizar Datos
                   </>
                 )}
               </Button>
