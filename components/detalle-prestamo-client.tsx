@@ -1042,8 +1042,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start space-x-4">
-                <div className="relative w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+              <div className="flex items-start space-x-3 sm:space-x-4 w-full">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
                   {prestamo.cliente.foto ? (
                     <button
                       onClick={abrirImagenModal}
@@ -1064,14 +1064,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <IconoAlerta className="h-4 w-4 text-white" />
                   </div>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 w-full">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate w-full" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
                       {prestamo.cliente.nombre} {prestamo.cliente.apellido}
                     </h3>
                     <Badge
                       variant="outline"
-                      className="text-xs bg-blue-100 text-blue-800"
+                      className="text-xs bg-blue-100 text-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0"
                     >
                       {getTipoPagoText(prestamo.tipoPago)}
                     </Badge>
@@ -1091,11 +1091,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     {/* Dirección del Cliente */}
                     <div className="flex items-start text-gray-600">
                       <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-700 mb-1">Dirección Cliente:</div>
                         <button
                           onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente')}
-                          className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight"
+                          className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full"
                           title="Click para abrir en Google Maps"
                         >
                           {prestamo.cliente.direccionCliente}
@@ -1107,11 +1107,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     {prestamo.cliente.direccionCobro && (
                       <div className="flex items-start text-gray-600">
                         <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-orange-500" />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium text-orange-700 mb-1">Dirección Cobro:</div>
                           <button
                             onClick={() => abrirMapa(prestamo.cliente.direccionCobro!, 'cobro')}
-                            className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight"
+                            className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full"
                             title="Click para abrir en Google Maps"
                           >
                             {prestamo.cliente.direccionCobro}
