@@ -153,6 +153,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [renovando, setRenovando] = useState(false)
   const [showEditarModal, setShowEditarModal] = useState(false)
   const [editando, setEditando] = useState(false)
+  const [montoTotalEditar, setMontoTotalEditar] = useState(0)
+  const [cuotaEditar, setCuotaEditar] = useState(0)
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
@@ -187,6 +189,29 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [montoEditar, setMontoEditar] = useState("")
   const [tipoMicroseguroEditar, setTipoMicroseguroEditar] = useState(prestamo.microseguroTipo)
   const [valorMicroseguroEditar, setValorMicroseguroEditar] = useState(prestamo.microseguroValor?.toString() || "0")
+
+  // Efecto para calcular el total y cuota en el modal de edición
+  useEffect(() => {
+    if (showEditarModal) {
+      const montoNum = parseFloat(montoEditar) || 0
+      const valorSeguro = parseFloat(valorMicroseguroEditar) || 0
+      const interesNum = Number(prestamo.interes)
+      const cuotasNum = Number(prestamo.cuotas)
+
+      const montoConInteres = montoNum + (montoNum * interesNum / 100)
+      
+      let totalSeguro = 0
+      if (tipoMicroseguroEditar === 'MONTO_FIJO') {
+        totalSeguro = valorSeguro
+      } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
+        totalSeguro = (montoNum * valorSeguro) / 100
+      }
+
+      const totalCalculado = montoConInteres + totalSeguro
+      setMontoTotalEditar(totalCalculado)
+      setCuotaEditar(totalCalculado / cuotasNum)
+    }
+  }, [montoEditar, tipoMicroseguroEditar, valorMicroseguroEditar, showEditarModal, prestamo.interes, prestamo.cuotas])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return ''
@@ -2017,12 +2042,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       <Dialog open={showEditarModal} onOpenChange={handleCancelEdicion}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 text-purple-600">
+            <DialogTitle className="flex items-center space-x-2 text-blue-600">
               <User className="h-5 w-5" />
-              <span>Editar Cliente</span>
+              <span>Editar Cliente y Préstamo</span>
             </DialogTitle>
             <DialogDescription>
-              Modifica la información personal del cliente asociado a este préstamo.
+              Modifica la información personal del cliente y los valores del préstamo.
             </DialogDescription>
           </DialogHeader>
 
@@ -2216,6 +2241,18 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       />
                     </div>
                   )}
+                </div>
+
+                {/* Resumen de totales editados */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-blue-100 p-2 rounded border border-blue-200 shadow-sm">
+                    <p className="text-[10px] text-blue-700 font-bold uppercase">Nuevo Total</p>
+                    <p className="text-sm font-bold text-blue-900">{formatCurrency(montoTotalEditar)}</p>
+                  </div>
+                  <div className="bg-emerald-100 p-2 rounded border border-emerald-200 shadow-sm">
+                    <p className="text-[10px] text-emerald-700 font-bold uppercase">Nueva Cuota</p>
+                    <p className="text-sm font-bold text-emerald-900">{formatCurrency(cuotaEditar)}</p>
+                  </div>
                 </div>
               </div>
             </div>

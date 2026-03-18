@@ -127,6 +127,24 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     fetchClientes()
   }, [soloConSaldo])
 
+  // Refrescar al recibir eventos de modificación de clientes
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('🔄 Cliente modificado, refrescando listado...')
+      fetchClientes()
+    }
+
+    window.addEventListener('clienteCreado', handleRefresh)
+    window.addEventListener('clienteActualizado', handleRefresh)
+    window.addEventListener('clienteEliminado', handleRefresh)
+
+    return () => {
+      window.removeEventListener('clienteCreado', handleRefresh)
+      window.removeEventListener('clienteActualizado', handleRefresh)
+      window.removeEventListener('clienteEliminado', handleRefresh)
+    }
+  }, [soloConSaldo])
+
   useEffect(() => {
     const filtered = clientes.filter(clienteData => {
       const searchLower = searchTerm.toLowerCase()
