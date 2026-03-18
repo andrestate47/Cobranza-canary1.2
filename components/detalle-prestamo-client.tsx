@@ -777,6 +777,41 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
   }
 
+  const handleDeleteTransferencia = async (transferenciaId: string) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar esta transferencia? Esta acción revertirá el saldo del préstamo.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/transferencias/${transferenciaId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Transferencia eliminada",
+          description: "La transferencia y su pago asociado han sido eliminados del registro.",
+        })
+        // Recargar la página para mostrar los datos actualizados
+        window.location.reload()
+      } else {
+        const errorData = await response.json()
+        toast({
+          title: "Error",
+          description: errorData.error || "No se pudo eliminar la transferencia",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error al eliminar transferencia:", error)
+      toast({
+        title: "Error",
+        description: "Error de conexión al eliminar la transferencia",
+        variant: "destructive",
+      })
+    }
+  }
+
   const onTransferenciaSaved = () => {
     setShowTransferenciaModal(false)
     cargarTransferencias() // Recargar transferencias
@@ -1568,6 +1603,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                             onClick={() => handleVerBoletaTransferencia(transferencia)}
                           >
                             <FileText className="h-4 w-4" />
+                          </Button>
+
+                          {/* Botón eliminar transferencia */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 shrink-0"
+                            title="Eliminar Transferencia"
+                            onClick={() => handleDeleteTransferencia(transferencia.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
