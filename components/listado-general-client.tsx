@@ -523,9 +523,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                 >
                   <CardContent className="p-4">
                     {/* Vista compacta del cliente - siempre visible */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="relative w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
+                        <div className="relative w-10 h-10 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
                           {clienteData.cliente.foto ? (
                             <button
                               onClick={() => abrirImagenModal(clienteData.cliente)}
@@ -546,41 +546,41 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             <IconoAlerta className="h-3 w-3 text-white" />
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex flex-col mb-1">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex flex-col mb-1 w-full">
                             <h3 className="font-semibold text-gray-900 truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
                               {clienteData.cliente.nombre} {clienteData.cliente.apellido}
                             </h3>
-                            <div className="flex items-center flex-wrap gap-1 mt-1">
+                            <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
                               <Badge
-                                className={`text-[10px] px-1.5 py-0 h-5 ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                                className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
                                   }`}
                               >
                                 {estadoAlerta.texto}
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] px-1.5 py-0 h-5 ${tipoPagoInfo.color}`}
+                                className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${tipoPagoInfo.color}`}
                               >
                                 {tipoPagoInfo.texto}
                               </Badge>
                               {clienteData.prestamos.length > 1 && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px]">
                                   {clienteData.prestamos.length} ptmos
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-sm text-gray-500 whitespace-nowrap">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
+                            <span className="text-[13px] sm:text-sm text-gray-500 whitespace-nowrap truncate block">
                               Saldo: <span className="font-semibold text-red-600">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
                             </span>
-                            <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                            <span className="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap hidden sm:block">
                               {clienteData.cuotasTotalesPagadas} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-[11px] text-gray-400 truncate">
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-[10px] sm:text-[11px] text-gray-400 truncate">
                               Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
                             </span>
                           </div>
@@ -588,7 +588,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                       </div>
 
                       <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="ml-2 p-2">
+                        <Button variant="ghost" size="sm" className="ml-1 p-1 sm:p-2 sm:ml-2 flex-shrink-0">
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" />
                           ) : (
