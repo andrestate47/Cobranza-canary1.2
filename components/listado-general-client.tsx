@@ -546,41 +546,41 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             <IconoAlerta className="h-3 w-3 text-white" />
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center flex-wrap gap-1">
-                              <h3 className="font-semibold text-gray-900 truncate">
-                                {clienteData.cliente.nombre} {clienteData.cliente.apellido}
-                              </h3>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="flex flex-col mb-1">
+                            <h3 className="font-semibold text-gray-900 truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
+                              {clienteData.cliente.nombre} {clienteData.cliente.apellido}
+                            </h3>
+                            <div className="flex items-center flex-wrap gap-1 mt-1">
                               <Badge
-                                className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                                className={`text-[10px] px-1.5 py-0 h-5 ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
                                   }`}
                               >
                                 {estadoAlerta.texto}
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className={`text-xs ${tipoPagoInfo.color}`}
+                                className={`text-[10px] px-1.5 py-0 h-5 ${tipoPagoInfo.color}`}
                               >
                                 {tipoPagoInfo.texto}
                               </Badge>
                               {clienteData.prestamos.length > 1 && (
-                                <Badge variant="outline" className="text-xs">
-                                  {clienteData.prestamos.length} préstamos
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                                  {clienteData.prestamos.length} ptmos
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">
-                              Saldo Total: <span className="font-semibold text-red-600">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm text-gray-500 whitespace-nowrap">
+                              Saldo: <span className="font-semibold text-red-600">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
                             </span>
-                            <span className="text-xs text-gray-500">
-                              {clienteData.cuotasTotalesPagadas} cuotas pagadas
+                            <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                              {clienteData.cuotasTotalesPagadas} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-gray-400">
+                            <span className="text-[11px] text-gray-400 truncate">
                               Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
                             </span>
                           </div>
