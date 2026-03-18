@@ -1441,40 +1441,41 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   {prestamo.pagos.map((pago: Pago, index: number) => (
                     <div
                       key={`pago-${pago.id}`}
-                      className="flex items-center justify-between p-3 bg-green-50 rounded-lg border-l-4 border-green-500"
+                      className="flex items-start sm:items-center justify-between p-3 bg-green-50 rounded-lg border-l-4 border-green-500 gap-2 overflow-hidden"
                     >
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          <span className="font-semibold text-green-600">
-                            {formatCurrency(pago.monto)}
-                          </span>
-                          <Badge className="bg-green-100 text-green-800 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                          <div className="flex items-center space-x-1 shrink-0">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <span className="font-semibold text-green-600 truncate">
+                              {formatCurrency(pago.monto)}
+                            </span>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800 text-[10px] h-4 px-1 shrink-0">
                             PAGO
                           </Badge>
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-[11px] sm:text-sm text-gray-500 mt-1 truncate block w-full">
                           {formatDateTime(String(pago.fecha))}
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-[10px] sm:text-xs text-gray-400 truncate block w-full">
                           Por: {pago.usuario?.firstName && pago.usuario?.lastName
                             ? `${pago.usuario.firstName} ${pago.usuario.lastName}`
                             : "Usuario"
                           }
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
                         {pago.observaciones && (
-                          <div className="text-sm text-gray-600 max-w-xs text-right">
+                          <div className="text-[11px] text-gray-600 mt-1 pb-1 border-b border-green-100 sm:border-0 sm:pb-0 break-words w-full">
                             {pago.observaciones}
                           </div>
                         )}
-
+                      </div>
+                      <div className="flex items-center space-x-1 shrink-0 self-start sm:self-center">
                         {/* Botón ver boleta */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-100"
+                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 shrink-0"
                           title="Ver Boleta"
                           onClick={() => handleVerBoletaPago(pago)}
                         >
@@ -1485,7 +1486,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-100"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 shrink-0"
                           title="Eliminar Pago"
                           onClick={() => handleDeletePago(pago.id)}
                         >
@@ -1499,72 +1500,76 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   {transferencias.map((transferencia: Transferencia, index: number) => (
                     <div
                       key={`transferencia-${transferencia.id}`}
-                      className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500"
+                      className="flex items-start sm:items-center justify-between p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500 gap-2 overflow-hidden"
                     >
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <CreditCard className="h-4 w-4 text-blue-600" />
-                          <span className="font-semibold text-blue-600">
-                            {formatCurrency(transferencia.monto)}
-                          </span>
-                          <Badge className="bg-blue-100 text-blue-800 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                          <div className="flex items-center space-x-1 shrink-0">
+                            <CreditCard className="h-4 w-4 text-blue-600" />
+                            <span className="font-semibold text-blue-600 truncate">
+                              {formatCurrency(transferencia.monto)}
+                            </span>
+                          </div>
+                          <Badge className="bg-blue-100 text-blue-800 text-[10px] h-4 px-1 shrink-0">
                             TRANSFERENCIA
                           </Badge>
                         </div>
                         {transferencia.banco && (
-                          <div className="text-sm text-blue-600 mt-1">
+                          <div className="text-[11px] sm:text-sm text-blue-600 mt-1 truncate">
                             {transferencia.banco}
                           </div>
                         )}
                         {transferencia.referencia && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-[10px] sm:text-xs text-gray-500 truncate">
                             Ref: {transferencia.referencia}
                           </div>
                         )}
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-[11px] sm:text-sm text-gray-500 mt-0.5 truncate block w-full">
                           {formatDateTime(String(transferencia.fecha))}
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-[10px] sm:text-xs text-gray-400 truncate block w-full">
                           Por: {transferencia.usuario?.firstName && transferencia.usuario?.lastName
                             ? `${transferencia.usuario.firstName} ${transferencia.usuario.lastName}`
                             : "Usuario"
                           }
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
                         {transferencia.observaciones && (
-                          <div className="text-sm text-gray-600 max-w-xs">
+                          <div className="text-[11px] text-gray-600 mt-1 pb-1 border-b border-blue-100 sm:border-0 sm:pb-0 break-words w-full">
                             {transferencia.observaciones}
                           </div>
                         )}
-                        {transferencia.fotoComprobante && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedImage({
-                                url: transferencia.fotoComprobante,
-                                title: "Comprobante de Transferencia",
-                                subtitle: `Monto: ${formatCurrency(transferencia.monto)} - Ref: ${transferencia.referencia || 'S/N'}`
-                              })
-                              setShowImageModal(true)
-                            }}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center gap-1 shrink-0 self-start sm:self-center">
+                        <div className="flex items-center space-x-1">
+                          {transferencia.fotoComprobante && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedImage({
+                                  url: transferencia.fotoComprobante,
+                                  title: "Comprobante de Transferencia",
+                                  subtitle: `Monto: ${formatCurrency(transferencia.monto)} - Ref: ${transferencia.referencia || 'S/N'}`
+                                })
+                                setShowImageModal(true)
+                              }}
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 shrink-0"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
 
-                        {/* Botón ver boleta para transferencia (busca el pago asociado) */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                          title="Ver Boleta"
-                          onClick={() => handleVerBoletaTransferencia(transferencia)}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                          {/* Botón ver boleta para transferencia (busca el pago asociado) */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100 shrink-0"
+                            title="Ver Boleta"
+                            onClick={() => handleVerBoletaTransferencia(transferencia)}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
