@@ -1151,138 +1151,138 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             <CardContent className="space-y-6">
               {/* Métricas principales */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg overflow-hidden flex flex-col justify-center">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600 truncate w-full" title={formatCurrency(montoOriginal)}>
                     {formatCurrency(montoOriginal)}
                   </div>
-                  <div className="text-sm text-gray-600">Monto Prestado</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Monto Prestado</div>
                 </div>
 
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg overflow-hidden flex flex-col justify-center">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600 truncate w-full" title={formatCurrency(totalPagado)}>
                     {formatCurrency(totalPagado)}
                   </div>
-                  <div className="text-sm text-gray-600">Total Pagado</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Pagado</div>
                 </div>
 
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">
+                <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg overflow-hidden flex flex-col justify-center">
+                  <div className="text-lg sm:text-2xl font-bold text-red-600 truncate w-full" title={formatCurrency(saldoPendiente)}>
                     {formatCurrency(saldoPendiente)}
                   </div>
-                  <div className="text-sm text-gray-600">Saldo Pendiente</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Saldo Pendiente</div>
                 </div>
 
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-lg overflow-hidden flex flex-col justify-center">
+                  <div className="text-lg sm:text-2xl font-bold text-purple-600 truncate w-full" title={formatCurrency(valorCuota)}>
                     {formatCurrency(valorCuota)}
                   </div>
-                  <div className="text-sm text-gray-600">Valor Cuota</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mt-1">Valor Cuota</div>
                 </div>
               </div>
 
               {/* Detalles básicos del préstamo */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tipo de crédito:</span>
-                    <span className="font-semibold">{getTipoCreditoText(prestamo.tipoCredito || 'EFECTIVO')}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Tipo de crédito:</span>
+                    <span className="font-semibold text-right break-words min-w-0">{getTipoCreditoText(prestamo.tipoCredito || 'EFECTIVO')}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Interés (%):</span>
-                    <span className="font-semibold">{prestamo.interes}%</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Interés (%):</span>
+                    <span className="font-semibold text-right break-words min-w-0">{prestamo.interes}%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Interés total:</span>
-                    <span className="font-semibold">{formatCurrency(prestamo.interesTotal || interesAmount)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Interés total:</span>
+                    <span className="font-semibold text-right break-words min-w-0">{formatCurrency(prestamo.interesTotal || interesAmount)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tipo de pago:</span>
-                    <span className="font-semibold">{getTipoPagoText(prestamo.tipoPago)}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Tipo de pago:</span>
+                    <span className="font-semibold text-right break-words min-w-0">{getTipoPagoText(prestamo.tipoPago)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total cuotas:</span>
-                    <span className="font-semibold">{prestamo.cuotas}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Total cuotas:</span>
+                    <span className="font-semibold text-right break-words min-w-0">{prestamo.cuotas}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas pagadas:</span>
-                    <span className="font-semibold text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Cuotas pagadas:</span>
+                    <span className="font-semibold text-green-600 text-right break-words min-w-0">{Number(cuotasPagadas.toFixed(2))}</span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas atrasadas:</span>
-                    <span className={`font-semibold ${infoExtendida.cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Cuotas atrasadas:</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {Number(infoExtendida.cuotasAtrasadas.toFixed(2))}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas pendientes:</span>
-                    <span className="font-semibold text-orange-600">{infoExtendida.cuotasPendientes}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Cuotas pendientes:</span>
+                    <span className="font-semibold text-orange-600 text-right break-words min-w-0">{infoExtendida.cuotasPendientes}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Días vencidos:</span>
-                    <span className={`font-semibold ${infoExtendida.diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Días vencidos:</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {infoExtendida.diasVencidos}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Valor en atraso(s):</span>
-                    <span className={`font-semibold ${infoExtendida.valorEnAtrasos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Valor en atraso(s):</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.valorEnAtrasos > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {formatCurrency(infoExtendida.valorEnAtrasos)}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Días transcurridos:</span>
-                    <span className="font-semibold text-blue-600">{infoExtendida.diasTranscurridos}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Días transcurridos:</span>
+                    <span className="font-semibold text-blue-600 text-right break-words min-w-0">{infoExtendida.diasTranscurridos}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Días de gracia:</span>
-                    <span className="font-semibold">{infoExtendida.diasGracia}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 shrink-0">Días de gracia:</span>
+                    <span className="font-semibold text-right break-words min-w-0">{infoExtendida.diasGracia}</span>
                   </div>
                 </div>
               </div>
 
               {/* Información adicional */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-3 w-full">
                 <h4 className="font-semibold text-gray-900 mb-2">Información Adicional</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Último pago:</span>
-                      <span className="font-medium">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start text-sm gap-2">
+                      <span className="text-gray-600 shrink-0">Último pago:</span>
+                      <span className="font-medium text-right break-words min-w-0">
                         {infoExtendida.ultimoPago
                           ? `${formatCurrency(infoExtendida.ultimoPago.monto)} - ${formatDateLocal(infoExtendida.ultimoPago.fecha)}`
                           : 'Sin pagos registrados'
                         }
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Fecha próximo pago:</span>
-                      <span className="font-medium">
+                    <div className="flex justify-between items-start text-sm gap-2 mt-2">
+                      <span className="text-gray-600 shrink-0">Fecha próximo pago:</span>
+                      <span className="font-medium text-right break-words min-w-0">
                         {infoExtendida.fechaProximoPago
                           ? formatDateLocal(infoExtendida.fechaProximoPago)
                           : 'Préstamo completado'
                         }
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Mora crédito:</span>
-                      <span className="font-medium">{prestamo.moraCredito || 0}%</span>
+                    <div className="flex justify-between items-start text-sm gap-2 mt-2">
+                      <span className="text-gray-600 shrink-0">Mora crédito:</span>
+                      <span className="font-medium text-right break-words min-w-0">{prestamo.moraCredito || 0}%</span>
                     </div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Fecha inicio:</span>
-                      <span className="font-medium">{formatDate(String(prestamo.fechaInicio))}</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start text-sm gap-2">
+                      <span className="text-gray-600 shrink-0">Fecha inicio:</span>
+                      <span className="font-medium text-right break-words min-w-0">{formatDate(String(prestamo.fechaInicio))}</span>
                     </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Fecha fin:</span>
-                      <span className="font-medium">{formatDate(String(prestamo.fechaFin))}</span>
+                    <div className="flex justify-between items-start text-sm gap-2 mt-2">
+                      <span className="text-gray-600 shrink-0">Fecha fin:</span>
+                      <span className="font-medium text-right break-words min-w-0">{formatDate(String(prestamo.fechaFin))}</span>
                     </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Creado por:</span>
-                      <span className="font-medium">
+                    <div className="flex justify-between items-start text-sm gap-2 mt-2">
+                      <span className="text-gray-600 shrink-0">Creado por:</span>
+                      <span className="font-medium text-right break-words min-w-0">
                         {prestamo.usuario?.firstName && prestamo.usuario?.lastName
                           ? `${prestamo.usuario.firstName} ${prestamo.usuario.lastName}`
                           : "Usuario"
