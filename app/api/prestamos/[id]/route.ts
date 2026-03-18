@@ -20,10 +20,20 @@ export async function PUT(
 
     const prestamoId = params.id
     const body = await request.json()
-    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones } = body
+    const {
+      monto,
+      interes,
+      tipoPago,
+      cuotas,
+      fechaInicio,
+      observaciones,
+      microseguroTipo,
+      microseguroValor,
+      microseguroTotal
+    } = body
 
     // Validaciones básicas
-    if (!monto || !interes || !tipoPago || !cuotas || !fechaInicio) {
+    if (!monto || interes === undefined || !tipoPago || !cuotas || !fechaInicio) {
       return NextResponse.json(
         { error: "Todos los campos obligatorios son requeridos" },
         { status: 400 }
@@ -33,6 +43,8 @@ export async function PUT(
     const montoNum = parseFloat(monto)
     const interesNum = parseFloat(interes)
     const cuotasNum = parseInt(cuotas)
+    const microseguroValorNum = parseFloat(microseguroValor || '0')
+    const microseguroTotalNum = parseFloat(microseguroTotal || '0')
 
     if (montoNum <= 0 || interesNum < 0 || cuotasNum <= 0) {
       return NextResponse.json(
@@ -58,14 +70,18 @@ export async function PUT(
     const fechaInicioDate = new Date(fechaInicio)
     let fechaFin = new Date(fechaInicioDate)
     
-    // Calcular fecha de fin basada en tipo de pago y número de cuotas
+    // Calcular fecha de fin basada en tipo de pago y número de cuotas (usando lógica simplificada para edición)
     const diasPorTipo = {
       'DIARIO': 1,
       'SEMANAL': 7,
+      'LUNES_A_VIERNES': 1,
+      'LUNES_A_SABADO': 1,
       'QUINCENAL': 15,
+      'CATORCENAL': 14,
       'FIN_DE_MES': 30,
       'MENSUAL': 30,
       'TRIMESTRAL': 90,
+      'CUATRIMESTRAL': 120,
       'SEMESTRAL': 180,
       'ANUAL': 365
     }
@@ -89,6 +105,9 @@ export async function PUT(
         fechaFin,
         valorCuota,
         observaciones: observaciones || null,
+        microseguroTipo: microseguroTipo || undefined,
+        microseguroValor: microseguroValorNum,
+        microseguroTotal: microseguroTotalNum
         // No cambiar la fecha de creación ni el usuario
       },
       include: {

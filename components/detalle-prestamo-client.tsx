@@ -26,7 +26,8 @@ import {
   MessageCircle,
   Send,
   CreditCard,
-  Edit
+  Edit,
+  ShieldCheck
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -182,6 +183,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [direccionClienteEditar, setDireccionClienteEditar] = useState("")
   const [direccionCobroEditar, setDireccionCobroEditar] = useState("")
   const [montoEditar, setMontoEditar] = useState("")
+  const [tipoMicroseguroEditar, setTipoMicroseguroEditar] = useState(prestamo.microseguroTipo)
+  const [valorMicroseguroEditar, setValorMicroseguroEditar] = useState(prestamo.microseguroValor?.toString() || "0")
 
   const formatDate = (dateString: string) => {
     if (!dateString) return ''
@@ -958,6 +961,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setDireccionClienteEditar(prestamo.cliente.direccionCliente || "")
     setDireccionCobroEditar(prestamo.cliente.direccionCobro || "")
     setMontoEditar(prestamo.monto.toString())
+    setTipoMicroseguroEditar(prestamo.microseguroTipo)
+    setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
     setShowEditarModal(true)
   }
 
@@ -1001,9 +1006,23 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         return
       }
 
-      // Si el monto del préstamo cambió, actualizar también el préstamo
+      // Si el monto del préstamo o los microseguros cambiaron, actualizar también el préstamo
       const montoNum = parseFloat(montoEditar)
-      if (!isNaN(montoNum) && montoNum !== Number(prestamo.monto)) {
+      const microseguroValorNum = parseFloat(valorMicroseguroEditar) || 0
+      
+      const cambioMonto = !isNaN(montoNum) && montoNum !== Number(prestamo.monto)
+      const cambioMicroseguro = tipoMicroseguroEditar !== prestamo.microseguroTipo || 
+                               microseguroValorNum !== Number(prestamo.microseguroValor)
+
+      if (cambioMonto || cambioMicroseguro) {
+        // Calcular microseguro total
+        let microseguroTotal = 0
+        if (tipoMicroseguroEditar === 'MONTO_FIJO') {
+          microseguroTotal = microseguroValorNum
+        } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
+          microseguroTotal = (montoNum * microseguroValorNum) / 100
+        }
+
         const prestamoUpdateResponse = await fetch(`/api/prestamos/${prestamo.id}`, {
           method: 'PUT',
           headers: {
@@ -1011,11 +1030,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           },
           body: JSON.stringify({
             monto: montoNum,
-            interes: prestamo.interes, // Mantener interés actual
-            tipoPago: prestamo.tipoPago, // Mantener tipo de pago actual
-            cuotas: prestamo.cuotas, // Mantener cuotas actuales
-            fechaInicio: prestamo.fechaInicio, // Mantener fecha de inicio actual
-            observaciones: prestamo.observaciones // Mantener observaciones actuales
+            interes: Number(prestamo.interes),
+            tipoPago: prestamo.tipoPago,
+            cuotas: Number(prestamo.cuotas),
+            fechaInicio: prestamo.fechaInicio,
+            observaciones: prestamo.observaciones,
+            microseguroTipo: tipoMicroseguroEditar,
+            microseguroValor: microseguroValorNum,
+            microseguroTotal: microseguroTotal
           }),
         })
 
@@ -2077,6 +2099,52 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   />
                 </div>
                 <p className="text-[10px] text-purple-700 mt-1">Advertencia: Cambiar el monto recalculará las cuotas pero no afectará los pagos ya registrados.</p>
+              </div>
+
+              {/* Microseguros */}
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-3">
+                <div className="flex items-center space-x-2 text-blue-900 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Label>Microseguro</Label>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="tipoMicroseguroEditar" className="text-xs text-blue-800">Tipo</Label>
+                    <Select
+                      value={tipoMicroseguroEditar}
+                      onValueChange={(value: any) => setTipoMicroseguroEditar(value)}
+                      disabled={editando}
+                    >
+                      <SelectTrigger id="tipoMicroseguroEditar" className="mt-1 bg-white border-blue-300">
+                        <SelectValue placeholder="Tipo de seguro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NINGUNO">Ninguno</SelectItem>
+                        <SelectItem value="MONTO_FIJO">Monto Fijo</SelectItem>
+                        <SelectItem value="PORCENTAJE">Porcentaje</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {tipoMicroseguroEditar !== 'NINGUNO' && (
+                    <div className="animate-fadeInScale">
+                      <Label htmlFor="valorMicroseguroEditar" className="text-xs text-blue-800">
+                        {tipoMicroseguroEditar === 'MONTO_FIJO' ? 'Valor ($)' : 'Porcentaje (%)'}
+                      </Label>
+                      <Input
+                        id="valorMicroseguroEditar"
+                        type="number"
+                        step="0.01"
+                        value={valorMicroseguroEditar}
+                        onChange={(e) => setValorMicroseguroEditar(e.target.value)}
+                        className="mt-1 bg-white border-blue-300"
+                        disabled={editando}
+                        placeholder={tipoMicroseguroEditar === 'MONTO_FIJO' ? "0.00" : "0"}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
