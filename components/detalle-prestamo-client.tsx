@@ -170,6 +170,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [interesRenovacion, setInteresRenovacion] = useState("")
   const [tipoPagoRenovacion, setTipoPagoRenovacion] = useState("DIARIO")
   const [cuotasRenovacion, setCuotasRenovacion] = useState("")
+  const [tipoMicroseguroRenovacion, setTipoMicroseguroRenovacion] = useState("NINGUNO")
+  const [valorMicroseguroRenovacion, setValorMicroseguroRenovacion] = useState("0")
   const [fechaInicioRenovacion, setFechaInicioRenovacion] = useState(() => {
     return new Date().toISOString().split('T')[0]
   })
@@ -233,13 +235,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   // Calcular totales
-  const montoOriginal = prestamo.monto
-  const interesAmount = (montoOriginal * prestamo.interes) / 100
-  const montoTotal = montoOriginal + interesAmount
+  const montoOriginal = Number(prestamo.monto)
+  const interesAmount = (montoOriginal * Number(prestamo.interes)) / 100
+  const microseguroAmount = Number(prestamo.microseguroTotal || 0)
+  const montoTotal = montoOriginal + interesAmount + microseguroAmount
   const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) =>
     sum + Number(pago.monto), 0
   )
-  const saldoPendiente = montoTotal - totalPagado
+  const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
   const valorCuota = prestamo.valorCuota
   const cuotasPagadas = valorCuota > 0 ? totalPagado / valorCuota : 0
 
@@ -877,6 +880,15 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     setRenovando(true)
     try {
+      // Calcular microseguro total para la renovación
+      const microseguroValorNum = parseFloat(valorMicroseguroRenovacion) || 0
+      let microseguroTotal = 0
+      if (tipoMicroseguroRenovacion === 'MONTO_FIJO') {
+        microseguroTotal = microseguroValorNum
+      } else if (tipoMicroseguroRenovacion === 'PORCENTAJE') {
+        microseguroTotal = (montoNum * microseguroValorNum) / 100
+      }
+
       const response = await fetch(`/api/prestamos/${prestamo.id}/renovar`, {
         method: 'POST',
         headers: {
@@ -888,7 +900,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           tipoPago: tipoPagoRenovacion,
           cuotas: cuotasNum,
           fechaInicio: fechaInicioRenovacion,
-          observaciones: observacionesRenovacion.trim() || undefined
+          observaciones: observacionesRenovacion.trim() || undefined,
+          microseguroTipo: tipoMicroseguroRenovacion,
+          microseguroValor: microseguroValorNum,
+          microseguroTotal: microseguroTotal
         }),
       })
 
@@ -929,6 +944,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setInteresRenovacion("")
     setTipoPagoRenovacion("DIARIO")
     setCuotasRenovacion("")
+    setTipoMicroseguroRenovacion("NINGUNO")
+    setValorMicroseguroRenovacion("0")
     setFechaInicioRenovacion(new Date().toISOString().split('T')[0])
     setObservacionesRenovacion("")
   }
@@ -938,14 +955,23 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const montoNum = parseFloat(montoRenovacion) || 0
     const interesNum = parseFloat(interesRenovacion) || 0
     const cuotasNum = parseInt(cuotasRenovacion) || 1
+    const microseguroValorNum = parseFloat(valorMicroseguroRenovacion) || 0
+    
+    // Calcular microseguro total para la renovación
+    let microseguroTotal = 0
+    if (tipoMicroseguroRenovacion === 'MONTO_FIJO') {
+      microseguroTotal = microseguroValorNum
+    } else if (tipoMicroseguroRenovacion === 'PORCENTAJE') {
+      microseguroTotal = (montoNum * microseguroValorNum) / 100
+    }
 
     const montoEfectivo = montoNum - saldoPendiente
-    const montoConInteres = montoNum * (1 + interesNum / 100)
-    const valorCuotaNueva = montoConInteres / cuotasNum
+    const montoConInteresYSeguro = montoNum * (1 + interesNum / 100) + microseguroTotal
+    const valorCuotaNueva = montoConInteresYSeguro / cuotasNum
 
     return {
       montoEfectivo: Math.max(0, montoEfectivo),
-      montoConInteres,
+      montoConInteres: montoConInteresYSeguro,
       valorCuotaNueva,
       descuento: saldoPendiente
     }
@@ -1839,6 +1865,52 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     disabled={renovando}
                     min="1"
                   />
+                </div>
+              </div>
+
+              {/* Microseguros para Renovación */}
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-3">
+                <div className="flex items-center space-x-2 text-blue-900 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Label>Microseguro</Label>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="tipoMicroseguroRenovacion" className="text-xs text-blue-800">Tipo</Label>
+                    <Select
+                      value={tipoMicroseguroRenovacion}
+                      onValueChange={(value: any) => setTipoMicroseguroRenovacion(value)}
+                      disabled={renovando}
+                    >
+                      <SelectTrigger id="tipoMicroseguroRenovacion" className="mt-1 bg-white border-blue-300">
+                        <SelectValue placeholder="Tipo de seguro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NINGUNO">Ninguno</SelectItem>
+                        <SelectItem value="MONTO_FIJO">Monto Fijo</SelectItem>
+                        <SelectItem value="PORCENTAJE">Porcentaje</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {tipoMicroseguroRenovacion !== 'NINGUNO' && (
+                    <div className="animate-fadeInScale">
+                      <Label htmlFor="valorMicroseguroRenovacion" className="text-xs text-blue-800">
+                        {tipoMicroseguroRenovacion === 'MONTO_FIJO' ? 'Valor ($)' : 'Porcentaje (%)'}
+                      </Label>
+                      <Input
+                        id="valorMicroseguroRenovacion"
+                        type="number"
+                        step="0.01"
+                        value={valorMicroseguroRenovacion}
+                        onChange={(e) => setValorMicroseguroRenovacion(e.target.value)}
+                        className="mt-1 bg-white border-blue-300"
+                        disabled={renovando}
+                        placeholder={tipoMicroseguroRenovacion === 'MONTO_FIJO' ? "0.00" : "0"}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

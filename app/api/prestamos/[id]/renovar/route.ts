@@ -19,7 +19,7 @@ export async function POST(
 
     const { id } = params
     const body = await request.json()
-    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones } = body
+    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones, microseguroTipo, microseguroValor, microseguroTotal } = body
 
     // Validar campos obligatorios
     if (!monto || !interes || !cuotas || !fechaInicio) {
@@ -57,13 +57,15 @@ export async function POST(
       sum + parseFloat(pago.monto.toString()), 0)
     const montoOriginal = parseFloat(prestamoAnterior.monto.toString())
     const tasaInteres = parseFloat(prestamoAnterior.interes.toString()) / 100
-    const montoTotalAnterior = montoOriginal * (1 + tasaInteres)
+    const microseguroAnterior = parseFloat(prestamoAnterior.microseguroTotal?.toString() || "0")
+    const montoTotalAnterior = montoOriginal * (1 + tasaInteres) + microseguroAnterior
     const saldoPendiente = Math.max(0, montoTotalAnterior - totalPagado)
 
     // Validar valores numéricos
     const montoNuevo = parseFloat(monto.toString())
     const interesNuevo = parseFloat(interes.toString())
     const cuotasNuevas = parseInt(cuotas.toString())
+    const microseguroTotalNuevo = parseFloat(microseguroTotal?.toString() || "0")
 
     if (montoNuevo <= 0 || interesNuevo < 0 || cuotasNuevas <= 0) {
       return NextResponse.json(
@@ -106,8 +108,8 @@ export async function POST(
     fechaFin.setDate(fechaFin.getDate() + dias)
 
     // Calcular valor de cuota
-    const montoConInteres = montoNuevo * (1 + interesNuevo / 100)
-    const valorCuota = montoConInteres / cuotasNuevas
+    const montoConInteresYSeguro = montoNuevo * (1 + interesNuevo / 100) + microseguroTotalNuevo
+    const valorCuota = montoConInteresYSeguro / cuotasNuevas
 
     // Usar transacción para marcar el préstamo anterior como renovado y crear el nuevo
     const resultado = await prisma.$transaction(async (tx) => {
@@ -137,7 +139,10 @@ export async function POST(
           estado: "ACTIVO",
           observaciones: observaciones 
             ? `REFINANCIAMIENTO de ${prestamoAnterior.id} | ${observaciones}`
-            : `REFINANCIAMIENTO de ${prestamoAnterior.id}`
+            : `REFINANCIAMIENTO de ${prestamoAnterior.id}`,
+          microseguroTipo: microseguroTipo || 'NINGUNO',
+          microseguroValor: parseFloat(microseguroValor?.toString() || "0"),
+          microseguroTotal: microseguroTotalNuevo
         },
         include: {
           cliente: true

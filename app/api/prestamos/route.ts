@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
 
     // Calcular valores
     const interesTotal = montoNum * interesNum / 100
-    const montoTotal = montoNum + interesTotal
+    const montoTotal = montoNum + interesTotal + microseguroTotalNum
     const valorCuota = montoTotal / cuotasNum
 
     console.log("Cálculos - montoTotal:", montoTotal, "interesTotal:", interesTotal, "valorCuota:", valorCuota, "tipoCredito:", tipoCredito, "diasGracia:", diasGraciaNum, "moraCredito:", moraCreditoNum)

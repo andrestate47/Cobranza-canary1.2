@@ -90,7 +90,7 @@ export async function PUT(
     fechaFin.setDate(fechaFin.getDate() + diasTotal)
 
     // Calcular nuevo valor de cuota
-    const montoTotal = montoNum * (1 + interesNum / 100)
+    const montoTotal = montoNum * (1 + interesNum / 100) + microseguroTotalNum
     const valorCuota = montoTotal / cuotasNum
 
     // Actualizar préstamo
