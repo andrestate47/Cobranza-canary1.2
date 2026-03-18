@@ -261,17 +261,36 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       return fechaProxima
     }
 
-    // Función para calcular días transcurridos
-    const calcularDiasTranscurridos = (fechaInicio: string, fechaReferencia: string): number => {
+    // Función para calcular días transcurridos consistentes con el detalle (días hábiles según tipo)
+    const calcularDiasTranscurridosPro = (fechaInicio: string, fechaReferencia: string, tipoPago: string): number => {
       const fechaInicioStr = String(fechaInicio).split('T')[0]
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
-      const inicioNormalized = new Date(yI, mI - 1, dI)
+      const inicioMid = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
       const fechaRefStr = String(fechaReferencia).split('T')[0]
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
-      const referenciaNormalized = new Date(yR, mR - 1, dR)
+      const referenciaMid = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
-      return Math.max(0, Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / (1000 * 60 * 60 * 24)))
+      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
+        let diasHabiles = 0
+        let current = new Date(inicioMid)
+        current.setUTCDate(current.getUTCDate() + 1)
+
+        while (current <= referenciaMid) {
+          const d = current.getUTCDay()
+          let valid = true
+          if (tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (tipoPago === 'DIARIO' && d === 0) valid = false
+
+          if (valid) diasHabiles++
+          current.setUTCDate(current.getUTCDate() + 1)
+        }
+        return diasHabiles
+      }
+
+      // Fallback para otros tipos: días calendario
+      return Math.max(0, Math.floor((referenciaMid.getTime() - inicioMid.getTime()) / (1000 * 60 * 60 * 24)))
     }
 
     // Función para formatear el tipo de pago
@@ -322,7 +341,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     const valorEnAtraso = cuotasAtrasadas * data.prestamo.valorCuota
     const fechaProximoPago = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
-    const diasTranscurridos = calcularDiasTranscurridos(data.prestamo.fechaInicio, data.fecha as string)
+    const diasTranscurridos = calcularDiasTranscurridosPro(data.prestamo.fechaInicio, data.fecha as string, data.prestamo.tipoPago)
 
     return (
       <div ref={ref} className={`bg-white ${className}`}>
@@ -515,7 +534,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <span className="font-medium">{formatDateOnly(data.prestamo.fechaInicio)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Días transcurridos:</span>
+                  <span className="text-gray-600">Días transcurridos (al pago):</span>
                   <span className="font-medium">{diasTranscurridos} días</span>
                 </div>
                 <div className="flex justify-between">
@@ -543,6 +562,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 <Separator className="my-2" />
 
                 {/* Información del pago actual */}
+                <div className="flex justify-between bg-blue-50 p-2 rounded-md mb-2">
+                  <span className="text-blue-700 font-bold">Monto de este abono:</span>
+                  <span className="font-bold text-blue-800 text-lg">{formatCurrency(data.monto)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Fecha del pago:</span>
                   <span className="font-medium text-blue-600">{formatDate(data.fecha)}</span>
