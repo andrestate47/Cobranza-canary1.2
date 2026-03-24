@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -112,6 +112,13 @@ export default function PagoRapidoModal({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const boletaRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+
+  // Actualiza la fecha a la fecha y hora actual cada vez que se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      setFecha(new Date())
+    }
+  }, [isOpen])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {

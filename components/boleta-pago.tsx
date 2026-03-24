@@ -106,6 +106,18 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       }).format(date)
     }
 
+    // Convierte el timestamp del pago a la fecha local en formato YYYY-MM-DD
+    const getLocalYYYYMMDD = (dateString: string | Date): string => {
+      const str = String(dateString)
+      if (str.includes('T') && str.length > 15) {
+        const d = new Date(str)
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        }
+      }
+      return str.split('T')[0]
+    }
+
     // Función para obtener días entre pagos según el tipo
     const getDiasEntrePagos = (tipoPago: string): number => {
       const tiposMap: { [key: string]: number } = {
@@ -133,7 +145,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
       // Normalizar fecha de referencia
-      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const fechaRefStr = getLocalYYYYMMDD(fechaReferencia)
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
       const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
@@ -180,7 +192,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
       const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
-      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const fechaRefStr = getLocalYYYYMMDD(fechaReferencia)
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
       const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
@@ -267,7 +279,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
       const inicioMid = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
-      const fechaRefStr = String(fechaReferencia).split('T')[0]
+      const fechaRefStr = getLocalYYYYMMDD(fechaReferencia)
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
       const referenciaMid = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
