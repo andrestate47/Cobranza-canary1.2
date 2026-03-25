@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { format } from "date-fns"
 
 interface TransferenciaModalProps {
   isOpen: boolean
@@ -442,7 +443,7 @@ export default function TransferenciaModal({
                 <Input
                   id="fecha"
                   type="date"
-                  value={fecha.toISOString().split('T')[0]}
+                  value={format(fecha, 'yyyy-MM-dd')}
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val) {
