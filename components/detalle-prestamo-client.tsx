@@ -91,6 +91,7 @@ interface Pago {
   observaciones: string | null
   metodoPago: string
   usuario?: PagoUsuario
+  createdAt?: string | Date
 }
 
 interface Transferencia {
@@ -435,17 +436,30 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       if (fechaProximoPago < hoyMidnight) {
         let proximaFechalogica = new Date(hoyMidnight);
         
-        // Si el último pago fue hoy, proyectamos para el siguiente día hábil
-        let ultimoPagoFueHoy = false;
+        // Si el cobrador RECIÉN registró un pago hoy en la aplicación (sin importar si lo anotó con fecha de ayer)
+        let interaccionHoy = false;
         if (ultimoPago) {
-          const ultimoPagoStr = new Date(ultimoPago.fecha).toISOString().split('T')[0];
-          const hoyStr = hoyMidnight.toISOString().split('T')[0];
-          if (ultimoPagoStr === hoyStr) {
-            ultimoPagoFueHoy = true;
+          // Buscamos si algún pago se ingresó físicamente HOY en el sistema
+          const pagoFisicoDeHoy = prestamo.pagos.find(p => {
+             if (p.createdAt) {
+               const cDate = new Date(p.createdAt);
+               // Ajustamos al offset local si es posible para comparar de forma segura, o comparamos strings
+               return cDate.toDateString() === hoy.toDateString() || cDate.toISOString().split('T')[0] === hoy.toISOString().split('T')[0];
+             }
+             return false;
+          });
+          
+          if (pagoFisicoDeHoy) {
+            interaccionHoy = true;
+          } else {
+            // Fallback usando la fecha del recibo por si acaso
+            const ultimoPagoStr = new Date(ultimoPago.fecha).toISOString().split('T')[0];
+            const hoyStr = hoyMidnight.toISOString().split('T')[0];
+            if (ultimoPagoStr === hoyStr) interaccionHoy = true;
           }
         }
 
-        if (ultimoPagoFueHoy && (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO')) {
+        if (interaccionHoy && (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO')) {
           proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
           let valid = false;
           while (!valid) {
@@ -456,6 +470,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false;
             if (!valid) proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
           }
+        } else if (interaccionHoy) {
+            proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
         }
         
         fechaProximoPago = proximaFechalogica;
