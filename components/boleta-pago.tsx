@@ -212,25 +212,25 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
-        let diasLaboralesTranscurridos = 0
-        const current = new Date(inicioNormalized)
-
+        let current = new Date(inicioNormalized)
+        
+        // Adelantamos a la fecha de vencimiento de la cuota atrasada
+        // Para simplificar, usamos diasLaboralesTranscurridos como cuotas esperadas
+        let cuotasEsperadasTotales = 0;
         while (current < referenciaNormalized) {
-          current.setUTCDate(current.getUTCDate() + 1)
+          current.setUTCDate(current.getUTCDate() + 1);
           const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
           if (tipoPago === 'LUNES_A_VIERNES' && (day !== 0 && day !== 6)) valid = true
           if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
-          if (valid) {
-            diasLaboralesTranscurridos++
-          }
+          if (valid) cuotasEsperadasTotales++;
         }
-
-        const diasCubiertos = cuotasPagadas // 1 cuota cubre 1 día laboral
-        const diasVencidos = Math.max(0, diasLaboralesTranscurridos - diasCubiertos)
-        return diasVencidos
+        
+        let cuotasAtrasadasCount = Math.max(0, cuotasEsperadasTotales - cuotasPagadas);
+        // Si atrasadas es > 0, devolvemos las mismas cuotas atrasadas como "días hábiles vencidos"
+        return Math.floor(cuotasAtrasadasCount);
       }
 
       // Para otros pagos (Diario, Semanal, etc)
@@ -282,10 +282,34 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
       const diasEntrePagos = getDiasEntrePagos(tipoPago)
 
-      const fechaProxima = new Date(inicioDate)
-      fechaProxima.setUTCDate(fechaProxima.getUTCDate() + (proximaCuota * diasEntrePagos))
+      fechaProximoPago = new Date(inicioDate)
+      fechaProximoPago.setUTCDate(fechaProximoPago.getUTCDate() + (Math.floor(proximaCuota) * diasEntrePagos))
+      return fechaProximoPago;
+    }
 
-      return fechaProxima
+    const consolidarProximoPago = (fechaCalculada: Date, fechaReferenciaStr: string, tipoPago: string, tienePagoMismoDia: boolean): Date => {
+      const fechaRefStr = getLocalYYYYMMDD(fechaReferenciaStr);
+      const [yR, mR, dR] = fechaRefStr.split('-').map(Number);
+      const referenciaMid = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0));
+
+      if (fechaCalculada < referenciaMid) {
+        let proximaFechalogica = new Date(referenciaMid);
+        
+        if (tienePagoMismoDia && (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO')) {
+          proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
+          let valid = false;
+          while (!valid) {
+            const d = proximaFechalogica.getUTCDay();
+            valid = true;
+            if (tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false;
+            if (tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false;
+            if (tipoPago === 'DIARIO' && d === 0) valid = false;
+            if (!valid) proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
+          }
+        }
+        return proximaFechalogica;
+      }
+      return fechaCalculada;
     }
 
     // Función para calcular días transcurridos consistentes con el detalle (días hábiles según tipo)
@@ -367,7 +391,17 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     }
 
     const valorEnAtraso = cuotasAtrasadas * data.prestamo.valorCuota
-    const fechaProximoPago = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
+    
+    let fechaProximaTeorica = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
+    
+    // Verificamos si hubo pago en el mismo día que la fecha de referencia
+    let pagoMismoDia = false;
+    if (data.fecha) {
+      pagoMismoDia = true; // El recibo se generó el día "data.fecha" y ES el pago actual.
+    }
+    
+    const fechaProximoPago = consolidarProximoPago(fechaProximaTeorica, data.fecha as string, data.prestamo.tipoPago, pagoMismoDia);
+    
     const diasTranscurridos = calcularDiasTranscurridosPro(data.prestamo.fechaInicio, data.fecha as string, data.prestamo.tipoPago)
 
     return (

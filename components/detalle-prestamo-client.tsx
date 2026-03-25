@@ -366,7 +366,19 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           }
         }
         // current ahora es la fecha de vencimiento de la cuota pendiente
-        diasVencidos = Math.max(0, Math.floor((hoyMidnight.getTime() - current.getTime()) / oneDay) - diasGracia)
+        // Contar días hábiles desde current hasta hoy
+        let diasHabilesVencidos = 0;
+        let tempDate = new Date(current);
+        while (tempDate < hoyMidnight) {
+          tempDate.setUTCDate(tempDate.getUTCDate() + 1);
+          const d = tempDate.getUTCDay();
+          let esDiaValido = true;
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) esDiaValido = false;
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) esDiaValido = false;
+          if (prestamo.tipoPago === 'DIARIO' && d === 0) esDiaValido = false;
+          if (esDiaValido) diasHabilesVencidos++;
+        }
+        diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
       } else {
         const diasPorTipo = {
           'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
@@ -374,7 +386,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         }
         const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
         const fechaVencimientoCuota = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
-        diasVencidos = Math.max(0, Math.floor((hoyMidnight.getTime() - fechaVencimientoCuota.getTime()) / oneDay) - diasGracia)
+        
+        let diffDias = Math.floor((hoyMidnight.getTime() - fechaVencimientoCuota.getTime()) / oneDay);
+        diasVencidos = Math.max(0, diffDias - diasGracia)
       }
     }
 
@@ -414,7 +428,37 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
         }
         const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((cuotasPagadas + 1) * diasPorCuota * oneDay))
+        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((Math.floor(cuotasPagadas) + 1) * diasPorCuota * oneDay))
+      }
+
+      // Si la fecha calculada quedó en el pasado, la actualizamos para que tenga sentido operativo
+      if (fechaProximoPago < hoyMidnight) {
+        let proximaFechalogica = new Date(hoyMidnight);
+        
+        // Si el último pago fue hoy, proyectamos para el siguiente día hábil
+        let ultimoPagoFueHoy = false;
+        if (ultimoPago) {
+          const ultimoPagoStr = new Date(ultimoPago.fecha).toISOString().split('T')[0];
+          const hoyStr = hoyMidnight.toISOString().split('T')[0];
+          if (ultimoPagoStr === hoyStr) {
+            ultimoPagoFueHoy = true;
+          }
+        }
+
+        if (ultimoPagoFueHoy && (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO')) {
+          proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
+          let valid = false;
+          while (!valid) {
+            const d = proximaFechalogica.getUTCDay();
+            valid = true;
+            if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false;
+            if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false;
+            if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false;
+            if (!valid) proximaFechalogica.setUTCDate(proximaFechalogica.getUTCDate() + 1);
+          }
+        }
+        
+        fechaProximoPago = proximaFechalogica;
       }
     }
 
