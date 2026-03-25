@@ -70,9 +70,25 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       }).format(amount)
     }
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | Date | null | undefined) => {
       if (!dateString) return ''
-      return format(new Date(dateString), "dd/MM/yyyy, hh:mm a", { locale: es })
+      try {
+        const d = new Date(dateString)
+        if (isNaN(d.getTime())) return String(dateString)
+        
+        // Forzar horario de Ecuador/Colombia (UTC-5) absoluto, ignorando huso horario del móvil
+        return new Intl.DateTimeFormat('es-CO', {
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: true,
+          timeZone: 'America/Guayaquil'
+        }).format(d)
+      } catch (e) {
+        return String(dateString)
+      }
     }
 
     const formatDateOnly = (dateString: string | Date) => {

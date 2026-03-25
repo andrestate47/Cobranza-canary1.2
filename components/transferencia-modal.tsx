@@ -60,7 +60,14 @@ export default function TransferenciaModal({
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
+  const [fecha, setFecha] = useState<Date>(new Date())
+
+  // Actualiza la fecha a la hora actual cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      setFecha(new Date())
+    }
+  }, [isOpen])
 
   // Nuevos estados para la boleta
   const [step, setStep] = useState<'form' | 'boleta'>('form')
@@ -243,7 +250,7 @@ export default function TransferenciaModal({
           referencia: referencia.trim() || null,
           observaciones: observaciones.trim() || null,
           fotoComprobante,
-          fecha: fecha ? new Date(fecha).toISOString() : new Date().toISOString()
+          fecha: fecha.toISOString()
         }),
       })
 
@@ -435,8 +442,16 @@ export default function TransferenciaModal({
                 <Input
                   id="fecha"
                   type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  value={fecha.toISOString().split('T')[0]}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      const [year, month, day] = val.split('-').map(Number);
+                      const nuevaFecha = new Date(fecha);
+                      nuevaFecha.setFullYear(year, month - 1, day);
+                      setFecha(nuevaFecha);
+                    }
+                  }}
                   className="mt-1 cursor-pointer"
                   onClick={(e) => {
                     try {
