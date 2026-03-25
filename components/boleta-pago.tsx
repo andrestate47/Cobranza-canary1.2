@@ -76,15 +76,14 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         const d = new Date(dateString)
         if (isNaN(d.getTime())) return String(dateString)
         
-        // Forzar horario de Ecuador/Colombia (UTC-5) absoluto, ignorando huso horario del móvil
+        // Usa el huso horario local automático del teléfono del cobrador de forma robusta
         return new Intl.DateTimeFormat('es-CO', {
           day: '2-digit', 
           month: '2-digit', 
           year: 'numeric',
           hour: '2-digit', 
           minute: '2-digit', 
-          hour12: true,
-          timeZone: 'America/Guayaquil'
+          hour12: true
         }).format(d)
       } catch (e) {
         return String(dateString)
