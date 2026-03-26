@@ -439,12 +439,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         // Si el cobrador RECIÉN registró un pago hoy en la aplicación (sin importar si lo anotó con fecha de ayer)
         let interaccionHoy = false;
         if (ultimoPago) {
-          // Buscamos si algún pago se ingresó físicamente HOY en el sistema
+          // Buscamos si algún pago se ingresó físicamente HOY en el sistema (usando UTC-5 para precisión total)
           const pagoFisicoDeHoy = prestamo.pagos.find(p => {
              if (p.createdAt) {
-               const cDate = new Date(p.createdAt);
-               // Ajustamos al offset local si es posible para comparar de forma segura, o comparamos strings
-               return cDate.toDateString() === hoy.toDateString() || cDate.toISOString().split('T')[0] === hoy.toISOString().split('T')[0];
+               const cDate = new Date(new Date(p.createdAt).getTime() - (5 * 60 * 60 * 1000));
+               const hDate = new Date(Date.now() - (5 * 60 * 60 * 1000));
+               return cDate.toISOString().split('T')[0] === hDate.toISOString().split('T')[0];
              }
              return false;
           });
@@ -452,10 +452,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (pagoFisicoDeHoy) {
             interaccionHoy = true;
           } else {
-            // Fallback usando la fecha del recibo por si acaso
-            const ultimoPagoStr = new Date(ultimoPago.fecha).toISOString().split('T')[0];
-            const hoyStr = hoyMidnight.toISOString().split('T')[0];
-            if (ultimoPagoStr === hoyStr) interaccionHoy = true;
+             // Fallback usando UTC-5 manual para asegurar que "Hoy" es verdaderamente hoy en Latinoamérica
+             const hDate = new Date(Date.now() - (5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+             const pDateStr = new Date(new Date(ultimoPago.fecha).getTime() - (5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+             if (pDateStr === hDate) interaccionHoy = true;
           }
         }
 
