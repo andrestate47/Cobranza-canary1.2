@@ -629,7 +629,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Fecha del pago:</span>
-                  <span className="font-medium text-blue-600">{formatDate(data.fecha)}</span>
+                  <span className="font-medium text-blue-600">{formatDateOnly(data.fecha)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Hora de registro:</span>
+                  <span className="font-medium text-gray-700">
+                    {new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Método de pago actual:</span>
