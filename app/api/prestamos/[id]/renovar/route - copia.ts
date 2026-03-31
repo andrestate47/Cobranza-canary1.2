@@ -19,7 +19,7 @@ export async function POST(
 
     const { id } = params
     const body = await request.json()
-    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones, microseguroTipo, microseguroValor, microseguroTotal } = body
+    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones } = body
 
     // Validar campos obligatorios
     if (!monto || !interes || !cuotas || !fechaInicio) {
@@ -57,15 +57,13 @@ export async function POST(
       sum + parseFloat(pago.monto.toString()), 0)
     const montoOriginal = parseFloat(prestamoAnterior.monto.toString())
     const tasaInteres = parseFloat(prestamoAnterior.interes.toString()) / 100
-    const microseguroAnterior = parseFloat(prestamoAnterior.microseguroTotal?.toString() || "0")
-    const montoTotalAnterior = montoOriginal * (1 + tasaInteres) + microseguroAnterior
+    const montoTotalAnterior = montoOriginal * (1 + tasaInteres)
     const saldoPendiente = Math.max(0, montoTotalAnterior - totalPagado)
 
     // Validar valores numéricos
     const montoNuevo = parseFloat(monto.toString())
     const interesNuevo = parseFloat(interes.toString())
     const cuotasNuevas = parseInt(cuotas.toString())
-    const microseguroTotalNuevo = parseFloat(microseguroTotal?.toString() || "0")
 
     if (montoNuevo <= 0 || interesNuevo < 0 || cuotasNuevas <= 0) {
       return NextResponse.json(
@@ -89,46 +87,27 @@ export async function POST(
     const fechaFin = new Date(fechaInicioDate)
     
     // Agregar días según el tipo de pago
-    let diasTotalesAgregados = 0;
-    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
-      let cuotasContadas = 0
-      let diaActual = new Date(fechaFin.getTime());
-
-      while (cuotasContadas < cuotasNuevas) {
-        diaActual.setUTCDate(diaActual.getUTCDate() + 1)
-        const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
-
-        let esDiaPago = true
-        if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
-        if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
-        if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
-
-        if (esDiaPago) {
-          cuotasContadas++
-        }
-      }
-      fechaFin.setTime(diaActual.getTime())
-    } else {
-      const diasPorCuota = {
-        'DIARIO': 1,
-        'SEMANAL': 7,
-        'QUINCENAL': 15,
-        'CATORCENAL': 14,
-        'FIN_DE_MES': 30,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'CUATRIMESTRAL': 120,
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-      }
-      
-      const dias = (diasPorCuota[tipoPago as keyof typeof diasPorCuota] || 1) * cuotasNuevas
-      fechaFin.setDate(fechaFin.getDate() + dias)
+    const diasPorCuota = {
+      'DIARIO': 1,
+      'SEMANAL': 7,
+      'LUNES_A_VIERNES': 1,     // Pago diario de lunes a viernes
+      'LUNES_A_SABADO': 1,      // Pago diario de lunes a sábado
+      'QUINCENAL': 15,
+      'CATORCENAL': 14,         // Cada 14 días
+      'FIN_DE_MES': 30,
+      'MENSUAL': 30,
+      'TRIMESTRAL': 90,
+      'CUATRIMESTRAL': 120,     // Cada 4 meses
+      'SEMESTRAL': 180,
+      'ANUAL': 365
     }
+    
+    const dias = (diasPorCuota[tipoPago as keyof typeof diasPorCuota] || 1) * cuotasNuevas
+    fechaFin.setDate(fechaFin.getDate() + dias)
 
     // Calcular valor de cuota
-    const montoConInteresYSeguro = montoNuevo * (1 + interesNuevo / 100) + microseguroTotalNuevo
-    const valorCuota = montoConInteresYSeguro / cuotasNuevas
+    const montoConInteres = montoNuevo * (1 + interesNuevo / 100)
+    const valorCuota = montoConInteres / cuotasNuevas
 
     // Usar transacción para marcar el préstamo anterior como renovado y crear el nuevo
     const resultado = await prisma.$transaction(async (tx) => {
@@ -138,8 +117,8 @@ export async function POST(
         data: { 
           estado: "RENOVADO",
           observaciones: prestamoAnterior.observaciones 
-            ? `${prestamoAnterior.observaciones} | REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
-            : `REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
+            ? `${prestamoAnterior.observaciones} | RENOVADO el ${new Date().toISOString().split('T')[0]}`
+            : `RENOVADO el ${new Date().toISOString().split('T')[0]}`
         }
       })
 
@@ -157,26 +136,22 @@ export async function POST(
           fechaFin: fechaFin,
           estado: "ACTIVO",
           observaciones: observaciones 
-            ? `REFINANCIAMIENTO de ${prestamoAnterior.id} | ${observaciones}`
-            : `REFINANCIAMIENTO de ${prestamoAnterior.id}`,
-          microseguroTipo: microseguroTipo || 'NINGUNO',
-          microseguroValor: parseFloat(microseguroValor?.toString() || "0"),
-          microseguroTotal: microseguroTotalNuevo
+            ? `RENOVACIÓN de ${prestamoAnterior.id} | ${observaciones}`
+            : `RENOVACIÓN de ${prestamoAnterior.id}`
         },
         include: {
           cliente: true
         }
       })
 
-      // Si había saldo pendiente, registrar un pago automático en el PRÉSTAMO ANTERIOR para dejarlo en cero
+      // Si había saldo pendiente, registrar un pago automático en el nuevo préstamo
       if (saldoPendiente > 0) {
         await tx.pago.create({
           data: {
-            prestamoId: id, // El id del préstamo anterior (params)
+            prestamoId: nuevoPrestamo.id,
             userId: session.user.id,
             monto: saldoPendiente,
-            metodoPago: "EFECTIVO",
-            observaciones: `Liquidación por refinanciamiento hacia nuevo préstamo ${nuevoPrestamo.id}`,
+            observaciones: `Descuento por saldo pendiente del préstamo anterior ${prestamoAnterior.id}`,
             fecha: new Date()
           }
         })
@@ -190,7 +165,7 @@ export async function POST(
           monto: montoEfectivo,
           saldoAnterior: 0,
           saldoNuevo: 0,
-          observaciones: `Refinanciamiento préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
+          observaciones: `Renovación préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
           asignadoPor: {
             connect: { id: session.user.id }
           }
@@ -201,7 +176,7 @@ export async function POST(
     })
 
     return NextResponse.json({
-      message: "Préstamo refinanciado exitosamente",
+      message: "Préstamo renovado exitosamente",
       prestamoAnterior: {
         id: prestamoAnterior.id,
         saldoPendiente: saldoPendiente

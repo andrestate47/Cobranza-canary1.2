@@ -20,20 +20,10 @@ export async function PUT(
 
     const prestamoId = params.id
     const body = await request.json()
-    const {
-      monto,
-      interes,
-      tipoPago,
-      cuotas,
-      fechaInicio,
-      observaciones,
-      microseguroTipo,
-      microseguroValor,
-      microseguroTotal
-    } = body
+    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones } = body
 
     // Validaciones básicas
-    if (!monto || interes === undefined || !tipoPago || !cuotas || !fechaInicio) {
+    if (!monto || !interes || !tipoPago || !cuotas || !fechaInicio) {
       return NextResponse.json(
         { error: "Todos los campos obligatorios son requeridos" },
         { status: 400 }
@@ -43,8 +33,6 @@ export async function PUT(
     const montoNum = parseFloat(monto)
     const interesNum = parseFloat(interes)
     const cuotasNum = parseInt(cuotas)
-    const microseguroValorNum = parseFloat(microseguroValor || '0')
-    const microseguroTotalNum = parseFloat(microseguroTotal || '0')
 
     if (montoNum <= 0 || interesNum < 0 || cuotasNum <= 0) {
       return NextResponse.json(
@@ -70,44 +58,23 @@ export async function PUT(
     const fechaInicioDate = new Date(fechaInicio)
     let fechaFin = new Date(fechaInicioDate)
     
-    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
-      let cuotasContadas = 0
-      let diaActual = new Date(fechaFin.getTime());
-
-      while (cuotasContadas < cuotasNum) {
-        diaActual.setUTCDate(diaActual.getUTCDate() + 1)
-        const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
-
-        let esDiaPago = true
-        if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
-        if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
-        if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
-
-        if (esDiaPago) {
-          cuotasContadas++
-        }
-      }
-      fechaFin.setTime(diaActual.getTime())
-    } else {
-      const diasPorTipo = {
-        'DIARIO': 1,
-        'SEMANAL': 7,
-        'QUINCENAL': 15,
-        'CATORCENAL': 14,
-        'FIN_DE_MES': 30,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'CUATRIMESTRAL': 120,
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-      }
-
-      const diasTotal = (diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1) * cuotasNum
-      fechaFin.setDate(fechaFin.getDate() + diasTotal)
+    // Calcular fecha de fin basada en tipo de pago y número de cuotas
+    const diasPorTipo = {
+      'DIARIO': 1,
+      'SEMANAL': 7,
+      'QUINCENAL': 15,
+      'FIN_DE_MES': 30,
+      'MENSUAL': 30,
+      'TRIMESTRAL': 90,
+      'SEMESTRAL': 180,
+      'ANUAL': 365
     }
 
+    const diasTotal = (diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1) * cuotasNum
+    fechaFin.setDate(fechaFin.getDate() + diasTotal)
+
     // Calcular nuevo valor de cuota
-    const montoTotal = montoNum * (1 + interesNum / 100) + microseguroTotalNum
+    const montoTotal = montoNum * (1 + interesNum / 100)
     const valorCuota = montoTotal / cuotasNum
 
     // Actualizar préstamo
@@ -122,9 +89,6 @@ export async function PUT(
         fechaFin,
         valorCuota,
         observaciones: observaciones || null,
-        microseguroTipo: microseguroTipo || undefined,
-        microseguroValor: microseguroValorNum,
-        microseguroTotal: microseguroTotalNum
         // No cambiar la fecha de creación ni el usuario
       },
       include: {

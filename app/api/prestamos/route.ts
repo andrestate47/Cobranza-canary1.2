@@ -271,7 +271,6 @@ export async function POST(request: NextRequest) {
     if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
       let cuotasContadas = 0
       let diaActual = new Date(Date.UTC(inicioY, inicioM - 1, inicioD, 12, 0, 0, 0));
-      let skippedFirst = false
 
       // En la lógica original (cuotas * 1), el primer pago es "mañana".
       // Mantenemos esa lógica: avanzamos días hasta completar las cuotas.
@@ -285,11 +284,7 @@ export async function POST(request: NextRequest) {
         if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
 
         if (esDiaPago) {
-          if (!skippedFirst) {
-            skippedFirst = true
-          } else {
-            cuotasContadas++
-          }
+          cuotasContadas++
         }
       }
       // Calcular diferencia de días para el log
