@@ -156,6 +156,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [editando, setEditando] = useState(false)
   const [montoTotalEditar, setMontoTotalEditar] = useState(0)
   const [cuotaEditar, setCuotaEditar] = useState(0)
+  const [fechaInicioEditar, setFechaInicioEditar] = useState<string>("")
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
@@ -1074,6 +1075,18 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setMontoEditar(prestamo.monto.toString())
     setTipoMicroseguroEditar(prestamo.microseguroTipo)
     setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
+    
+    // Obtener la fecha en formato YYYY-MM-DD para el input type="date"
+    try {
+      if (prestamo.fechaInicio) {
+        const d = new Date(prestamo.fechaInicio);
+        const z = d.toISOString().split('T')[0];
+        setFechaInicioEditar(z);
+      }
+    } catch (e) {
+      setFechaInicioEditar("");
+    }
+    
     setShowEditarModal(true)
   }
 
@@ -1117,51 +1130,52 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         return
       }
 
-      // Si el monto del préstamo o los microseguros cambiaron, actualizar también el préstamo
+      // Siempre actualizar el préstamo para recalcular matemáticamente la fecha fin si se corrigió la fecha de inicio
       const montoNum = parseFloat(montoEditar)
       const microseguroValorNum = parseFloat(valorMicroseguroEditar) || 0
       
-      const cambioMonto = !isNaN(montoNum) && montoNum !== Number(prestamo.monto)
-      const cambioMicroseguro = tipoMicroseguroEditar !== prestamo.microseguroTipo || 
-                               microseguroValorNum !== Number(prestamo.microseguroValor)
+      // Calcular microseguro total
+      let microseguroTotal = 0
+      if (tipoMicroseguroEditar === 'MONTO_FIJO') {
+        microseguroTotal = microseguroValorNum
+      } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
+        microseguroTotal = (montoNum * microseguroValorNum) / 100
+      }
+      
+      // Reconstruir fecha manteniendo el formato UTC al mediodía para evitar saltos (igual que en creación)
+      let fechaInicioAEnviar : string | Date = prestamo.fechaInicio;
+      if (fechaInicioEditar) {
+        const [y, m, d] = fechaInicioEditar.split('-').map(Number);
+        fechaInicioAEnviar = new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0));
+      }
 
-      if (cambioMonto || cambioMicroseguro) {
-        // Calcular microseguro total
-        let microseguroTotal = 0
-        if (tipoMicroseguroEditar === 'MONTO_FIJO') {
-          microseguroTotal = microseguroValorNum
-        } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
-          microseguroTotal = (montoNum * microseguroValorNum) / 100
-        }
+      const prestamoUpdateResponse = await fetch(`/api/prestamos/${prestamo.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          monto: montoNum,
+          interes: Number(prestamo.interes),
+          tipoPago: prestamo.tipoPago,
+          cuotas: Number(prestamo.cuotas),
+          fechaInicio: fechaInicioAEnviar,
+          observaciones: prestamo.observaciones,
+          microseguroTipo: tipoMicroseguroEditar,
+          microseguroValor: microseguroValorNum,
+          microseguroTotal: microseguroTotal
+        }),
+      })
 
-        const prestamoUpdateResponse = await fetch(`/api/prestamos/${prestamo.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            monto: montoNum,
-            interes: Number(prestamo.interes),
-            tipoPago: prestamo.tipoPago,
-            cuotas: Number(prestamo.cuotas),
-            fechaInicio: prestamo.fechaInicio,
-            observaciones: prestamo.observaciones,
-            microseguroTipo: tipoMicroseguroEditar,
-            microseguroValor: microseguroValorNum,
-            microseguroTotal: microseguroTotal
-          }),
+      if (!prestamoUpdateResponse.ok) {
+        const error = await prestamoUpdateResponse.json()
+        toast({
+          title: "Error",
+          description: error.error || "No se pudo actualizar el monto del préstamo",
+          variant: "destructive",
         })
-
-        if (!prestamoUpdateResponse.ok) {
-          const error = await prestamoUpdateResponse.json()
-          toast({
-            title: "Error",
-            description: error.error || "No se pudo actualizar el monto del préstamo",
-            variant: "destructive",
-          })
-          setEditando(false)
-          return
-        }
+        setEditando(false)
+        return
       }
 
       toast({
@@ -2256,6 +2270,22 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   />
                 </div>
                 <p className="text-[10px] text-purple-700 mt-1">Advertencia: Cambiar el monto recalculará las cuotas pero no afectará los pagos ya registrados.</p>
+              </div>
+
+              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                <Label htmlFor="fechaInicioEditar" className="text-orange-900 font-semibold">Fecha de Inicio del Préstamo</Label>
+                <div className="relative mt-1">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
+                  <Input
+                    id="fechaInicioEditar"
+                    type="date"
+                    value={fechaInicioEditar}
+                    onChange={(e) => setFechaInicioEditar(e.target.value)}
+                    className="pl-10 border-orange-300 focus:ring-orange-500 font-bold"
+                    disabled={editando}
+                  />
+                </div>
+                <p className="text-[10px] text-orange-700 mt-1">Modifica esta fecha para corregir cuándo inició. La <b>fecha de fin</b> se recalculará y se arreglará automáticamente.</p>
               </div>
 
               {/* Microseguros */}
