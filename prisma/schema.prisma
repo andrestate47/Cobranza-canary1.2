@@ -164,6 +164,9 @@ model Prestamo {
   fechaFin            DateTime
   estado              EstadoPrestamo  @default(ACTIVO)
   observaciones       String?
+  fechaFinManual      DateTime?       @map("fecha_fin_manual")
+  diasTranscurridosManual Int?        @map("dias_transcurridos_manual")
+  fechaProximoPagoManual  DateTime?   @map("fecha_proximo_pago_manual")
   tipoCredito         TipoCredito     @default(EFECTIVO)
   interesTotal        Decimal?        @db.Decimal(10, 2)
   diasGracia          Int             @default(0)

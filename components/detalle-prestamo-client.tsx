@@ -157,6 +157,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [montoTotalEditar, setMontoTotalEditar] = useState(0)
   const [cuotaEditar, setCuotaEditar] = useState(0)
   const [fechaInicioEditar, setFechaInicioEditar] = useState<string>("")
+  const [fechaFinEditar, setFechaFinEditar] = useState<string>("")
+  const [diasTranscurridosEditar, setDiasTranscurridosEditar] = useState<string>("")
+  const [fechaProximoPagoEditar, setFechaProximoPagoEditar] = useState<string>("")
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
@@ -333,7 +336,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       cuotasEsperadas = Math.floor(Math.max(0, totalDiasCalendario - 1) / diasPorCuota)
     }
 
-    const diasTranscurridos = diasHabilesTotales
+    // Usar el manual si existe, si no calcular
+    const prestamoFlex = prestamo as any;
+    const diasTranscurridos = prestamoFlex.diasTranscurridosManual !== null && prestamoFlex.diasTranscurridosManual !== undefined 
+      ? prestamoFlex.diasTranscurridosManual 
+      : diasHabilesTotales
+
     const cuotasPendientes = Math.max(0, prestamo.cuotas - cuotasPagadas)
 
     // Cuotas atrasadas (considerando días de gracia)
@@ -477,6 +485,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         
         fechaProximoPago = proximaFechalogica;
       }
+    }
+    
+    // Si hay un override manual explícito, lo usamos e ignoramos toda la lógica anterior
+    const prestamoFlex2 = prestamo as any;
+    if (prestamoFlex2.fechaProximoPagoManual) {
+      fechaProximoPago = new Date(prestamoFlex2.fechaProximoPagoManual)
     }
 
     return {
@@ -1076,15 +1090,31 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setTipoMicroseguroEditar(prestamo.microseguroTipo)
     setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
     
-    // Obtener la fecha en formato YYYY-MM-DD para el input type="date"
+    // Obtener la fecha en formato YYYY-MM-DD para los inputs type="date"
     try {
       if (prestamo.fechaInicio) {
         const d = new Date(prestamo.fechaInicio);
-        const z = d.toISOString().split('T')[0];
-        setFechaInicioEditar(z);
+        setFechaInicioEditar(d.toISOString().split('T')[0]);
       }
+      
+      // Intentar setear valores manuales u originales (sólo base visual)
+      const prestamoFlex3 = prestamo as any;
+      if (prestamoFlex3.fechaFinManual) {
+        setFechaFinEditar(new Date(prestamoFlex3.fechaFinManual).toISOString().split('T')[0])
+      } else if (prestamo.fechaFin) {
+         setFechaFinEditar(new Date(prestamo.fechaFin).toISOString().split('T')[0])
+      } else {
+         setFechaFinEditar("")
+      }
+
+      setDiasTranscurridosEditar(prestamoFlex3.diasTranscurridosManual?.toString() || "")
+      setFechaProximoPagoEditar(prestamoFlex3.fechaProximoPagoManual ? new Date(prestamoFlex3.fechaProximoPagoManual).toISOString().split('T')[0] : "")
+
     } catch (e) {
       setFechaInicioEditar("");
+      setFechaFinEditar("");
+      setDiasTranscurridosEditar("");
+      setFechaProximoPagoEditar("");
     }
     
     setShowEditarModal(true)
@@ -1149,6 +1179,18 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         fechaInicioAEnviar = new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0));
       }
 
+      let fechaFinManualObj = undefined;
+      if (fechaFinEditar) {
+        const [fy, fm, fd] = fechaFinEditar.split('-').map(Number);
+        fechaFinManualObj = new Date(Date.UTC(fy, fm - 1, fd, 12, 0, 0, 0));
+      }
+
+      let fechaProximoPagoManualObj = undefined;
+      if (fechaProximoPagoEditar) {
+        const [py, pm, pd] = fechaProximoPagoEditar.split('-').map(Number);
+        fechaProximoPagoManualObj = new Date(Date.UTC(py, pm - 1, pd, 12, 0, 0, 0));
+      }
+
       const prestamoUpdateResponse = await fetch(`/api/prestamos/${prestamo.id}`, {
         method: 'PUT',
         headers: {
@@ -1160,6 +1202,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           tipoPago: prestamo.tipoPago,
           cuotas: Number(prestamo.cuotas),
           fechaInicio: fechaInicioAEnviar,
+          fechaFinManual: fechaFinManualObj,
+          diasTranscurridosManual: diasTranscurridosEditar || null,
+          fechaProximoPagoManual: fechaProximoPagoManualObj,
           observaciones: prestamo.observaciones,
           microseguroTipo: tipoMicroseguroEditar,
           microseguroValor: microseguroValorNum,
@@ -2272,20 +2317,67 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 <p className="text-[10px] text-purple-700 mt-1">Advertencia: Cambiar el monto recalculará las cuotas pero no afectará los pagos ya registrados.</p>
               </div>
 
-              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                <Label htmlFor="fechaInicioEditar" className="text-orange-900 font-semibold">Fecha de Inicio del Préstamo</Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
-                  <Input
-                    id="fechaInicioEditar"
-                    type="date"
-                    value={fechaInicioEditar}
-                    onChange={(e) => setFechaInicioEditar(e.target.value)}
-                    className="pl-10 border-orange-300 focus:ring-orange-500 font-bold"
-                    disabled={editando}
-                  />
+              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 space-y-3">
+                
+                <div>
+                  <Label htmlFor="fechaInicioEditar" className="text-orange-900 font-semibold">Fecha de Inicio del Préstamo</Label>
+                  <div className="relative mt-1">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
+                    <Input
+                      id="fechaInicioEditar"
+                      type="date"
+                      value={fechaInicioEditar}
+                      onChange={(e) => setFechaInicioEditar(e.target.value)}
+                      className="pl-10 border-orange-300 focus:ring-orange-500 font-bold"
+                      disabled={editando}
+                    />
+                  </div>
+                  <p className="text-[10px] text-orange-700 mt-1">Modifica esta fecha para corregir cuándo inició el crédito en el sistema.</p>
                 </div>
-                <p className="text-[10px] text-orange-700 mt-1">Modifica esta fecha para corregir cuándo inició. La <b>fecha de fin</b> se recalculará y se arreglará automáticamente.</p>
+
+                <div className="pt-2 border-t border-orange-200">
+                  <Label htmlFor="fechaFinEditar" className="text-orange-900 font-semibold">Fecha de Fin (Sobrescribir manualmente)</Label>
+                  <div className="relative mt-1">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
+                    <Input
+                      id="fechaFinEditar"
+                      type="date"
+                      value={fechaFinEditar}
+                      onChange={(e) => setFechaFinEditar(e.target.value)}
+                      className="pl-10 border-orange-300 focus:ring-orange-500"
+                      disabled={editando}
+                    />
+                  </div>
+                  <p className="text-[10px] text-orange-700 mt-1">Opcional: Si se ingresa una fecha aquí, sobreescribirá el cálculo automático del sistema permanentemente.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-orange-200">
+                  <div>
+                    <Label htmlFor="diasTranscurridosEditar" className="text-xs text-orange-800">Días Trans. (Manual)</Label>
+                    <Input
+                      id="diasTranscurridosEditar"
+                      type="number"
+                      value={diasTranscurridosEditar}
+                      onChange={(e) => setDiasTranscurridosEditar(e.target.value)}
+                      className="mt-1 bg-white border-orange-300"
+                      disabled={editando}
+                      placeholder="Ej. 12"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fechaProximoPagoEditar" className="text-xs text-orange-800">Próx. Pago (Manual)</Label>
+                    <Input
+                      id="fechaProximoPagoEditar"
+                      type="date"
+                      value={fechaProximoPagoEditar}
+                      onChange={(e) => setFechaProximoPagoEditar(e.target.value)}
+                      className="mt-1 bg-white border-orange-300 px-2 text-xs"
+                      disabled={editando}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-orange-700 mt-1">Llenar estos campos de días o próximo pago fuerza su aparición saltando las fórmulas.</p>
+
               </div>
 
               {/* Microseguros */}

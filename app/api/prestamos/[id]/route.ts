@@ -26,6 +26,9 @@ export async function PUT(
       tipoPago,
       cuotas,
       fechaInicio,
+      fechaFinManual,
+      diasTranscurridosManual,
+      fechaProximoPagoManual,
       observaciones,
       microseguroTipo,
       microseguroValor,
@@ -70,40 +73,45 @@ export async function PUT(
     const fechaInicioDate = new Date(fechaInicio)
     let fechaFin = new Date(fechaInicioDate)
     
-    if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
-      let cuotasContadas = 0
-      let diaActual = new Date(fechaFin.getTime());
-
-      while (cuotasContadas < cuotasNum) {
-        diaActual.setUTCDate(diaActual.getUTCDate() + 1)
-        const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
-
-        let esDiaPago = true
-        if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
-        if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
-        if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
-
-        if (esDiaPago) {
-          cuotasContadas++
-        }
-      }
-      fechaFin.setTime(diaActual.getTime())
+    // Solo recalcular fechaFin matemáticamente si no nos han enviado un fechaFinManual explícito
+    if (fechaFinManual) {
+      fechaFin = new Date(fechaFinManual)
     } else {
-      const diasPorTipo = {
-        'DIARIO': 1,
-        'SEMANAL': 7,
-        'QUINCENAL': 15,
-        'CATORCENAL': 14,
-        'FIN_DE_MES': 30,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'CUATRIMESTRAL': 120,
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-      }
+      if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
+        let cuotasContadas = 0
+        let diaActual = new Date(fechaFin.getTime());
 
-      const diasTotal = (diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1) * cuotasNum
-      fechaFin.setDate(fechaFin.getDate() + diasTotal)
+        while (cuotasContadas < cuotasNum) {
+          diaActual.setUTCDate(diaActual.getUTCDate() + 1)
+          const diaSemana = diaActual.getUTCDay() // 0 = Domingo, 6 = Sábado
+
+          let esDiaPago = true
+          if (tipoPago === 'LUNES_A_SABADO' && diaSemana === 0) esDiaPago = false
+          if (tipoPago === 'LUNES_A_VIERNES' && (diaSemana === 0 || diaSemana === 6)) esDiaPago = false
+          if (tipoPago === 'DIARIO' && diaSemana === 0) esDiaPago = false
+
+          if (esDiaPago) {
+            cuotasContadas++
+          }
+        }
+        fechaFin.setTime(diaActual.getTime())
+      } else {
+        const diasPorTipo = {
+          'DIARIO': 1,
+          'SEMANAL': 7,
+          'QUINCENAL': 15,
+          'CATORCENAL': 14,
+          'FIN_DE_MES': 30,
+          'MENSUAL': 30,
+          'TRIMESTRAL': 90,
+          'CUATRIMESTRAL': 120,
+          'SEMESTRAL': 180,
+          'ANUAL': 365
+        }
+
+        const diasTotal = (diasPorTipo[tipoPago as keyof typeof diasPorTipo] || 1) * cuotasNum
+        fechaFin.setDate(fechaFin.getDate() + diasTotal)
+      }
     }
 
     // Calcular nuevo valor de cuota
@@ -120,6 +128,9 @@ export async function PUT(
         cuotas: cuotasNum,
         fechaInicio: fechaInicioDate,
         fechaFin,
+        fechaFinManual: fechaFinManual ? new Date(fechaFinManual) : null,
+        diasTranscurridosManual: diasTranscurridosManual !== undefined && diasTranscurridosManual !== null && diasTranscurridosManual !== "" ? parseInt(diasTranscurridosManual) : null,
+        fechaProximoPagoManual: fechaProximoPagoManual ? new Date(fechaProximoPagoManual) : null,
         valorCuota,
         observaciones: observaciones || null,
         microseguroTipo: microseguroTipo || undefined,
