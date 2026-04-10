@@ -172,8 +172,11 @@ model Prestamo {
   microseguroTotal Decimal         @default(0) @map("microseguro_total") @db.Decimal(10, 2)
   microseguroValor Decimal         @default(0) @map("microseguro_valor") @db.Decimal(10, 2)
   moraCredito      Decimal         @default(0) @db.Decimal(5, 2)
-  tipoCredito      TipoCredito     @default(EFECTIVO)
-  pagos            Pago[]
+  tipoCredito             TipoCredito     @default(EFECTIVO)
+  fechaFinManual          DateTime?       @map("fecha_fin_manual")
+  diasTranscurridosManual Int?            @map("dias_transcurridos_manual")
+  fechaProximoPagoManual  DateTime?       @map("fecha_proximo_pago_manual")
+  pagos                   Pago[]
   cliente          Cliente         @relation(fields: [clienteId], references: [id])
   usuario          User            @relation(fields: [userId], references: [id])
   transferencias   Transferencia[]
