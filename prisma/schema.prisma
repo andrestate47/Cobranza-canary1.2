@@ -1,61 +1,61 @@
 generator client {
-    provider = "prisma-client-js"
-    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  email               String               @unique
-  password            String
-  firstName           String?
-  lastName            String?
-  name                String?
-  role                UserRole             @default(COBRADOR)
-  isActive            Boolean              @default(true) @map("activo")
-  timeLimit           Int?
-  lastLogin           DateTime?
-  supervisorId        String?              @map("supervisor_id")
-  numeroRuta          String?              @map("numero_ruta")
-  profilePhoto        String?              @map("profile_photo")
-  phone               String?
-  phoneReferencial    String?              @map("phone_referencial")
-  address             String?
-  pais                String?
-  ciudad              String?
-  ubicacion           String?
-  mapLink             String?              @map("map_link")
-  referenciaFamiliar  String?              @map("referencia_familiar")
-  referenciaTrabajo   String?              @map("referencia_trabajo")
-  documentoIdentificacion String?          @map("documento_identificacion")
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  accounts            Account[]
-  cierresDia          CierreDia[]
-  configuracionSueldo ConfiguracionSueldo?
-  gastos              Gasto[]
-  pagos               Pago[]
-  pagosSueldoCobrador PagoSueldo[]         @relation("CobradorPagos")
-  pagosSueldoPagador  PagoSueldo[]         @relation("PagadorPagos")
-  prestamos           Prestamo[]
-  sessions            Session[]
-  transferencias      Transferencia[]
-  permissions         UserPermission[]
-  timeUsage           UserTimeUsage[]
-  visitasCliente      VisitaCliente[]
-  supervisor          User?                @relation("UserSupervisor", fields: [supervisorId], references: [id])
-  supervisados        User[]               @relation("UserSupervisor")
-  sususCreados        Susu[]
-  participacionesSusu SusuParticipante[]
-  dispositivos        DispositivoAutorizado[]
-  movimientosCajaChica MovimientoCajaChica[] @relation("CobradorCajaChica")
-  movimientosAsignados MovimientoCajaChica[] @relation("AsignadorCajaChica")
-  rutaId              String?              @map("ruta_id")
-  ruta                Ruta?                @relation("UsuarioRuta", fields: [rutaId], references: [id], onDelete: SetNull)
+  id                      String                  @id @default(cuid())
+  email                   String                  @unique
+  password                String
+  firstName               String?
+  lastName                String?
+  name                    String?
+  role                    UserRole                @default(COBRADOR)
+  isActive                Boolean                 @default(true) @map("activo")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  address                 String?
+  ciudad                  String?
+  documentoIdentificacion String?                 @map("documento_identificacion")
+  lastLogin               DateTime?
+  mapLink                 String?                 @map("map_link")
+  numeroRuta              String?                 @map("numero_ruta")
+  pais                    String?
+  phone                   String?
+  phoneReferencial        String?                 @map("phone_referencial")
+  profilePhoto            String?                 @map("profile_photo")
+  referenciaFamiliar      String?                 @map("referencia_familiar")
+  referenciaTrabajo       String?                 @map("referencia_trabajo")
+  rutaId                  String?                 @map("ruta_id")
+  supervisorId            String?                 @map("supervisor_id")
+  timeLimit               Int?
+  ubicacion               String?
+  accounts                Account[]
+  cierresDia              CierreDia[]
+  configuracionSueldo     ConfiguracionSueldo?
+  dispositivos            DispositivoAutorizado[]
+  gastos                  Gasto[]
+  movimientosAsignados    MovimientoCajaChica[]   @relation("AsignadorCajaChica")
+  movimientosCajaChica    MovimientoCajaChica[]   @relation("CobradorCajaChica")
+  pagos                   Pago[]
+  pagosSueldoCobrador     PagoSueldo[]            @relation("CobradorPagos")
+  pagosSueldoPagador      PagoSueldo[]            @relation("PagadorPagos")
+  prestamos               Prestamo[]
+  sessions                Session[]
+  participacionesSusu     SusuParticipante[]
+  sususCreados            Susu[]
+  transferencias          Transferencia[]
+  permissions             UserPermission[]
+  timeUsage               UserTimeUsage[]
+  ruta                    Ruta?                   @relation("UsuarioRuta", fields: [rutaId], references: [id])
+  supervisor              User?                   @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  supervisados            User[]                  @relation("UserSupervisor")
+  visitasCliente          VisitaCliente[]
 
   @@map("users")
 }
@@ -123,80 +123,77 @@ model VerificationToken {
 }
 
 model Cliente {
-  id                    String        @id @default(cuid())
-  codigoCliente         String        @unique
-  documento             String        @unique
+  id                    String          @id @default(cuid())
   nombre                String
   apellido              String
+  telefono              String?
+  foto                  String?
+  activo                Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  ciudad                String?
+  codigoCliente         String          @unique
   direccionCliente      String
   direccionCobro        String?
-  telefono              String?
-  referenciasPersonales String?
-  pais                  String?
-  ciudad                String?
-  ubicacion             String?
-  mapLink               String?       @map("map_link")
-  foto                  String?
+  documento             String          @unique
   fotoDocumento         String?
-  activo                Boolean       @default(true)
-  numeroRuta            String?       @map("numero_ruta")
+  mapLink               String?         @map("map_link")
+  numeroRuta            String?         @map("numero_ruta")
+  pais                  String?
+  referenciasPersonales String?
+  rutaId                String?         @map("ruta_id")
+  ubicacion             String?
   ultimaVisita          DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  ruta                  Ruta?           @relation("ClienteRuta", fields: [rutaId], references: [id])
   prestamos             Prestamo[]
   visitas               VisitaCliente[]
-  rutaId                String?       @map("ruta_id")
-  ruta                  Ruta?         @relation("ClienteRuta", fields: [rutaId], references: [id], onDelete: SetNull)
 
   @@map("clientes")
 }
 
 model Prestamo {
-  id                  String          @id @default(cuid())
-  clienteId           String          @map("cliente_id")
-  userId              String          @map("user_id")
-  monto               Decimal         @db.Decimal(10, 2)
-  interes             Decimal         @db.Decimal(5, 2)
-  tipoPago            TipoPago        @default(DIARIO)
-  cuotas              Int
-  valorCuota          Decimal         @db.Decimal(10, 2)
-  fechaInicio         DateTime
-  fechaFin            DateTime
-  estado              EstadoPrestamo  @default(ACTIVO)
-  observaciones       String?
-  fechaFinManual      DateTime?       @map("fecha_fin_manual")
-  diasTranscurridosManual Int?        @map("dias_transcurridos_manual")
-  fechaProximoPagoManual  DateTime?   @map("fecha_proximo_pago_manual")
-  tipoCredito         TipoCredito     @default(EFECTIVO)
-  interesTotal        Decimal?        @db.Decimal(10, 2)
-  diasGracia          Int             @default(0)
-  moraCredito         Decimal         @default(0) @db.Decimal(5, 2)
-  microseguroTipo     TipoMicroseguro @default(NINGUNO) @map("microseguro_tipo")
-  microseguroValor    Decimal         @default(0) @db.Decimal(10, 2) @map("microseguro_valor")
-  microseguroTotal    Decimal         @default(0) @db.Decimal(10, 2) @map("microseguro_total")
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  pagos               Pago[]
-  cliente             Cliente         @relation(fields: [clienteId], references: [id])
-  usuario             User            @relation(fields: [userId], references: [id])
-  transferencias      Transferencia[]
+  id               String          @id @default(cuid())
+  clienteId        String          @map("cliente_id")
+  userId           String          @map("user_id")
+  monto            Decimal         @db.Decimal(10, 2)
+  interes          Decimal         @db.Decimal(5, 2)
+  tipoPago         TipoPago        @default(DIARIO)
+  cuotas           Int
+  valorCuota       Decimal         @db.Decimal(10, 2)
+  fechaInicio      DateTime
+  fechaFin         DateTime
+  estado           EstadoPrestamo  @default(ACTIVO)
+  observaciones    String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  diasGracia       Int             @default(0)
+  interesTotal     Decimal?        @db.Decimal(10, 2)
+  microseguroTipo  TipoMicroseguro @default(NINGUNO) @map("microseguro_tipo")
+  microseguroTotal Decimal         @default(0) @map("microseguro_total") @db.Decimal(10, 2)
+  microseguroValor Decimal         @default(0) @map("microseguro_valor") @db.Decimal(10, 2)
+  moraCredito      Decimal         @default(0) @db.Decimal(5, 2)
+  tipoCredito      TipoCredito     @default(EFECTIVO)
+  pagos            Pago[]
+  cliente          Cliente         @relation(fields: [clienteId], references: [id])
+  usuario          User            @relation(fields: [userId], references: [id])
+  transferencias   Transferencia[]
 
   @@map("prestamos")
 }
 
 model Pago {
-  id            String      @id @default(cuid())
-  prestamoId    String      @map("prestamo_id")
-  userId        String      @map("user_id")
-  monto         Decimal     @db.Decimal(10, 2)
-  fecha         DateTime    @default(now())
+  id            String     @id @default(cuid())
+  prestamoId    String     @map("prestamo_id")
+  userId        String     @map("user_id")
+  monto         Decimal    @db.Decimal(10, 2)
+  fecha         DateTime   @default(now())
   observaciones String?
-  metodoPago    MetodoPago  @default(EFECTIVO) @map("metodo_pago")
-  modificado    Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  prestamo      Prestamo    @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
-  usuario       User        @relation(fields: [userId], references: [id])
+  modificado    Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  metodoPago    MetodoPago @default(EFECTIVO) @map("metodo_pago")
+  prestamo      Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  usuario       User       @relation(fields: [userId], references: [id])
 
   @@map("pagos")
 }
@@ -208,9 +205,9 @@ model Gasto {
   monto           Decimal  @db.Decimal(10, 2)
   fecha           DateTime @default(now())
   observaciones   String?
-  fotoComprobante String?  @map("foto_comprobante")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  fotoComprobante String?  @map("foto_comprobante")
   usuario         User     @relation(fields: [userId], references: [id])
 
   @@map("gastos")
@@ -293,35 +290,35 @@ model PagoSueldo {
 }
 
 model VisitaCliente {
-  id         String   @id @default(cuid())
-  clienteId  String   @map("cliente_id")
-  userId     String   @map("user_id")
-  fecha      DateTime @default(now())
-  tipo       TipoVisita @default(COBRO)
-  resultado  String?
+  id            String     @id @default(cuid())
+  clienteId     String     @map("cliente_id")
+  userId        String     @map("user_id")
+  fecha         DateTime   @default(now())
+  tipo          TipoVisita @default(COBRO)
+  resultado     String?
   observaciones String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  cliente    Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  usuario    User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  cliente       Cliente    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario       User       @relation(fields: [userId], references: [id])
 
   @@map("visitas_cliente")
 }
 
 model DispositivoAutorizado {
-  id            String              @id @default(cuid())
-  userId        String              @map("user_id")
-  deviceId      String              @map("device_id")
-  userAgent     String?             @map("user_agent")
-  ipAddress     String?             @map("ip_address")
-  deviceName    String?             @map("device_name")
-  estado        EstadoDispositivo   @default(PENDIENTE)
-  aprobadoPor   String?             @map("aprobado_por")
+  id              String            @id @default(cuid())
+  userId          String            @map("user_id")
+  deviceId        String            @map("device_id")
+  userAgent       String?           @map("user_agent")
+  ipAddress       String?           @map("ip_address")
+  deviceName      String?           @map("device_name")
+  estado          EstadoDispositivo @default(PENDIENTE)
+  aprobadoPor     String?           @map("aprobado_por")
   fechaAprobacion DateTime?         @map("fecha_aprobacion")
-  ultimoAcceso  DateTime            @default(now()) @map("ultimo_acceso")
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  usuario       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ultimoAcceso    DateTime          @default(now()) @map("ultimo_acceso")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  usuario         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, deviceId])
   @@map("dispositivos_autorizados")
@@ -334,18 +331,165 @@ model Ruta {
   descripcion String?
   color       String?
   activa      Boolean   @default(true)
-  usuarios    User[]    @relation("UsuarioRuta")
-  clientes    Cliente[] @relation("ClienteRuta")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  clientes    Cliente[] @relation("ClienteRuta")
+  usuarios    User[]    @relation("UsuarioRuta")
 
   @@map("rutas")
 }
 
+model Susu {
+  id            String             @id @default(cuid())
+  nombre        String
+  descripcion   String?
+  montoTotal    Decimal            @db.Decimal(10, 2)
+  frecuencia    FrecuenciaSusu     @default(SEMANAL)
+  fechaInicio   DateTime
+  fechaFin      DateTime?
+  estado        EstadoSusu         @default(ACTIVO)
+  creadorId     String             @map("creador_id")
+  observaciones String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  pagos         SusuPago[]
+  participantes SusuParticipante[]
+  creador       User               @relation(fields: [creadorId], references: [id])
+
+  @@map("susus")
+}
+
+model SusuParticipante {
+  id              String             @id @default(cuid())
+  susuId          String             @map("susu_id")
+  userId          String             @map("user_id")
+  orden           Int
+  montoPorPeriodo Decimal            @db.Decimal(10, 2)
+  yaRecibio       Boolean            @default(false)
+  fechaRecepcion  DateTime?
+  estado          EstadoParticipante @default(ACTIVO)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  pagos           SusuPago[]
+  susu            Susu               @relation(fields: [susuId], references: [id], onDelete: Cascade)
+  usuario         User               @relation(fields: [userId], references: [id])
+
+  @@unique([susuId, userId])
+  @@unique([susuId, orden])
+  @@map("susu_participantes")
+}
+
+model SusuPago {
+  id             String           @id @default(cuid())
+  susuId         String           @map("susu_id")
+  participanteId String           @map("participante_id")
+  numeroPeriodo  Int
+  monto          Decimal          @db.Decimal(10, 2)
+  fechaPago      DateTime         @default(now())
+  metodoPago     MetodoPagoSusu   @default(SALDO)
+  estado         EstadoPagoSusu   @default(COMPLETADO)
+  observaciones  String?
+  comprobante    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  participante   SusuParticipante @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+  susu           Susu             @relation(fields: [susuId], references: [id], onDelete: Cascade)
+
+  @@map("susu_pagos")
+}
+
+model RegistroAuditoria {
+  id        String      @id @default(cuid())
+  usuarioId String      @map("usuario_id")
+  accion    TipoAccion
+  entidad   TipoEntidad
+  entidadId String      @map("entidad_id")
+  detalles  String?
+  ipAddress String?     @map("ip_address")
+  userAgent String?     @map("user_agent")
+  fecha     DateTime    @default(now())
+  createdAt DateTime    @default(now())
+
+  @@map("registros_auditoria")
+}
+
+model MovimientoCajaChica {
+  id            String             @id @default(cuid())
+  cobradorId    String?            @map("cobrador_id")
+  asignadoPorId String?            @map("asignado_por_id")
+  tipo          TipoMovimientoCaja @default(ENTREGA)
+  monto         Decimal            @db.Decimal(10, 2)
+  saldoAnterior Decimal            @db.Decimal(10, 2)
+  saldoNuevo    Decimal            @db.Decimal(10, 2)
+  fecha         DateTime           @default(now())
+  observaciones String?
+  descripcion   String?
+  comprobante   String?
+  estado        EstadoMovimiento   @default(APROBADO)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  asignadoPor   User?              @relation("AsignadorCajaChica", fields: [asignadoPorId], references: [id])
+  cobrador      User?              @relation("CobradorCajaChica", fields: [cobradorId], references: [id])
+
+  @@map("movimientos_caja_chica")
+}
+
+model Suscripcion {
+  id               String            @id @default(cuid())
+  nombreEmpresa    String            @map("nombre_empresa")
+  emailContacto    String            @unique @map("email_contacto")
+  telefonoContacto String?           @map("telefono_contacto")
+  rucEmpresa       String?           @unique @map("ruc_empresa")
+  direccion        String?
+  plan             PlanSuscripcion   @default(MENSUAL)
+  estado           EstadoSuscripcion @default(PRUEBA)
+  fechaInicio      DateTime          @default(now()) @map("fecha_inicio")
+  fechaVencimiento DateTime          @map("fecha_vencimiento")
+  fechaActivacion  DateTime?         @map("fecha_activacion")
+  fechaCancelacion DateTime?         @map("fecha_cancelacion")
+  observaciones    String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  pagos            PagoSuscripcion[]
+
+  @@map("suscripciones")
+}
+
+model PagoSuscripcion {
+  id                String                @id @default(cuid())
+  suscripcionId     String                @map("suscripcion_id")
+  monto             Decimal               @db.Decimal(10, 2)
+  fechaPago         DateTime              @default(now()) @map("fecha_pago")
+  metodoPago        MetodoPagoSuscripcion @default(TRANSFERENCIA_BANCARIA) @map("metodo_pago")
+  banco             String?
+  numeroReferencia  String?               @map("numero_referencia")
+  comprobanteUrl    String?               @map("comprobante_url")
+  estado            EstadoPago            @default(PENDIENTE)
+  periodoInicio     DateTime              @map("periodo_inicio")
+  periodoFin        DateTime              @map("periodo_fin")
+  observaciones     String?
+  verificadoPor     String?               @map("verificado_por")
+  fechaVerificacion DateTime?             @map("fecha_verificacion")
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  suscripcion       Suscripcion           @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+
+  @@map("pagos_suscripcion")
+}
+
+model Configuracion {
+  id        String   @id @default(cuid())
+  moneda    Moneda   @default(USD)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("configuracion")
+}
+
 enum UserRole {
   COBRADOR
-  SUPERVISOR
   ADMINISTRADOR
+  SUPERVISOR
 }
 
 enum Permission {
@@ -376,12 +520,12 @@ enum Permission {
 enum TipoPago {
   DIARIO
   SEMANAL
+  QUINCENAL
+  MENSUAL
   LUNES_A_VIERNES
   LUNES_A_SABADO
-  QUINCENAL
   CATORCENAL
   FIN_DE_MES
-  MENSUAL
   TRIMESTRAL
   CUATRIMESTRAL
   SEMESTRAL
@@ -429,65 +573,6 @@ enum TipoVisita {
   OTROS
 }
 
-model Susu {
-  id               String             @id @default(cuid())
-  nombre           String
-  descripcion      String?
-  montoTotal       Decimal            @db.Decimal(10, 2)
-  frecuencia       FrecuenciaSusu     @default(SEMANAL)
-  fechaInicio      DateTime
-  fechaFin         DateTime?
-  estado           EstadoSusu         @default(ACTIVO)
-  creadorId        String             @map("creador_id")
-  observaciones    String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  creador          User               @relation(fields: [creadorId], references: [id])
-  participantes    SusuParticipante[]
-  pagos            SusuPago[]
-
-  @@map("susus")
-}
-
-model SusuParticipante {
-  id              String         @id @default(cuid())
-  susuId          String         @map("susu_id")
-  userId          String         @map("user_id")
-  orden           Int
-  montoPorPeriodo Decimal        @db.Decimal(10, 2)
-  yaRecibio       Boolean        @default(false)
-  fechaRecepcion  DateTime?
-  estado          EstadoParticipante @default(ACTIVO)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  susu            Susu           @relation(fields: [susuId], references: [id], onDelete: Cascade)
-  usuario         User           @relation(fields: [userId], references: [id])
-  pagos           SusuPago[]
-
-  @@unique([susuId, userId])
-  @@unique([susuId, orden])
-  @@map("susu_participantes")
-}
-
-model SusuPago {
-  id              String           @id @default(cuid())
-  susuId          String           @map("susu_id")
-  participanteId  String           @map("participante_id")
-  numeroPeriodo   Int
-  monto           Decimal          @db.Decimal(10, 2)
-  fechaPago       DateTime         @default(now())
-  metodoPago      MetodoPagoSusu   @default(SALDO)
-  estado          EstadoPagoSusu   @default(COMPLETADO)
-  observaciones   String?
-  comprobante     String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  susu            Susu             @relation(fields: [susuId], references: [id], onDelete: Cascade)
-  participante    SusuParticipante @relation(fields: [participanteId], references: [id], onDelete: Cascade)
-
-  @@map("susu_pagos")
-}
-
 enum FrecuenciaSusu {
   SEMANAL
   QUINCENAL
@@ -523,42 +608,6 @@ enum EstadoDispositivo {
   AUTORIZADO
   RECHAZADO
   BLOQUEADO
-}
-
-model RegistroAuditoria {
-  id              String           @id @default(cuid())
-  usuarioId       String           @map("usuario_id")
-  accion          TipoAccion
-  entidad         TipoEntidad
-  entidadId       String           @map("entidad_id")
-  detalles        String?          @db.Text
-  ipAddress       String?          @map("ip_address")
-  userAgent       String?          @map("user_agent")
-  fecha           DateTime         @default(now())
-  createdAt       DateTime         @default(now())
-
-  @@map("registros_auditoria")
-}
-
-model MovimientoCajaChica {
-  id                String                @id @default(cuid())
-  cobradorId        String?               @map("cobrador_id")
-  asignadoPorId     String?               @map("asignado_por_id")
-  tipo              TipoMovimientoCaja    @default(ENTREGA)
-  monto             Decimal               @db.Decimal(10, 2)
-  saldoAnterior     Decimal               @db.Decimal(10, 2)
-  saldoNuevo        Decimal               @db.Decimal(10, 2)
-  fecha             DateTime              @default(now())
-  observaciones     String?               @db.Text
-  descripcion       String?               @db.Text
-  comprobante       String?
-  estado            EstadoMovimiento      @default(APROBADO)
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-  cobrador          User?                 @relation("CobradorCajaChica", fields: [cobradorId], references: [id])
-  asignadoPor       User?                 @relation("AsignadorCajaChica", fields: [asignadoPorId], references: [id])
-
-  @@map("movimientos_caja_chica")
 }
 
 enum EstadoMovimiento {
@@ -599,49 +648,6 @@ enum TipoMovimientoCaja {
   EGRESO_GENERAL
 }
 
-model Suscripcion {
-  id                String            @id @default(cuid())
-  nombreEmpresa     String            @map("nombre_empresa")
-  emailContacto     String            @unique @map("email_contacto")
-  telefonoContacto  String?           @map("telefono_contacto")
-  rucEmpresa        String?           @unique @map("ruc_empresa")
-  direccion         String?
-  plan              PlanSuscripcion   @default(MENSUAL)
-  estado            EstadoSuscripcion @default(PRUEBA)
-  fechaInicio       DateTime          @default(now()) @map("fecha_inicio")
-  fechaVencimiento  DateTime          @map("fecha_vencimiento")
-  fechaActivacion   DateTime?         @map("fecha_activacion")
-  fechaCancelacion  DateTime?         @map("fecha_cancelacion")
-  observaciones     String?           @db.Text
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  pagos             PagoSuscripcion[]
-
-  @@map("suscripciones")
-}
-
-model PagoSuscripcion {
-  id                String               @id @default(cuid())
-  suscripcionId     String               @map("suscripcion_id")
-  monto             Decimal              @db.Decimal(10, 2)
-  fechaPago         DateTime             @default(now()) @map("fecha_pago")
-  metodoPago        MetodoPagoSuscripcion @default(TRANSFERENCIA_BANCARIA) @map("metodo_pago")
-  banco             String?
-  numeroReferencia  String?              @map("numero_referencia")
-  comprobanteUrl    String?              @map("comprobante_url")
-  estado            EstadoPago           @default(PENDIENTE)
-  periodoInicio     DateTime             @map("periodo_inicio")
-  periodoFin        DateTime             @map("periodo_fin")
-  observaciones     String?              @db.Text
-  verificadoPor     String?              @map("verificado_por")
-  fechaVerificacion DateTime?            @map("fecha_verificacion")
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  suscripcion       Suscripcion          @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
-
-  @@map("pagos_suscripcion")
-}
-
 enum PlanSuscripcion {
   MENSUAL
   ANUAL
@@ -673,22 +679,13 @@ enum EstadoPago {
   RECHAZADO
 }
 
-model Configuracion {
-  id        String   @id @default(cuid())
-  moneda    Moneda   @default(USD)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("configuracion")
-}
-
 enum Moneda {
-  USD // Dólar estadounidense
-  EUR // Euro
-  MXN // Peso mexicano
-  BRL // Real brasileño
-  ARS // Peso argentino
-  COP // Peso colombiano
-  PEN // Sol peruano
-  USD_EC // Dólar (Ecuador)
+  USD
+  EUR
+  MXN
+  BRL
+  ARS
+  COP
+  PEN
+  USD_EC
 }

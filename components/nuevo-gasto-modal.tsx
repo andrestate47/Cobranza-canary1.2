@@ -38,8 +38,28 @@ export default function NuevoGastoModal({
   const { toast } = useToast()
 
   const handleMontoChange = (value: string) => {
-    // Solo permitir números y punto decimal
-    const numericValue = value.replace(/[^0-9.]/g, '')
+    // Reemplazar coma por punto para soporte de teclados latinos
+    let formattedValue = value.replace(',', '.')
+    
+    // Solo permitir números y un punto decimal
+    let numericValue = formattedValue.replace(/[^0-9.]/g, '')
+
+    // Asegurar que solo haya un punto decimal
+    const parts = numericValue.split('.')
+    if (parts.length > 2) {
+      numericValue = parts[0] + '.' + parts.slice(1).join('')
+    }
+
+    // Limitar a 2 decimales
+    if (parts.length === 2 && parts[1].length > 2) {
+      numericValue = parts[0] + '.' + parts[1].substring(0, 2)
+    }
+
+    // Evitar que empiece con punto
+    if (numericValue.startsWith('.')) {
+      numericValue = '0' + numericValue
+    }
+
     setMonto(numericValue)
   }
 

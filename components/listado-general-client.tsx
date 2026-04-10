@@ -594,7 +594,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                               Saldo: <span className="font-semibold text-red-600">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
                             </span>
                             <span className="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap hidden sm:block">
-                              {clienteData.cuotasTotalesPagadas} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
+                              {Number(clienteData.cuotasTotalesPagadas.toFixed(2))} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-0.5">

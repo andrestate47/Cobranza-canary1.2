@@ -56,10 +56,11 @@ export async function GET(request: NextRequest) {
       )
       const montoTotal = parseFloat(prestamo.monto.toString()) +
         (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
-      const saldoPendiente = montoTotal - totalPagado
-      const cuotasPagadas = parseFloat(prestamo.valorCuota.toString()) > 0
+      const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
+      const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
         ? totalPagado / parseFloat(prestamo.valorCuota.toString())
         : 0
+      const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
 
       // Determinar la fecha de actividad más reciente
       const fechaCreacion = prestamo.createdAt || prestamo.fechaInicio
@@ -122,8 +123,13 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Convertir Map a Array y ordenar por actividad reciente
-    const clientesArray = Array.from(clientesConPrestamos.values())
+    // Convertir Map a Array, redondear totales y ordenar por actividad reciente
+    const clientesArray = Array.from(clientesConPrestamos.values()).map(clienteData => ({
+      ...clienteData,
+      saldoTotalPendiente: Math.round(clienteData.saldoTotalPendiente * 100) / 100,
+      cuotasTotalesPagadas: Math.round(clienteData.cuotasTotalesPagadas * 100) / 100
+    }))
+
     clientesArray.sort((a, b) => {
       const fechaA = new Date(a.fechaActividadReciente).getTime()
       const fechaB = new Date(b.fechaActividadReciente).getTime()

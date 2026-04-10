@@ -140,7 +140,8 @@ export async function POST(request: NextRequest) {
     const tasaInteresPrestamo = Number(prestamo.interes) / 100
     const montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
     const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0)
-    const saldoActual = Math.max(0, montoTotalPrestamo - totalPagosExistentes)
+    // Redondear a 2 decimales para evitar precisiones de punto flotante
+    const saldoActual = Math.max(0, Math.round((montoTotalPrestamo - totalPagosExistentes) * 100) / 100)
 
     console.log('💰 Validación de saldo:')
     console.log('  - Monto total préstamo:', montoTotalPrestamo)

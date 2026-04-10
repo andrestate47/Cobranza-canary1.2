@@ -215,6 +215,32 @@ export default function TransferenciaModal({
     }
   }
 
+  const handleMontoChange = (value: string) => {
+    // Reemplazar coma por punto para soporte de teclados latinos
+    let formattedValue = value.replace(',', '.')
+    
+    // Solo permitir números y un punto decimal
+    let numericValue = formattedValue.replace(/[^0-9.]/g, '')
+
+    // Asegurar que solo haya un punto decimal
+    const parts = numericValue.split('.')
+    if (parts.length > 2) {
+      numericValue = parts[0] + '.' + parts.slice(1).join('')
+    }
+
+    // Limitar a 2 decimales
+    if (parts.length === 2 && parts[1].length > 2) {
+      numericValue = parts[0] + '.' + parts[1].substring(0, 2)
+    }
+
+    // Evitar que empiece con punto
+    if (numericValue.startsWith('.')) {
+      numericValue = '0' + numericValue
+    }
+
+    setMonto(numericValue)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -425,10 +451,9 @@ export default function TransferenciaModal({
                   <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="monto"
-                    type="number"
-                    step="0.01"
+                    type="text"
                     value={monto}
-                    onChange={(e) => setMonto(e.target.value)}
+                    onChange={(e) => handleMontoChange(e.target.value)}
                     className="pl-10"
                     placeholder="0.00"
                     required

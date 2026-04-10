@@ -129,8 +129,11 @@ export default function PagoRapidoModal({
   }
 
   const handleMontoChange = (value: string) => {
-    // Solo permitir números, punto decimal y un solo punto
-    let numericValue = value.replace(/[^0-9.]/g, '')
+    // Reemplazar coma por punto para soporte de teclados latinos
+    let formattedValue = value.replace(',', '.')
+    
+    // Solo permitir números y un punto decimal
+    let numericValue = formattedValue.replace(/[^0-9.]/g, '')
 
     // Asegurar que solo haya un punto decimal
     const parts = numericValue.split('.')
@@ -143,7 +146,7 @@ export default function PagoRapidoModal({
       numericValue = parts[0] + '.' + parts[1].substring(0, 2)
     }
 
-    // Evitar que emppiece con punto
+    // Evitar que empiece con punto
     if (numericValue.startsWith('.')) {
       numericValue = '0' + numericValue
     }
