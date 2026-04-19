@@ -204,7 +204,8 @@ export async function DELETE(
           select: {
             nombre: true,
             apellido: true,
-            codigoCliente: true
+            codigoCliente: true,
+            rutaId: true
           }
         }
       }
