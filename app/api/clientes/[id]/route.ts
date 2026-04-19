@@ -40,6 +40,21 @@ export async function PUT(
       return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
     }
 
+    // Verificar permisos de ruta si no es administrador
+    const userDb = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!userDb) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    if (userDb.role !== "ADMINISTRADOR") {
+      if (!userDb.rutaId || clienteExistente.rutaId !== userDb.rutaId) {
+        return NextResponse.json({ error: "No tienes permiso para modificar este cliente" }, { status: 403 })
+      }
+    }
+
     // Verificar si el documento ya existe en otro cliente
     const clienteConMismoDocumento = await prisma.cliente.findFirst({
       where: {
@@ -118,6 +133,21 @@ export async function DELETE(
 
     if (!clienteExistente) {
       return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
+    }
+
+    // Verificar permisos de ruta si no es administrador
+    const userDb = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!userDb) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    if (userDb.role !== "ADMINISTRADOR") {
+      if (!userDb.rutaId || clienteExistente.rutaId !== userDb.rutaId) {
+        return NextResponse.json({ error: "No tienes permiso para eliminar este cliente" }, { status: 403 })
+      }
     }
 
     // Verificar si tiene préstamos activos

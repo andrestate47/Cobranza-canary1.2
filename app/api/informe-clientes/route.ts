@@ -14,9 +14,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha') || new Date().toISOString().split('T')[0]
 
+    // Obtener datos del usuario para filtrar por ruta si no es administrador
+    const user = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    // Construir filtro de ruta según el rol
+    const routeFilter: any = {}
+    if (user.role !== "ADMINISTRADOR") {
+      if (!user.rutaId) {
+        routeFilter.rutaId = "sin-ruta-imposible"
+      } else {
+        routeFilter.rutaId = user.rutaId
+      }
+    }
+
     // Convertir fecha a rango del día CORRECTAMENTE
-    // new Date("YYYY-MM-DD") crea una fecha UTC a las 00:00
-    // new Date(y, m, d) crea una fecha LOCAL a las 00:00
     const [year, month, day] = fecha.split('-').map(Number)
 
     const fechaInicio = new Date(year, month - 1, day, 0, 0, 0, 0)
@@ -24,18 +41,27 @@ export async function GET(request: NextRequest) {
 
     // 1. CLIENTES TOTALES
     const totalClientes = await prisma.cliente.count({
-      where: { activo: true }
+      where: { 
+        activo: true,
+        ...routeFilter
+      }
     })
 
     // 2. PRÉSTAMOS TOTALES Y ACTIVOS
     const prestamosData = await prisma.prestamo.aggregate({
       _count: { id: true },
-      where: { estado: 'ACTIVO' }
+      where: { 
+        estado: 'ACTIVO',
+        cliente: routeFilter
+      }
     })
 
     // 2.1 PRÉSTAMOS CANCELADOS (COMPLETADOS)
     const prestamosCancelados = await prisma.prestamo.count({
-      where: { estado: 'CANCELADO' }
+      where: { 
+        estado: 'CANCELADO',
+        cliente: routeFilter
+      }
     })
 
     // 2.2 PRÉSTAMOS NUEVOS HOY
@@ -44,7 +70,8 @@ export async function GET(request: NextRequest) {
         createdAt: {
           gte: fechaInicio,
           lte: fechaFin
-        }
+        },
+        cliente: routeFilter
       }
     })
 
@@ -54,7 +81,8 @@ export async function GET(request: NextRequest) {
         estado: 'ACTIVO',
         fechaFin: {
           lt: new Date()
-        }
+        },
+        cliente: routeFilter
       }
     })
 
@@ -62,6 +90,7 @@ export async function GET(request: NextRequest) {
     const clientesVisitados = await prisma.cliente.findMany({
       where: {
         activo: true,
+        ...routeFilter,
         visitas: {
           some: {
             fecha: {
@@ -109,6 +138,7 @@ export async function GET(request: NextRequest) {
     const clientesNoVisitados = await prisma.cliente.findMany({
       where: {
         activo: true,
+        ...routeFilter,
         prestamos: {
           some: { estado: 'ACTIVO' }
         },
@@ -143,13 +173,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
+
     // 5. PRÉSTAMOS VENCIDOS
     const prestamosVencidos = await prisma.prestamo.findMany({
       where: {
         estado: 'ACTIVO',
         fechaFin: {
           lt: new Date()
-        }
+        },
+        cliente: routeFilter
       },
       include: {
         cliente: {
@@ -178,7 +210,8 @@ export async function GET(request: NextRequest) {
     // Se cambió la lógica para mostrar todos los clientes activos en la pestaña "Clientes"
     const nuevosClientes = await prisma.cliente.findMany({
       where: {
-        activo: true
+        activo: true,
+        ...routeFilter
       },
       include: {
         prestamos: {
@@ -203,7 +236,8 @@ export async function GET(request: NextRequest) {
         createdAt: {
           gte: fechaInicio,
           lte: fechaFin
-        }
+        },
+        cliente: routeFilter
       },
       include: {
         cliente: {
@@ -239,6 +273,9 @@ export async function GET(request: NextRequest) {
         fecha: {
           gte: fechaInicio,
           lte: fechaFin
+        },
+        prestamo: {
+          cliente: routeFilter
         }
       },
       include: {
@@ -275,6 +312,7 @@ export async function GET(request: NextRequest) {
     const clientesConMora = await prisma.cliente.findMany({
       where: {
         activo: true,
+        ...routeFilter,
         prestamos: {
           some: {
             estado: 'ACTIVO',
@@ -311,7 +349,10 @@ export async function GET(request: NextRequest) {
 
     // 10. TODOS LOS PRÉSTAMOS ACTIVOS (para pestaña Total)
     const todosPrestamosTotales = await prisma.prestamo.findMany({
-      where: { estado: 'ACTIVO' },
+      where: { 
+        estado: 'ACTIVO',
+        cliente: routeFilter
+      },
       include: {
         cliente: {
           select: {
@@ -340,7 +381,10 @@ export async function GET(request: NextRequest) {
 
     // 11. PRÉSTAMOS CANCELADOS (completados)
     const prestamosCanceladosLista = await prisma.prestamo.findMany({
-      where: { estado: 'CANCELADO' },
+      where: { 
+        estado: 'CANCELADO',
+        cliente: routeFilter
+      },
       include: {
         cliente: {
           select: {
@@ -374,7 +418,8 @@ export async function GET(request: NextRequest) {
         estado: 'ACTIVO',
         fechaFin: {
           lt: new Date()
-        }
+        },
+        cliente: routeFilter
       },
       include: {
         cliente: {

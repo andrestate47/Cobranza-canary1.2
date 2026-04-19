@@ -16,11 +16,37 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const conSaldo = searchParams.get("conSaldo") === "true"
 
+    // Obtener datos del usuario para filtrar por ruta si no es administrador
+    const user = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    // Construir filtro según el rol
+    const whereClause: any = {
+      estado: "ACTIVO"
+    }
+
+    // Si no es ADMINISTRADOR, filtrar por la ruta del cliente
+    if (user.role !== "ADMINISTRADOR") {
+      if (!user.rutaId) {
+        // Si no tiene ruta asignada, no ve nada
+        whereClause.cliente = {
+          rutaId: "sin-ruta-imposible"
+        }
+      } else {
+        whereClause.cliente = {
+          rutaId: user.rutaId
+        }
+      }
+    }
+
     // Obtener préstamos activos con información completa de cliente y pagos
     const prestamos = await prisma.prestamo.findMany({
-      where: {
-        estado: "ACTIVO"
-      },
+      where: whereClause,
       include: {
         cliente: {
           select: {

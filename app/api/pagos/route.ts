@@ -386,7 +386,33 @@ export async function GET(request: NextRequest) {
     const fecha = searchParams.get("fecha")
     const prestamoId = searchParams.get("prestamoId")
 
+    // Obtener datos del usuario para filtrar por ruta si no es administrador
+    const user = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
     const whereCondition: Prisma.PagoWhereInput = {}
+
+    // Si no es ADMINISTRADOR, filtrar por la ruta del cliente
+    if (user.role !== "ADMINISTRADOR") {
+      if (!user.rutaId) {
+        whereCondition.prestamo = {
+          cliente: {
+            rutaId: "sin-ruta-imposible"
+          }
+        }
+      } else {
+        whereCondition.prestamo = {
+          cliente: {
+            rutaId: user.rutaId
+          }
+        }
+      }
+    }
 
     if (fecha) {
       const fechaInicio = new Date(fecha)

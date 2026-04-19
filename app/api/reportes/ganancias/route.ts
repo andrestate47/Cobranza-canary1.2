@@ -98,6 +98,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    // Verificar que sea administrador o supervisor
+    const user = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!user || (user.role !== "ADMINISTRADOR" && user.role !== "SUPERVISOR")) {
+      return NextResponse.json({ error: "No tienes permisos para ver este reporte" }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const fechaInicio = searchParams.get("fechaInicio")
     const fechaFin = searchParams.get("fechaFin")

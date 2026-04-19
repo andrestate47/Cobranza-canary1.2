@@ -60,13 +60,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       href: "/informe-clientes",
       color: "bg-indigo-500 hover:bg-indigo-600",
     },
-    {
-      title: "Reporte de Ganancias",
-      description: "Análisis financiero detallado",
-      icon: BarChart3,
-      href: "/reportes/ganancias",
-      color: "bg-emerald-500 hover:bg-emerald-600",
-    },
+    // El reporte de ganancias se agregará condicionalmente según el rol
     {
       title: "Cierres del Día",
       description: "Historial de cierres diarios",
@@ -110,6 +104,17 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   const menuItemsWithCaja = [
     ...baseMenuItems,
     cajaChicaItem,
+  ]
+
+  // Items compartidos por Admin y Supervisor que no ve el Cobrador
+  const adminSupervisorItems = [
+    {
+      title: "Reporte de Ganancias",
+      description: "Análisis financiero detallado",
+      icon: BarChart3,
+      href: "/reportes/ganancias",
+      color: "bg-emerald-500 hover:bg-emerald-600",
+    },
     {
       title: "SUSU",
       description: "Sistema de ahorro rotativo",
@@ -123,6 +128,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   const menuItems = user?.role === 'ADMINISTRADOR'
     ? [
       ...menuItemsWithCaja,
+      ...adminSupervisorItems,
       {
         title: "Gestión de Usuarios",
         description: "Administrar usuarios y permisos",
@@ -176,6 +182,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
     : user?.role === 'SUPERVISOR'
       ? [
         ...menuItemsWithCaja,
+        ...adminSupervisorItems,
         {
           title: "Gestión de Sueldos",
           description: "Pagos de sueldos y avances",

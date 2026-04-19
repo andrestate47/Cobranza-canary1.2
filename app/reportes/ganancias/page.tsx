@@ -18,6 +18,10 @@ export default async function ReporteGananciasPage() {
     redirect('/login')
   }
 
+  if (session.user.role !== "ADMINISTRADOR" && session.user.role !== "SUPERVISOR") {
+    redirect("/dashboard")
+  }
+
   return <ReporteGananciasClient session={session} />
 }
 

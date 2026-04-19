@@ -15,6 +15,18 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
+    // Verificar que el usuario sea ADMIN o SUPERVISOR
+    const userRoleCheck = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+
+    if (userRoleCheck?.role !== 'ADMINISTRADOR' && userRoleCheck?.role !== 'SUPERVISOR') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para acceder al módulo SUSU' },
+        { status: 403 }
+      )
+    }
+
     const susu = await prisma.susu.findUnique({
       where: { id: params.id },
       include: {
@@ -80,6 +92,18 @@ export async function PATCH(
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    // Verificar que el usuario sea ADMIN o SUPERVISOR
+    const userRoleCheckPatch = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+
+    if (userRoleCheckPatch?.role !== 'ADMINISTRADOR' && userRoleCheckPatch?.role !== 'SUPERVISOR') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para acceder al módulo SUSU' },
+        { status: 403 }
+      )
     }
 
     const data = await request.json()

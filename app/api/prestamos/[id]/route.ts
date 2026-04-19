@@ -69,6 +69,21 @@ export async function PUT(
       return NextResponse.json({ error: "Préstamo no encontrado" }, { status: 404 })
     }
 
+    // Verificar permisos de ruta si no es administrador
+    const userDb = await prisma.user.findUnique({
+      where: { email: session.user?.email || "" }
+    })
+
+    if (!userDb) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    if (userDb.role !== "ADMINISTRADOR") {
+      if (!userDb.rutaId || prestamoExistente.cliente.rutaId !== userDb.rutaId) {
+        return NextResponse.json({ error: "No tienes permiso para modificar este préstamo" }, { status: 403 })
+      }
+    }
+
     // Calcular nueva fecha de fin y valor de cuota
     const fechaInicioDate = new Date(fechaInicio)
     let fechaFin = new Date(fechaInicioDate)
@@ -199,14 +214,20 @@ export async function DELETE(
       return NextResponse.json({ error: "Préstamo no encontrado" }, { status: 404 })
     }
 
-    // Obtener información del usuario que elimina
+    // Verificar permisos de ruta si no es administrador
     const usuario = await prisma.user.findUnique({
       where: { email: session.user.email! },
-      select: { id: true, role: true }
+      select: { id: true, role: true, rutaId: true }
     })
 
     if (!usuario) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
+    if (usuario.role !== "ADMINISTRADOR") {
+      if (!usuario.rutaId || prestamoExistente.cliente.rutaId !== usuario.rutaId) {
+        return NextResponse.json({ error: "No tienes permiso para eliminar este préstamo" }, { status: 403 })
+      }
     }
 
     // Registrar en auditoría solo si NO es administrador

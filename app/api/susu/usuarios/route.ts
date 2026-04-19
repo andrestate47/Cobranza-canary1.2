@@ -13,6 +13,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
+    // Verificar que el usuario sea ADMIN o SUPERVISOR
+    const userRoleCheck = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+
+    if (userRoleCheck?.role !== 'ADMINISTRADOR' && userRoleCheck?.role !== 'SUPERVISOR') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para acceder al módulo SUSU' },
+        { status: 403 }
+      )
+    }
+
     const searchParams = request.nextUrl.searchParams
     const buscar = searchParams.get('q')
 
