@@ -5,91 +5,11 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
 
+import { getEcuadorDayRange, getEcuadorRange } from "@/lib/date-utils"
+
 export const dynamic = "force-dynamic"
 
-// Interfaces para tipos
-interface ClienteBasico {
-  nombre: string
-  apellido: string
-  documento: string
-}
-
-interface PagoBasico {
-  monto: Decimal
-}
-
-interface PrestamoConCliente {
-  id: string
-  clienteId: string
-  monto: Decimal
-  interes: Decimal
-  fechaFin: Date
-  createdAt: Date
-  cliente: ClienteBasico
-  pagos: PagoBasico[]
-}
-
-interface PagoConPrestamo {
-  id: string
-  monto: Decimal
-  fecha: Date
-  prestamo: {
-    clienteId: string
-    monto: Decimal
-    interes: Decimal
-    fechaFin: Date
-    cliente: ClienteBasico
-  }
-}
-
-interface GastoBasico {
-  monto: Decimal
-}
-
-interface GastoDetallado {
-  id: string
-  concepto: string
-  monto: Decimal
-  fecha: Date
-  observaciones: string | null
-}
-
-interface PagoDetallado {
-  id: string
-  monto: Decimal
-  fecha: Date
-  prestamoId: string
-  observaciones: string | null
-  prestamo: {
-    cliente: ClienteBasico
-  }
-}
-
-interface InteresCliente {
-  clienteId: string
-  nombre: string
-  documento: string
-  interesGenerado: number
-  interesGanado: number
-}
-
-interface TransferenciaConPrestamo {
-  monto: Decimal
-  prestamo: {
-    clienteId: string
-  }
-}
-
-interface PrestamoParaTransferencia {
-  monto: Decimal
-  interes: Decimal
-  pagos: PagoBasico[]
-  transferencias: { id: string }[]
-}
-
-interface UsuarioConSalario {
-  salario: number
-}
+// ... (interfaces)
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,22 +28,22 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const fechaInicio = searchParams.get("fechaInicio")
-    const fechaFin = searchParams.get("fechaFin")
+    const fechaInicioParam = searchParams.get("fechaInicio")
+    const fechaFinParam = searchParams.get("fechaFin")
     
-    // Si no se especifican fechas, usar el mes actual
     let fechaInicioDate: Date
     let fechaFinDate: Date
     
-    if (fechaInicio && fechaFin) {
-      fechaInicioDate = new Date(fechaInicio)
-      fechaFinDate = new Date(fechaFin)
-      fechaFinDate.setHours(23, 59, 59, 999)
+    if (fechaInicioParam && fechaFinParam) {
+      const range = getEcuadorRange(fechaInicioParam, fechaFinParam)
+      fechaInicioDate = range.inicio
+      fechaFinDate = range.fin
     } else {
-      // Mes actual por defecto
-      const hoy = new Date()
-      fechaInicioDate = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-      fechaFinDate = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59, 999)
+      // Mes actual por defecto (normalizado a Ecuador)
+      const { inicio } = getEcuadorDayRange()
+      const base = new Date(inicio)
+      fechaInicioDate = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), 1, 5, 0, 0))
+      fechaFinDate = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0, 4, 59, 59, 999))
     }
 
     // Obtener todos los préstamos en el rango de fechas

@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
+import { normalizeToEcuadorMidnight } from "@/lib/date-utils"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
@@ -24,8 +26,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { fecha, totalCobrado, totalPrestado, totalGastos, saldoEfectivo, observaciones } = body
 
-    const fechaCierre = new Date(fecha)
-    fechaCierre.setHours(0, 0, 0, 0)
+    // Normalizar a la medianoche de Ecuador para evitar colisiones por zona horaria
+    const fechaCierre = normalizeToEcuadorMidnight(fecha)
 
     // Verificar que no exista ya un cierre para esta fecha
     const cierreExistente = await prisma.cierreDia.findUnique({

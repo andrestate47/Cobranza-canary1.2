@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@prisma/client"
+import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
     const whereCondition: Prisma.GastoWhereInput = {}
 
     if (fecha) {
-      const fechaInicio = new Date(fecha)
-      fechaInicio.setHours(0, 0, 0, 0)
-      const fechaFin = new Date(fecha)
-      fechaFin.setHours(23, 59, 59, 999)
+      const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(fecha)
 
       whereCondition.fecha = {
         gte: fechaInicio,
@@ -92,8 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar si el día está cerrado (solo para cobradores)
     if (session.user.role === "COBRADOR") {
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0)
+      const hoy = normalizeToEcuadorMidnight()
 
       const cierreHoy = await prisma.cierreDia.findUnique({
         where: { fecha: hoy }

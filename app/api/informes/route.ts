@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
+import { getEcuadorDayRange } from "@/lib/date-utils"
+
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
@@ -15,15 +17,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const fechaParam = searchParams.get("fecha")
-    const userIdParam = searchParams.get("userId") // Nuevo parámetro para filtrar por cobrador
+    const userIdParam = searchParams.get("userId")
     
-    // Si no se especifica fecha, usar hoy
-    const fecha = fechaParam ? new Date(fechaParam) : new Date()
-    fecha.setHours(0, 0, 0, 0)
-    
-    const fechaInicio = new Date(fecha)
-    const fechaFin = new Date(fecha)
-    fechaFin.setHours(23, 59, 59, 999)
+    // Usar la utilidad de Ecuador para obtener el rango exacto
+    const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(fechaParam)
+    const fecha = fechaInicio // Para mantener compatibilidad con el resto del código
 
     // Determinar qué usuario usar para el filtro (el seleccionado o el actual)
     const userId = userIdParam || session.user.id

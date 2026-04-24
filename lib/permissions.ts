@@ -134,8 +134,7 @@ export async function checkTimeLimit(userId: string): Promise<{
     return { allowed: true, minutesUsed: 0 }
   }
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = normalizeToEcuadorMidnight()
 
   const timeUsage = await prisma.userTimeUsage.findUnique({
     where: {
@@ -165,12 +164,13 @@ export async function checkTimeLimit(userId: string): Promise<{
   }
 }
 
+import { normalizeToEcuadorMidnight } from "@/lib/date-utils"
+
 /**
  * Registrar tiempo de uso
  */
 export async function recordTimeUsage(userId: string, minutes: number = 1): Promise<void> {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = normalizeToEcuadorMidnight()
 
   await prisma.userTimeUsage.upsert({
     where: {
