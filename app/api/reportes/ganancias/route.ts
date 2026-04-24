@@ -9,7 +9,118 @@ import { getEcuadorDayRange, getEcuadorRange } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
-// ... (interfaces)
+interface PrestamoConCliente {
+  id: string
+  monto: Decimal | number
+  interes: Decimal | number
+  fechaFin: Date | string
+  updatedAt: Date
+  createdAt: Date
+  clienteId: string
+  cliente: {
+    nombre: string
+    apellido: string
+    documento: string
+  }
+  pagos: {
+    monto: Decimal | number
+  }[]
+}
+
+interface PagoConPrestamo {
+  id: string
+  monto: Decimal | number
+  fecha: Date | string
+  prestamoId: string
+  prestamo: {
+    clienteId: string
+    monto: Decimal | number
+    interes: Decimal | number
+    fechaFin: Date | string
+    cliente: {
+      nombre: string
+      apellido: string
+      documento: string
+    }
+  }
+  observaciones?: string | null
+}
+
+interface GastoBasico {
+  id: string
+  monto: Decimal | number
+  fecha: Date | string
+  concepto: string
+  observaciones?: string | null
+}
+
+interface InteresCliente {
+  clienteId: string
+  nombre: string
+  documento: string
+  interesGenerado: number
+  interesGanado: number
+}
+
+interface TransferenciaConPrestamo {
+  id: string
+  monto: Decimal | number
+  fecha: Date | string
+  prestamo: {
+    clienteId: string
+    cliente: {
+      nombre: string
+      apellido: string
+      documento: string
+    }
+  }
+}
+
+interface PrestamoParaTransferencia {
+  id: string
+  monto: Decimal | number
+  interes: Decimal | number
+  pagos: {
+    monto: Decimal | number
+  }[]
+  transferencias: any[]
+}
+
+interface UsuarioConSalario {
+  id: string
+  nombre: string
+  apellido: string
+  nombreCompleto: string
+  email: string
+  salario: number
+  pagoSemanal: number
+  pagoQuincenal: number
+  pagoMensual: number
+  comisionPorCobro: number
+}
+
+interface PagoDetallado {
+  id: string
+  prestamo: {
+    cliente: {
+      nombre: string
+      apellido: string
+    }
+  }
+  monto: Decimal | number
+  fecha: Date
+  prestamoId: string
+  observaciones?: string | null
+}
+
+interface GastoDetallado {
+  id: string
+  concepto: string
+  monto: Decimal | number
+  fecha: Date
+  observaciones?: string | null
+}
+
 
 export async function GET(request: NextRequest) {
   try {
