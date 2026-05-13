@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import NuevoGastoModal from "@/components/nuevo-gasto-modal"
 import ImageViewerModal from "@/components/image-viewer-modal"
+import { useCurrency } from "@/hooks/use-currency"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -199,13 +200,7 @@ export default function GastosClient({ session }: GastosClientProps) {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('es-CO')

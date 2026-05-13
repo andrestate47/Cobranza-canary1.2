@@ -50,7 +50,7 @@ export const CURRENCIES: Record<Moneda, CurrencyInfo> = {
     name: 'Peso colombiano',
     symbol: '$',
     locale: 'es-CO',
-    decimals: 0,
+    decimals: 2,
   },
   PEN: {
     code: 'PEN',

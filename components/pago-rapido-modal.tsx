@@ -35,6 +35,7 @@ import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import BoletaPago from "@/components/boleta-pago"
 import html2canvas from "html2canvas"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface PrestamoConCliente {
   id: string
@@ -120,13 +121,7 @@ export default function PagoRapidoModal({
     }
   }, [isOpen])
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   const handleMontoChange = (value: string) => {
     // Reemplazar coma por punto para soporte de teclados latinos

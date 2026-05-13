@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface BoletaPagoData {
   id: string
@@ -62,13 +63,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     console.log('📋 monto:', data?.monto)
     console.log('📋 === FIN BOLETA INFO ===')
 
-    const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-      }).format(amount)
-    }
+    const { format: formatCurrency } = useCurrency()
 
     const formatDate = (dateString: string | Date | null | undefined) => {
       if (!dateString) return ''

@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 
 
 interface ReporteGanancias {
@@ -243,13 +244,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
     fetchReporte(fechaInicio, fechaFin)
   }, [fechaInicio, fechaFin])
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-CO', {

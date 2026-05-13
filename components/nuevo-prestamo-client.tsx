@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 import {
   Dialog,
   DialogContent,
@@ -87,6 +88,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   const { toast } = useToast()
   const boletaRef = useRef<HTMLDivElement>(null)
 
+  const { format: formatCurrencyGlobal } = useCurrency()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingClientes, setLoadingClientes] = useState(true)
@@ -548,11 +550,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
+    return formatCurrencyGlobal(amount)
   }
 
   const selectedCliente = clientes.find(c => c.id === clienteId)
@@ -599,11 +597,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   const formatCurrencyModal = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
+    return formatCurrencyGlobal(amount)
   }
 
   const formatDateModal = (dateString: string) => {

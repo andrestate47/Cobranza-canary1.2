@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Trash2 } from "lucide-react"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface CierreDia {
   id: string
@@ -198,13 +199,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-CO', {

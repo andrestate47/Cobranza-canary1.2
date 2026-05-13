@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 import { format } from "date-fns"
 
 interface TransferenciaModalProps {
@@ -420,13 +421,7 @@ export default function TransferenciaModal({
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

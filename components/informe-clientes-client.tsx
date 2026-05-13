@@ -45,6 +45,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface PrestamoDetallado {
   id: string
@@ -333,13 +334,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const { format: formatCurrency } = useCurrency()
 
   const formatDate = (dateString: string) => {
     // Si la fecha viene como YYYY-MM-DD (longitud 10), agregar T00:00:00 para que
