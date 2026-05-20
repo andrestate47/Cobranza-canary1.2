@@ -21,6 +21,12 @@ export async function GET(request: NextRequest) {
 
     const whereCondition: Prisma.GastoWhereInput = {}
 
+    // Solo el administrador puede ver los gastos de todos.
+    // Los cobradores (y otros roles) solo ven sus propios gastos.
+    if (session.user.role !== "ADMINISTRADOR") {
+      whereCondition.userId = session.user.id
+    }
+
     if (fecha) {
       const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(fecha)
 
