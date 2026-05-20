@@ -25,6 +25,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -56,6 +63,7 @@ export default function TransferenciaModal({
   onTransferenciaSaved
 }: TransferenciaModalProps) {
   const [monto, setMonto] = useState("")
+  const [metodoPago, setMetodoPago] = useState<'TRANSFERENCIA' | 'DEPOSITO'>('TRANSFERENCIA')
   const [banco, setBanco] = useState("")
   const [referencia, setReferencia] = useState("")
   const [observaciones, setObservaciones] = useState("")
@@ -278,6 +286,7 @@ export default function TransferenciaModal({
           referencia: referencia.trim() || null,
           observaciones: observaciones.trim() || null,
           fotoComprobante,
+          metodoPago,
           fecha: fecha.toISOString()
         }),
       })
@@ -330,6 +339,7 @@ export default function TransferenciaModal({
 
     detenerCamara()
     setMonto("")
+    setMetodoPago('TRANSFERENCIA')
     setBanco("")
     setReferencia("")
     setObservaciones("")
@@ -486,6 +496,24 @@ export default function TransferenciaModal({
                   required
                   disabled={loading}
                 />
+              </div>
+
+              {/* Método de pago */}
+              <div>
+                <Label htmlFor="metodoPago">Método de pago *</Label>
+                <Select
+                  value={metodoPago}
+                  onValueChange={(value: 'TRANSFERENCIA' | 'DEPOSITO') => setMetodoPago(value)}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="mt-1 h-10">
+                    <SelectValue placeholder="Selecciona método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TRANSFERENCIA">🏦 Transferencia</SelectItem>
+                    <SelectItem value="DEPOSITO">🏧 Depósito</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Banco */}

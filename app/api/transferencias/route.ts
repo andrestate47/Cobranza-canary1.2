@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fecha } = body
+    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fecha, metodoPago } = body
 
     // 1. Validaciones básicas
     if (!prestamoId || !monto || !fotoComprobante) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           monto: montoNum,
           fecha: fechaPago,
-          metodoPago: "TRANSFERENCIA",
+          metodoPago: metodoPago || "TRANSFERENCIA",
           observaciones: `Transferencia ID: ${nuevaTransferencia.id}. Ref: ${referencia || 'S/N'}. ${observaciones || ''}`.trim().substring(0, 191) // Asegurar que cabe en DB
         }
       })
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       where: {
         prestamoId: prestamoId,
         userId: session.user.id,
-        metodoPago: "TRANSFERENCIA",
+        metodoPago: metodoPago || "TRANSFERENCIA",
         createdAt: { gte: new Date(Date.now() - 10000) } // Creado en los últimos 10s
       },
       orderBy: { createdAt: 'desc' },
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
             : pagoAsociado.usuario.name || "Usuario"
         },
         tipoCredito: pagoAsociado.prestamo.tipoCredito?.toLowerCase() || 'efectivo',
-        tipoPagoMetodo: 'transferencia'
+        tipoPagoMetodo: (metodoPago || 'transferencia').toLowerCase()
       }
     }
 
