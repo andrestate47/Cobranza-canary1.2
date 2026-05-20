@@ -77,9 +77,9 @@ export async function POST(
     // El monto efectivo del nuevo préstamo es el monto nuevo menos el saldo pendiente
     const montoEfectivo = montoNuevo - saldoPendiente
     
-    if (montoEfectivo <= 0) {
+    if (montoEfectivo < 0) {
       return NextResponse.json(
-        { error: "El monto de renovación debe ser mayor al saldo pendiente" },
+        { error: "El monto de renovación debe ser mayor o igual al saldo pendiente" },
         { status: 400 }
       )
     }

@@ -960,10 +960,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const interesNum = parseFloat(interesRenovacion)
     const cuotasNum = parseInt(cuotasRenovacion)
 
-    if (montoNum <= saldoPendiente) {
+    if (montoNum < saldoPendiente) {
       toast({
         title: "Error",
-        description: "El monto de renovación debe ser mayor al saldo pendiente actual",
+        description: "El monto de renovación debe ser mayor o igual al saldo pendiente actual",
         variant: "destructive",
       })
       return
@@ -1947,11 +1947,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     className="pl-10"
                     required
                     disabled={renovando}
-                    min={saldoPendiente + 0.01}
+                    min={saldoPendiente}
                   />
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Monto mínimo: {formatCurrency(saldoPendiente + 1)} (saldo pendiente + $1)
+                  Monto mínimo: {formatCurrency(saldoPendiente)} (saldo pendiente)
                 </div>
               </div>
 
