@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { prestamoId, monto, observaciones, metodoPago, fecha } = body || {}
+    const { prestamoId, monto, observaciones, metodoPago, fecha, fotoComprobante } = body || {}
 
     // Validaciones básicas
     if (!prestamoId || !monto) {
@@ -49,6 +49,16 @@ export async function POST(request: NextRequest) {
     // Validar método de pago
     const metodosValidos = ['EFECTIVO', 'TRANSFERENCIA', 'DEPOSITO']
     const metodoFinal = metodoPago && metodosValidos.includes(metodoPago) ? metodoPago : 'EFECTIVO'
+
+    // Validar foto de comprobante
+    if (metodoFinal !== 'EFECTIVO' && !fotoComprobante) {
+      // Opcionalmente se puede requerir foto para transferencias y depósitos
+      // console.log('❌ Falta foto del comprobante para pago no en efectivo')
+      // return NextResponse.json(
+      //   { error: "La foto del comprobante es obligatoria para transferencias y depósitos" },
+      //   { status: 400 }
+      // )
+    }
 
     // Validar que el monto sea un número válido y positivo
     const montoNumerico = parseFloat(monto)
@@ -196,6 +206,7 @@ export async function POST(request: NextRequest) {
           monto: montoDecimal, // Pasar como objeto Decimal
           observaciones: observaciones?.trim() || null,
           metodoPago: metodoFinal,
+          fotoComprobante: fotoComprobante || null,
           fecha: fecha ? new Date(fecha) : undefined
         },
         include: {

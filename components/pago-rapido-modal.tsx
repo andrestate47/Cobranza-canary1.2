@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { DollarSign, User, Calculator, Loader2, Plus, Receipt, Share2, MessageCircle, ChevronDown, CalendarIcon } from "lucide-react"
+import { DollarSign, User, Calculator, Loader2, Plus, Receipt, Share2, MessageCircle, ChevronDown, CalendarIcon, Camera, Upload, X } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -108,11 +108,112 @@ export default function PagoRapidoModal({
   const [observaciones, setObservaciones] = useState("")
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO'>('EFECTIVO')
   const [fecha, setFecha] = useState<Date>(new Date())
+  const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
+  const [capturandoFoto, setCapturandoFoto] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const boletaRef = useRef<HTMLDivElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
+  useEffect(() => {
+    return () => {
+      detenerCamara()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) {
+      detenerCamara()
+    }
+  }, [isOpen])
+
+  const iniciarCamara = async () => {
+    if (streamRef.current) return
+    try {
+      setCapturandoFoto(true)
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      })
+      streamRef.current = mediaStream
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play()
+          } catch (e: any) {
+            if (e.name !== 'AbortError') console.error('[Camera] Play error:', e)
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error al acceder a la cámara:", error)
+      setCapturandoFoto(false)
+      toast({
+        title: "Error",
+        description: "No se pudo acceder a la cámara. Verifica los permisos.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const detenerCamara = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setCapturandoFoto(false)
+  }
+
+  const capturarFoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        const dataURL = canvas.toDataURL('image/jpeg', 0.8)
+        setFotoComprobante(dataURL)
+        detenerCamara()
+        toast({
+          title: "Foto capturada",
+          description: "La imagen del comprobante se ha capturado exitosamente",
+        })
+      }
+    }
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona una imagen válida",
+          variant: "destructive",
+        })
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFotoComprobante(e.target?.result as string)
+        toast({
+          title: "Imagen cargada",
+          description: "La imagen del comprobante se ha cargado exitosamente",
+        })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   // Actualiza la fecha a la fecha y hora actual cada vez que se abre el modal
   useEffect(() => {
@@ -244,6 +345,7 @@ export default function PagoRapidoModal({
         monto: montoNumerico,
         observaciones: observaciones.trim() || undefined,
         metodoPago: metodoPago,
+        fotoComprobante: fotoComprobante || undefined,
         fecha: fecha ? fecha.toISOString() : undefined
       }
 
@@ -336,7 +438,9 @@ export default function PagoRapidoModal({
     setObservaciones("")
     setMetodoPago('EFECTIVO')
     setFecha(new Date())
+    setFotoComprobante(null)
     setPagoRegistrado(null)
+    detenerCamara()
     onClose()
   }
 
@@ -611,6 +715,97 @@ export default function PagoRapidoModal({
                 </Select>
               </div>
 
+              {/* Foto del comprobante */}
+              <div className="sm:col-span-2">
+                <Label>Foto de boleta / comprobante (opcional)</Label>
+                <div className="mt-2 space-y-2">
+                  {!fotoComprobante ? (
+                    <div className="space-y-2">
+                      {!capturandoFoto ? (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={iniciarCamara}
+                            disabled={loading}
+                            className="flex-1"
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Cámara
+                          </Button>
+
+                          <div className="relative flex-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={loading}
+                              className="w-full"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Galería
+                            </Button>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <video
+                            ref={videoRef}
+                            className="w-full max-h-64 object-cover rounded-lg border bg-black"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={capturarFoto}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Camera className="h-4 w-4 mr-2" />
+                              Capturar
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={detenerCamara}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative w-full sm:w-1/2 mx-auto">
+                        <img
+                          src={fotoComprobante}
+                          alt="Comprobante"
+                          className="w-full max-h-48 object-contain rounded-lg border bg-gray-50"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => setFotoComprobante(null)}
+                          className="absolute -top-2 -right-2 h-8 w-8 rounded-full"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Fila Completa Inferior: Observaciones */}
               <div className="sm:col-span-2">
                 <Label htmlFor="observaciones">Observaciones</Label>
@@ -739,6 +934,7 @@ export default function PagoRapidoModal({
             </div>
           </>
         )}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
       </DialogContent>
     </Dialog>
   )

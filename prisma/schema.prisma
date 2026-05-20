@@ -191,11 +191,12 @@ model Pago {
   monto         Decimal    @db.Decimal(10, 2)
   fecha         DateTime   @default(now())
   observaciones String?
-  modificado    Boolean    @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  metodoPago    MetodoPago @default(EFECTIVO) @map("metodo_pago")
-  prestamo      Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  modificado      Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  metodoPago      MetodoPago @default(EFECTIVO) @map("metodo_pago")
+  fotoComprobante String?    @map("foto_comprobante")
+  prestamo        Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
   usuario       User       @relation(fields: [userId], references: [id])
 
   @@map("pagos")
