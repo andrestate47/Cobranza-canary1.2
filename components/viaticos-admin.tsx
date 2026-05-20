@@ -238,17 +238,39 @@ export function ViaticosAdmin() {
   }
 
   const totalViaticos = cobradores.reduce((sum, c) => sum + c.saldoActual, 0)
-  const montosIniciales = movimientos
+  
+  // Desglosar los tipos de movimientos para cálculos exactos
+  const totalApertura = movimientos
     .filter(m => m.tipo === "APERTURA_CAJA")
     .reduce((sum, m) => sum + m.monto, 0)
-  const totalIngresos = movimientos
-    .filter(m => m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
+  
+  const totalEntregas = movimientos
+    .filter(m => m.tipo === "ENTREGA")
     .reduce((sum, m) => sum + m.monto, 0)
-  const totalEgresos = movimientos
-    .filter(m => m.tipo === "GASTO" || m.tipo === "EGRESO_GENERAL")
+  
+  const totalDevoluciones = movimientos
+    .filter(m => m.tipo === "DEVOLUCION")
     .reduce((sum, m) => sum + m.monto, 0)
-  // Saldo disponible en caja = Monto inicial - Todos los egresos
-  const saldoDisponibleCaja = montosIniciales - totalEgresos
+  
+  const totalEgresosGenerales = movimientos
+    .filter(m => m.tipo === "EGRESO_GENERAL")
+    .reduce((sum, m) => sum + m.monto, 0)
+  
+  const totalGastosCobradores = movimientos
+    .filter(m => m.tipo === "GASTO")
+    .reduce((sum, m) => sum + m.monto, 0)
+
+  // 1. Caja Central (Admin): Dinero físico en poder de la administración.
+  const saldoCajaAdmin = totalApertura - totalEntregas - totalEgresosGenerales + totalDevoluciones
+
+  // 2. Caja en Cobradores: Dinero activo entregado a los cobradores.
+  // totalViaticos ya representa la suma de los saldos actuales.
+
+  // 3. Fondo Consolidado (Total de la Empresa): Saldo Caja Admin + Dinero en Cobradores.
+  const saldoConsolidado = saldoCajaAdmin + totalViaticos
+  
+  // 4. Egresos Totales: Suma de salidas definitivas de dinero.
+  const totalEgresos = totalGastosCobradores + totalEgresosGenerales
 
   return (
     <div className="space-y-6">
@@ -282,71 +304,101 @@ export function ViaticosAdmin() {
 
       {/* Tarjetas de Resumen */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        {/* Caja Central (Admin) */}
+        <Card className="border-l-4 border-l-blue-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Saldo en Caja
+            <CardTitle className="text-sm font-semibold text-gray-700">
+              Caja Central (Admin)
             </CardTitle>
-            <Banknote className="h-4 w-4 text-blue-600 flex-shrink-0" />
+            <Banknote className="h-5 w-5 text-blue-600 flex-shrink-0" />
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-sm font-bold text-blue-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
-              {formatCurrency(saldoDisponibleCaja)}
+            <div className="text-xl font-bold text-blue-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
+              {formatCurrency(saldoCajaAdmin)}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Monto inicial - Todos los egresos
-            </p>
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p>Dinero físico del administrador.</p>
+              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
+                <div>Inicial: {formatCurrency(totalApertura)}</div>
+                <div>Entregas: -{formatCurrency(totalEntregas)}</div>
+                <div>Egresos Grales: -{formatCurrency(totalEgresosGenerales)}</div>
+                <div>Devoluciones: +{formatCurrency(totalDevoluciones)}</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Caja en Cobradores */}
+        <Card className="border-l-4 border-l-purple-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              En Cobradores
+            <CardTitle className="text-sm font-semibold text-gray-700">
+              En Cobradores (Viáticos)
             </CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Users className="h-5 w-5 text-purple-600 flex-shrink-0" />
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-sm font-bold break-words whitespace-normal overflow-wrap-anywhere leading-tight">
+            <div className="text-xl font-bold text-purple-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
               {formatCurrency(totalViaticos)}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {cobradores.length} cobradores activos
-            </p>
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p>Efectivo activo en manos de los cobradores para gastos de ruta.</p>
+              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
+                <div>Cobradores activos: {cobradores.length}</div>
+                <div>Entregado: {formatCurrency(totalEntregas)}</div>
+                <div>Gastado: -{formatCurrency(totalGastosCobradores)}</div>
+                <div>Devuelto: -{formatCurrency(totalDevoluciones)}</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
+        {/* Fondo Consolidado */}
+        <Card className={`border-l-4 ${saldoConsolidado >= 0 ? 'border-l-green-500' : 'border-l-red-500'} shadow-sm`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Ingresos
+            <CardTitle className="text-sm font-semibold text-gray-700">
+              Fondo Total Consolidado
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600 flex-shrink-0" />
+            <DollarSign className={`h-5 w-5 ${saldoConsolidado >= 0 ? 'text-green-600' : 'text-red-600'} flex-shrink-0`} />
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-sm font-bold text-green-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
-              {formatCurrency(totalIngresos)}
+            <div className={`text-xl font-bold ${saldoConsolidado >= 0 ? 'text-green-600' : 'text-red-600'} break-words whitespace-normal overflow-wrap-anywhere leading-tight`}>
+              {formatCurrency(saldoConsolidado)}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Entregas registradas
-            </p>
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p>Dinero total disponible en el sistema (Caja + Cobradores).</p>
+              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
+                <div>Caja Central: {formatCurrency(saldoCajaAdmin)}</div>
+                <div>En Cobradores: +{formatCurrency(totalViaticos)}</div>
+                <div className="border-t border-gray-200 mt-1 pt-1 font-semibold text-gray-700">
+                  Total: {formatCurrency(saldoConsolidado)}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Egresos Totales */}
+        <Card className="border-l-4 border-l-amber-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Egresos
+            <CardTitle className="text-sm font-semibold text-gray-700">
+              Egresos Totales (Gastos)
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600 flex-shrink-0" />
+            <TrendingDown className="h-5 w-5 text-amber-600 flex-shrink-0" />
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="text-sm font-bold text-red-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
+            <div className="text-xl font-bold text-amber-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
               {formatCurrency(totalEgresos)}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Gastos registrados
-            </p>
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p>Salidas reales de efectivo de la empresa (gastos definitivos).</p>
+              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
+                <div>Gastos de Cobradores: {formatCurrency(totalGastosCobradores)}</div>
+                <div>Egresos Generales: +{formatCurrency(totalEgresosGenerales)}</div>
+                <div className="border-t border-gray-200 mt-1 pt-1 font-semibold text-gray-700">
+                  Total: {formatCurrency(totalEgresos)}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
