@@ -142,7 +142,7 @@ export default function NuevoGastoModal({
           fotoBase64 = await new Promise((resolve, reject) => {
             const reader = new FileReader()
             reader.onload = (e) => {
-              const img = new Image()
+              const img = document.createElement('img')
               img.onload = () => {
                 const canvas = document.createElement('canvas')
                 const MAX_WIDTH = 800;
