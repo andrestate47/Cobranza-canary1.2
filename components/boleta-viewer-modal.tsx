@@ -58,6 +58,7 @@ interface BoletaPagoData {
     }
     tipoCredito?: string
     tipoPagoMetodo?: string
+    fotoComprobante?: string | null
 }
 
 interface BoletaViewerModalProps {

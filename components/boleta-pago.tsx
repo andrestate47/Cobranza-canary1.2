@@ -47,6 +47,7 @@ interface BoletaPagoData {
   // Nuevos campos adicionales
   tipoCredito?: string // 'efectivo' | 'transferencia'
   tipoPagoMetodo?: string // 'efectivo' | 'transferencia'
+  fotoComprobante?: string | null
 }
 
 interface BoletaPagoProps {
@@ -655,6 +656,24 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <span className="font-medium text-purple-600">{progresoPrecentaje}%</span>
                 </div>
               </div>
+
+              {/* Foto del comprobante */}
+              {data.fotoComprobante && (
+                <>
+                  <Separator className="my-3" />
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Comprobante adjunto:</p>
+                    <div className="rounded-lg overflow-hidden border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={data.fotoComprobante} 
+                        alt="Comprobante de pago" 
+                        className="w-full object-contain max-h-[300px]"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Número de boleta destacado */}
               <div className="mt-4 bg-blue-50 rounded-lg p-3 text-center">

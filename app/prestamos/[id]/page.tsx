@@ -72,6 +72,7 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
         fecha: pago.fecha.toISOString(),
         observaciones: pago.observaciones,
         metodoPago: pago.metodoPago,
+        fotoComprobante: pago.fotoComprobante,
         usuario: pago.usuario,
         createdAt: pago.createdAt.toISOString(),
         updatedAt: pago.updatedAt.toISOString(),
