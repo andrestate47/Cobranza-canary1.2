@@ -26,11 +26,13 @@ export async function POST(request: NextRequest) {
     let body
     try {
       body = await request.json()
-      console.log('📦 Body recibido:', JSON.stringify(body, null, 2))
+      const { fotoComprobante, ...bodyToLog } = body || {}
+      console.log('📦 Body recibido:', JSON.stringify(bodyToLog, null, 2))
+      if (fotoComprobante) console.log('📦 Incluye fotoComprobante: Sí (base64 omitido en log)')
     } catch (parseError) {
       console.log('❌ Error parsing JSON body:', parseError)
       return NextResponse.json(
-        { error: "Los datos enviados no son válidos. Intenta nuevamente" },
+        { error: "Los datos enviados no son válidos o la imagen es muy pesada. Intenta nuevamente" },
         { status: 400 }
       )
     }

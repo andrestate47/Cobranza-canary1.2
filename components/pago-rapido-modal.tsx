@@ -176,12 +176,30 @@ export default function PagoRapidoModal({
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current
       const video = videoRef.current
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
+      
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width = Math.round((width * MAX_HEIGHT) / height);
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
       const ctx = canvas.getContext('2d')
       if (ctx) {
-        ctx.drawImage(video, 0, 0)
-        const dataURL = canvas.toDataURL('image/jpeg', 0.8)
+        ctx.drawImage(video, 0, 0, width, height)
+        const dataURL = canvas.toDataURL('image/jpeg', 0.6)
         setFotoComprobante(dataURL)
         detenerCamara()
         toast({
@@ -205,11 +223,40 @@ export default function PagoRapidoModal({
       }
       const reader = new FileReader()
       reader.onload = (e) => {
-        setFotoComprobante(e.target?.result as string)
-        toast({
-          title: "Imagen cargada",
-          description: "La imagen del comprobante se ha cargado exitosamente",
-        })
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height)
+            const dataURL = canvas.toDataURL('image/jpeg', 0.6)
+            setFotoComprobante(dataURL)
+            toast({
+              title: "Imagen cargada",
+              description: "La imagen del comprobante se ha cargado exitosamente",
+            })
+          }
+        }
+        img.src = e.target?.result as string
       }
       reader.readAsDataURL(file)
     }
