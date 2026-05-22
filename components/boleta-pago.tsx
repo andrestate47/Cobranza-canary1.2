@@ -657,24 +657,6 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 </div>
               </div>
 
-              {/* Foto del comprobante */}
-              {data.fotoComprobante && (
-                <>
-                  <Separator className="my-3" />
-                  <div className="mt-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Comprobante adjunto:</p>
-                    <div className="rounded-lg overflow-hidden border border-gray-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={data.fotoComprobante} 
-                        alt="Comprobante de pago" 
-                        className="w-full object-contain max-h-[300px]"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
               {/* Número de boleta destacado */}
               <div className="mt-4 bg-blue-50 rounded-lg p-3 text-center">
                 <p className="text-xs text-gray-600 mb-1">Número de Boleta</p>

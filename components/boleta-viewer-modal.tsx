@@ -201,6 +201,21 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
                             Cerrar
                         </Button>
                     </div>
+
+                    {/* Foto del comprobante adjunto (visible sólo en la UI, no en la captura compartida) */}
+                    {data.fotoComprobante && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                            <h3 className="text-sm font-semibold text-gray-700 mb-3 text-center">Comprobante Adjunto <span className="text-xs text-gray-500 font-normal">(No visible al compartir)</span></h3>
+                            <div className="rounded-lg overflow-hidden border border-gray-200 bg-white">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img 
+                                    src={data.fotoComprobante} 
+                                    alt="Comprobante de pago adjunto" 
+                                    className="w-full object-contain max-h-[400px]"
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
