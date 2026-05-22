@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
       supervisor: usuario.supervisor,
       supervisados: usuario.supervisados,
       documentoIdentificacion: usuario.documentoIdentificacion,
+      profilePhoto: usuario.profilePhoto,
       permissions: usuario.permissions.map(p => p.permission),
       stats: {
         prestamos: usuario._count.prestamos,
@@ -95,8 +96,10 @@ export async function POST(request: NextRequest) {
       const formData = await request.formData()
       body = Object.fromEntries(formData.entries())
       
-      // Extraer archivo si existe
+      // Extraer archivos si existen
       documentoFile = formData.get('documentoFile') as File | null
+      const profilePhotoFile = formData.get('profilePhotoFile') as File | null
+      body.profilePhotoFile = profilePhotoFile
       
       // Parsear permisos si viene como string
       if (typeof body.permissions === 'string') {
@@ -176,6 +179,14 @@ export async function POST(request: NextRequest) {
       documentoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
     }
 
+    let profilePhotoUrl = null
+    const profilePhotoFile = body.profilePhotoFile as File | null
+    if (profilePhotoFile && profilePhotoFile.size > 0) {
+      const buffer = Buffer.from(await profilePhotoFile.arrayBuffer())
+      const mimeType = profilePhotoFile.type || 'application/octet-stream'
+      profilePhotoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
+    }
+
     // Encriptar contraseña
     const hashedPassword = await bcryptjs.hash(password, 12)
 
@@ -200,7 +211,8 @@ export async function POST(request: NextRequest) {
         mapLink: mapLink?.trim() || null,
         referenciaFamiliar: referenciaFamiliar?.trim() || null,
         referenciaTrabajo: referenciaTrabajo?.trim() || null,
-        documentoIdentificacion: documentoUrl
+        documentoIdentificacion: documentoUrl,
+        profilePhoto: profilePhotoUrl
       },
       include: {
         supervisor: true
@@ -238,6 +250,7 @@ export async function POST(request: NextRequest) {
       timeLimit: usuarioCompleto!.timeLimit,
       supervisor: usuarioCompleto!.supervisor,
       documentoIdentificacion: usuarioCompleto!.documentoIdentificacion,
+      profilePhoto: usuarioCompleto!.profilePhoto,
       permissions: usuarioCompleto!.permissions.map(p => p.permission)
     })
 

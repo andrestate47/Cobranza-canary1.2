@@ -68,6 +68,7 @@ export async function GET(
       supervisor: usuario.supervisor,
       supervisados: usuario.supervisados,
       documentoIdentificacion: usuario.documentoIdentificacion,
+      profilePhoto: usuario.profilePhoto,
       permissions: usuario.permissions.map(p => p.permission),
       timeUsage: usuario.timeUsage
     })
@@ -99,8 +100,10 @@ export async function PUT(
       const formData = await request.formData()
       body = Object.fromEntries(formData.entries())
       
-      // Extraer archivo si existe
+      // Extraer archivos si existen
       documentoFile = formData.get('documentoFile') as File | null
+      const profilePhotoFile = formData.get('profilePhotoFile') as File | null
+      body.profilePhotoFile = profilePhotoFile
       
       // Parsear permisos si viene como string
       if (typeof body.permissions === 'string') {
@@ -203,6 +206,14 @@ export async function PUT(
       documentoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
     }
 
+    let profilePhotoUrl = usuarioExistente.profilePhoto
+    const profilePhotoFile = body.profilePhotoFile as File | null
+    if (profilePhotoFile && profilePhotoFile.size > 0) {
+      const buffer = Buffer.from(await profilePhotoFile.arrayBuffer())
+      const mimeType = profilePhotoFile.type || 'application/octet-stream'
+      profilePhotoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
+    }
+
     // Preparar datos de actualización con valores correctamente procesados
     const updateData: any = {
       email: email?.trim() || usuarioExistente.email,
@@ -222,7 +233,8 @@ export async function PUT(
       mapLink: mapLink?.trim() || null,
       referenciaFamiliar: referenciaFamiliar?.trim() || null,
       referenciaTrabajo: referenciaTrabajo?.trim() || null,
-      documentoIdentificacion: documentoUrl
+      documentoIdentificacion: documentoUrl,
+      profilePhoto: profilePhotoUrl
     }
 
     // Si se proporciona contraseña, encriptarla
@@ -273,6 +285,7 @@ export async function PUT(
       timeLimit: usuarioActualizado!.timeLimit,
       supervisor: usuarioActualizado!.supervisor,
       documentoIdentificacion: usuarioActualizado!.documentoIdentificacion,
+      profilePhoto: usuarioActualizado!.profilePhoto,
       permissions: usuarioActualizado!.permissions.map(p => p.permission)
     })
 

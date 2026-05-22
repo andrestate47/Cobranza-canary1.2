@@ -58,6 +58,7 @@ interface Usuario {
     email: string
   }>
   documentoIdentificacion?: string
+  profilePhoto?: string
   permissions: string[]
   stats?: {
     prestamos: number
@@ -359,10 +360,14 @@ export default function AdminUsuarios() {
               <CardContent className="pt-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4 flex-1">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 ${
                       usuario.isActive ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'
                     }`}>
-                      {getRoleIcon(usuario.role)}
+                      {usuario.profilePhoto ? (
+                        <img src={usuario.profilePhoto} alt={usuario.name || "Perfil"} className="w-full h-full object-cover" />
+                      ) : (
+                        getRoleIcon(usuario.role)
+                      )}
                     </div>
                     
                     <div className="flex-1">

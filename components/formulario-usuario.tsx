@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Eye, EyeOff, Info, Upload, X, FileText } from "lucide-react"
+import { Loader2, Eye, EyeOff, Info, Upload, X, FileText, User } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 // MapLocationPicker eliminado - ahora se usa un simple link de Google Maps
 
@@ -39,6 +39,7 @@ interface Usuario {
   referenciaFamiliar?: string
   referenciaTrabajo?: string
   documentoIdentificacion?: string
+  profilePhoto?: string
   supervisor?: {
     id: string
     name: string
@@ -123,6 +124,10 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
   const [documentoPreview, setDocumentoPreview] = useState<string | null>(
     usuario?.documentoIdentificacion || null
   )
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null)
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(
+    usuario?.profilePhoto || null
+  )
   const { toast } = useToast()
 
   const isEditing = !!usuario
@@ -187,6 +192,29 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
     setDocumentoPreview(usuario?.documentoIdentificacion || null)
   }
 
+  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: "Error", description: "Solo se permiten archivos de imagen", variant: "destructive" })
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "Error", description: "La foto debe ser menor a 5MB", variant: "destructive" })
+        return
+      }
+      setProfilePhotoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setProfilePhotoPreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeProfilePhoto = () => {
+    setProfilePhotoFile(null)
+    setProfilePhotoPreview(usuario?.profilePhoto || null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -234,7 +262,7 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
       const method = isEditing ? 'PUT' : 'POST'
 
       // Si hay archivo, usar FormData
-      if (documentoFile) {
+      if (documentoFile || profilePhotoFile) {
         const formDataToSend = new FormData()
         formDataToSend.append('email', formData.email.trim())
         formDataToSend.append('firstName', formData.firstName.trim())
@@ -257,7 +285,8 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
         if (formData.password) {
           formDataToSend.append('password', formData.password)
         }
-        formDataToSend.append('documentoFile', documentoFile)
+        if (documentoFile) formDataToSend.append('documentoFile', documentoFile)
+        if (profilePhotoFile) formDataToSend.append('profilePhotoFile', profilePhotoFile)
 
         const response = await fetch(url, {
           method,
@@ -395,6 +424,28 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
           <CardTitle>Información Básica</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Avatar / Profile Photo */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="relative group">
+              <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${profilePhotoPreview ? 'border-primary' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                {profilePhotoPreview ? (
+                  <img src={profilePhotoPreview} alt="Perfil" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="h-10 w-10 text-gray-400" />
+                )}
+              </div>
+              <label htmlFor="profilePhotoInput" className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-sm">
+                <Upload className="h-4 w-4" />
+              </label>
+              <input id="profilePhotoInput" type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
+            </div>
+            {profilePhotoPreview && profilePhotoPreview !== usuario?.profilePhoto && (
+               <button type="button" onClick={removeProfilePhoto} className="text-xs text-red-500 mt-2 hover:underline">
+                 Quitar foto seleccionada
+               </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">Nombre</Label>
