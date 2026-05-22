@@ -14,8 +14,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Receipt, DollarSign, Loader2, Upload, X, Image as ImageIcon } from "lucide-react"
+import { Receipt, DollarSign, Loader2, Upload, X, Image as ImageIcon, Camera } from "lucide-react"
 import Image from "next/image"
+import CameraModal from "@/components/camera-modal"
 
 interface NuevoGastoModalProps {
   isOpen: boolean
@@ -31,8 +32,9 @@ export default function NuevoGastoModal({
   const [concepto, setConcepto] = useState("")
   const [monto, setMonto] = useState("")
   const [observaciones, setObservaciones] = useState("")
-  const [foto, setFoto] = useState<File | null>(null)
+  const [foto, setFoto] = useState<File | string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [showCameraModal, setShowCameraModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -111,6 +113,12 @@ export default function NuevoGastoModal({
     }
   }
 
+  const handleCameraCapture = (fotoBase64: string) => {
+    setFoto(fotoBase64)
+    setPreviewUrl(fotoBase64)
+    setShowCameraModal(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -138,7 +146,9 @@ export default function NuevoGastoModal({
       let fotoBase64 = null
 
       if (foto) {
-        if (foto.type.startsWith('image/')) {
+        if (typeof foto === 'string') {
+          fotoBase64 = foto
+        } else if (foto.type.startsWith('image/')) {
           fotoBase64 = await new Promise((resolve, reject) => {
             const reader = new FileReader()
             reader.onload = (e) => {
@@ -296,7 +306,22 @@ export default function NuevoGastoModal({
           </div>
 
           <div>
-            <Label htmlFor="foto">Foto de la boleta o factura</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="foto">Foto de la boleta o factura</Label>
+              {!foto && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowCameraModal(true)}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                  disabled={loading}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Tomar Foto
+                </Button>
+              )}
+            </div>
             <div className="mt-1">
               {!foto ? (
                 <div
@@ -326,7 +351,7 @@ export default function NuevoGastoModal({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center text-sm text-gray-600">
                           <ImageIcon className="h-4 w-4 mr-2" />
-                          <span className="truncate max-w-[200px]">{foto.name}</span>
+                          <span className="truncate max-w-[200px]">{typeof foto === 'string' ? 'Foto capturada.jpg' : foto.name}</span>
                         </div>
                         <Button
                           type="button"
@@ -396,6 +421,12 @@ export default function NuevoGastoModal({
           </div>
         </form>
       </DialogContent>
+
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handleCameraCapture}
+      />
     </Dialog>
   )
 }
