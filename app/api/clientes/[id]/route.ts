@@ -16,11 +16,6 @@ export async function PUT(
     }
 
     const clienteId = params.id
-
-    if (!clienteId) {
-      return NextResponse.json({ error: "ID de cliente inválido" }, { status: 400 })
-    }
-
     const body = await request.json()
     const { nombre, apellido, documento, telefono, direccionCliente, direccionCobro } = body
 

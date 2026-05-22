@@ -153,6 +153,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [showRenovacionModal, setShowRenovacionModal] = useState(false)
   const [renovando, setRenovando] = useState(false)
   const [showEditarModal, setShowEditarModal] = useState(false)
+  const [showEditarBoletaModal, setShowEditarBoletaModal] = useState(false)
   const [editando, setEditando] = useState(false)
   const [montoTotalEditar, setMontoTotalEditar] = useState(0)
   const [cuotaEditar, setCuotaEditar] = useState(0)
@@ -184,7 +185,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   })
   const [observacionesRenovacion, setObservacionesRenovacion] = useState("")
 
-  // Estados para el formulario de edición de cliente
+  // Estados para el formulario de edición de cliente y boleta
   const [nombreEditar, setNombreEditar] = useState("")
   const [apellidoEditar, setApellidoEditar] = useState("")
   const [documentoEditar, setDocumentoEditar] = useState("")
@@ -192,16 +193,19 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [direccionClienteEditar, setDireccionClienteEditar] = useState("")
   const [direccionCobroEditar, setDireccionCobroEditar] = useState("")
   const [montoEditar, setMontoEditar] = useState("")
+  const [interesEditar, setInteresEditar] = useState("")
+  const [tipoPagoEditar, setTipoPagoEditar] = useState("")
+  const [cuotasEditar, setCuotasEditar] = useState("")
   const [tipoMicroseguroEditar, setTipoMicroseguroEditar] = useState(prestamo.microseguroTipo)
   const [valorMicroseguroEditar, setValorMicroseguroEditar] = useState(prestamo.microseguroValor?.toString() || "0")
 
   // Efecto para calcular el total y cuota en el modal de edición
   useEffect(() => {
-    if (showEditarModal) {
+    if (showEditarModal || showEditarBoletaModal) {
       const montoNum = parseFloat(montoEditar) || 0
       const valorSeguro = parseFloat(valorMicroseguroEditar) || 0
-      const interesNum = Number(prestamo.interes)
-      const cuotasNum = Number(prestamo.cuotas)
+      const interesNum = parseFloat(interesEditar) || 0
+      const cuotasNum = parseInt(cuotasEditar) || 1
 
       const montoConInteres = montoNum + (montoNum * interesNum / 100)
       
@@ -216,7 +220,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       setMontoTotalEditar(totalCalculado)
       setCuotaEditar(totalCalculado / cuotasNum)
     }
-  }, [montoEditar, tipoMicroseguroEditar, valorMicroseguroEditar, showEditarModal, prestamo.interes, prestamo.cuotas])
+  }, [montoEditar, tipoMicroseguroEditar, valorMicroseguroEditar, interesEditar, cuotasEditar, showEditarModal, showEditarBoletaModal])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return ''
@@ -1087,36 +1091,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setTelefonoEditar(prestamo.cliente.telefono || "")
     setDireccionClienteEditar(prestamo.cliente.direccionCliente || "")
     setDireccionCobroEditar(prestamo.cliente.direccionCobro || "")
-    setMontoEditar(prestamo.monto.toString())
-    setTipoMicroseguroEditar(prestamo.microseguroTipo)
-    setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
-    
-    // Obtener la fecha en formato YYYY-MM-DD para los inputs type="date"
-    try {
-      if (prestamo.fechaInicio) {
-        const d = new Date(prestamo.fechaInicio);
-        setFechaInicioEditar(d.toISOString().split('T')[0]);
-      }
-      
-      // Intentar setear valores manuales u originales (sólo base visual)
-      const prestamoFlex3 = prestamo as any;
-      if (prestamoFlex3.fechaFinManual) {
-        setFechaFinEditar(new Date(prestamoFlex3.fechaFinManual).toISOString().split('T')[0])
-      } else if (prestamo.fechaFin) {
-         setFechaFinEditar(new Date(prestamo.fechaFin).toISOString().split('T')[0])
-      } else {
-         setFechaFinEditar("")
-      }
-
-      setDiasTranscurridosEditar(prestamoFlex3.diasTranscurridosManual?.toString() || "")
-      setFechaProximoPagoEditar(prestamoFlex3.fechaProximoPagoManual ? new Date(prestamoFlex3.fechaProximoPagoManual).toISOString().split('T')[0] : "")
-
-    } catch (e) {
-      setFechaInicioEditar("");
-      setFechaFinEditar("");
-      setDiasTranscurridosEditar("");
-      setFechaProximoPagoEditar("");
-    }
     
     setShowEditarModal(true)
   }
@@ -1161,10 +1135,95 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         return
       }
 
-      // Siempre actualizar el préstamo para recalcular matemáticamente la fecha fin si se corrigió la fecha de inicio
-      const montoNum = parseFloat(montoEditar)
-      const microseguroValorNum = parseFloat(valorMicroseguroEditar) || 0
+      toast({
+        title: "Datos actualizados",
+        description: "La información del cliente ha sido actualizada exitosamente",
+      })
+
+      // Cerrar modal y recargar la página
+      setShowEditarModal(false)
+      window.location.reload()
+    } catch (error) {
+      console.error("Error:", error)
+      toast({
+        title: "Error",
+        description: "Error de conexión",
+        variant: "destructive",
+      })
+    } finally {
+      setEditando(false)
+    }
+  }
+
+  const handleCancelEdicion = () => {
+    setShowEditarModal(false)
+    // Limpiar formulario
+    setNombreEditar("")
+    setApellidoEditar("")
+    setDocumentoEditar("")
+    setTelefonoEditar("")
+    setDireccionClienteEditar("")
+    setDireccionCobroEditar("")
+  }
+
+  // Función para manejar la edición de la boleta/préstamo
+  const handleEditarBoleta = () => {
+    setMontoEditar(prestamo.monto.toString())
+    setInteresEditar(prestamo.interes.toString())
+    setTipoPagoEditar(prestamo.tipoPago)
+    setCuotasEditar(prestamo.cuotas.toString())
+    setTipoMicroseguroEditar(prestamo.microseguroTipo)
+    setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
+    
+    // Obtener la fecha en formato YYYY-MM-DD para los inputs type="date"
+    try {
+      if (prestamo.fechaInicio) {
+        const d = new Date(prestamo.fechaInicio);
+        setFechaInicioEditar(d.toISOString().split('T')[0]);
+      }
       
+      // Intentar setear valores manuales u originales (sólo base visual)
+      const prestamoFlex3 = prestamo as any;
+      if (prestamoFlex3.fechaFinManual) {
+        setFechaFinEditar(new Date(prestamoFlex3.fechaFinManual).toISOString().split('T')[0])
+      } else if (prestamo.fechaFin) {
+         setFechaFinEditar(new Date(prestamo.fechaFin).toISOString().split('T')[0])
+      } else {
+         setFechaFinEditar("")
+      }
+
+      setDiasTranscurridosEditar(prestamoFlex3.diasTranscurridosManual?.toString() || "")
+      setFechaProximoPagoEditar(prestamoFlex3.fechaProximoPagoManual ? new Date(prestamoFlex3.fechaProximoPagoManual).toISOString().split('T')[0] : "")
+
+    } catch (e) {
+      setFechaInicioEditar("");
+      setFechaFinEditar("");
+      setDiasTranscurridosEditar("");
+      setFechaProximoPagoEditar("");
+    }
+    
+    setShowEditarBoletaModal(true)
+  }
+
+  const handleSubmitEditarBoleta = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const montoNum = parseFloat(montoEditar)
+    const interesNum = parseFloat(interesEditar)
+    const cuotasNum = parseInt(cuotasEditar)
+    const microseguroValorNum = parseFloat(valorMicroseguroEditar) || 0
+
+    if (isNaN(montoNum) || montoNum <= 0 || isNaN(interesNum) || interesNum < 0 || isNaN(cuotasNum) || cuotasNum <= 0) {
+      toast({
+        title: "Error",
+        description: "Monto, interés y cuotas deben ser números válidos mayores a cero",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setEditando(true)
+    try {
       // Calcular microseguro total
       let microseguroTotal = 0
       if (tipoMicroseguroEditar === 'MONTO_FIJO') {
@@ -1199,9 +1258,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         },
         body: JSON.stringify({
           monto: montoNum,
-          interes: Number(prestamo.interes),
-          tipoPago: prestamo.tipoPago,
-          cuotas: Number(prestamo.cuotas),
+          interes: interesNum,
+          tipoPago: tipoPagoEditar,
+          cuotas: cuotasNum,
           fechaInicio: fechaInicioAEnviar,
           fechaFinManual: fechaFinManualObj,
           diasTranscurridosManual: diasTranscurridosEditar || null,
@@ -1217,7 +1276,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         const error = await prestamoUpdateResponse.json()
         toast({
           title: "Error",
-          description: error.error || "No se pudo actualizar el monto del préstamo",
+          description: error.error || "No se pudo actualizar la boleta del préstamo",
           variant: "destructive",
         })
         setEditando(false)
@@ -1225,12 +1284,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       }
 
       toast({
-        title: "Datos actualizados",
-        description: "La información ha sido actualizada exitosamente",
+        title: "Boleta actualizada",
+        description: "La información de la boleta ha sido actualizada exitosamente",
       })
 
       // Cerrar modal y recargar la página
-      setShowEditarModal(false)
+      setShowEditarBoletaModal(false)
       window.location.reload()
     } catch (error) {
       console.error("Error:", error)
@@ -1244,16 +1303,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
   }
 
-  const handleCancelEdicion = () => {
-    setShowEditarModal(false)
+  const handleCancelEditarBoleta = () => {
+    setShowEditarBoletaModal(false)
     // Limpiar formulario
-    setNombreEditar("")
-    setApellidoEditar("")
-    setDocumentoEditar("")
-    setTelefonoEditar("")
-    setDireccionClienteEditar("")
-    setDireccionCobroEditar("")
     setMontoEditar("")
+    setInteresEditar("")
+    setTipoPagoEditar("")
+    setCuotasEditar("")
+    setFechaInicioEditar("")
+    setFechaFinEditar("")
+    setDiasTranscurridosEditar("")
+    setFechaProximoPagoEditar("")
   }
 
   return (
@@ -1610,6 +1670,15 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Editar Cliente
+                </Button>
+
+                <Button
+                  onClick={handleEditarBoleta}
+                  variant="outline"
+                  className="flex-1 border-teal-300 text-teal-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-400"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Boleta
                 </Button>
 
                 {prestamo.estado === "ACTIVO" && (
@@ -2162,12 +2231,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       <Dialog open={showEditarModal} onOpenChange={handleCancelEdicion}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 text-blue-600">
+            <DialogTitle className="flex items-center space-x-2 text-purple-600">
               <User className="h-5 w-5" />
-              <span>Editar Cliente y Préstamo</span>
+              <span>Editar Información de Cliente</span>
             </DialogTitle>
             <DialogDescription>
-              Modifica la información personal del cliente y los valores del préstamo.
+              Modifica los datos personales y de contacto del cliente.
             </DialogDescription>
           </DialogHeader>
 
@@ -2299,27 +2368,134 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
                 <p className="text-[10px] text-gray-500 mt-1">Puedes pegar directamente el enlace de Google Maps compartido.</p>
               </div>
+            </div>
 
-              <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                <Label htmlFor="montoEditar" className="text-purple-900 font-semibold">Monto del Préstamo</Label>
-                <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
-                  <Input
-                    id="montoEditar"
-                    type="number"
-                    step="0.01"
-                    value={montoEditar}
-                    onChange={(e) => setMontoEditar(e.target.value)}
-                    className="pl-10 border-purple-300 focus:ring-purple-500 font-bold"
-                    disabled={editando}
-                    placeholder="Monto original del préstamo"
-                  />
+            {/* Botones de acción */}
+            <div className="flex space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancelEdicion}
+                disabled={editando}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={editando || !nombreEditar.trim() || !apellidoEditar.trim() || !documentoEditar.trim()}
+                className="bg-purple-600 hover:bg-purple-700 flex-1"
+              >
+                {editando ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Actualizando...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Actualizar Cliente
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de edición de boleta (préstamo) */}
+      <Dialog open={showEditarBoletaModal} onOpenChange={handleCancelEditarBoleta}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 text-teal-600">
+              <ShieldCheck className="h-5 w-5" />
+              <span>Editar Boleta de Préstamo</span>
+            </DialogTitle>
+            <DialogDescription>
+              Modifica los valores del préstamo por si hay algún error de registro.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitEditarBoleta} className="space-y-4">
+            <div className="space-y-4">
+              {/* Monto e Interés */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                  <Label htmlFor="montoEditar" className="text-purple-900 font-semibold">Monto ($) *</Label>
+                  <div className="relative mt-1">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
+                    <Input
+                      id="montoEditar"
+                      type="number"
+                      step="0.01"
+                      value={montoEditar}
+                      onChange={(e) => setMontoEditar(e.target.value)}
+                      className="pl-10 border-purple-300 focus:ring-purple-500 font-bold bg-white"
+                      disabled={editando}
+                      required
+                    />
+                  </div>
                 </div>
-                <p className="text-[10px] text-purple-700 mt-1">Advertencia: Cambiar el monto recalculará las cuotas pero no afectará los pagos ya registrados.</p>
+
+                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                  <Label htmlFor="interesEditar" className="text-purple-900 font-semibold">Interés (%) *</Label>
+                  <div className="relative mt-1">
+                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
+                    <Input
+                      id="interesEditar"
+                      type="number"
+                      step="0.01"
+                      value={interesEditar}
+                      onChange={(e) => setInteresEditar(e.target.value)}
+                      className="pl-10 border-purple-300 focus:ring-purple-500 font-bold bg-white"
+                      disabled={editando}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Frecuencia de pago y Cuotas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="tipoPagoEditar">Frecuencia *</Label>
+                  <Select value={tipoPagoEditar} onValueChange={setTipoPagoEditar} disabled={editando}>
+                    <SelectTrigger id="tipoPagoEditar" className="mt-1">
+                      <SelectValue placeholder="Frecuencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DIARIO">Diario</SelectItem>
+                      <SelectItem value="SEMANAL">Semanal</SelectItem>
+                      <SelectItem value="LUNES_A_VIERNES">Lunes a Viernes</SelectItem>
+                      <SelectItem value="LUNES_A_SABADO">Lunes a Sábado</SelectItem>
+                      <SelectItem value="QUINCENAL">Quincenal</SelectItem>
+                      <SelectItem value="CATORCENAL">Catorcenal</SelectItem>
+                      <SelectItem value="FIN_DE_MES">Fin de Mes</SelectItem>
+                      <SelectItem value="MENSUAL">Mensual</SelectItem>
+                      <SelectItem value="TRIMESTRAL">Trimestral</SelectItem>
+                      <SelectItem value="CUATRIMESTRAL">Cuatrimestral</SelectItem>
+                      <SelectItem value="SEMESTRAL">Semestral</SelectItem>
+                      <SelectItem value="ANUAL">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="cuotasEditar">Cuotas *</Label>
+                  <Input
+                    id="cuotasEditar"
+                    type="number"
+                    value={cuotasEditar}
+                    onChange={(e) => setCuotasEditar(e.target.value)}
+                    className="mt-1"
+                    disabled={editando}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Fechas del préstamo */}
               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 space-y-3">
-                
                 <div>
                   <Label htmlFor="fechaInicioEditar" className="text-orange-900 font-semibold">Fecha de Inicio del Préstamo</Label>
                   <div className="relative mt-1">
@@ -2329,11 +2505,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       type="date"
                       value={fechaInicioEditar}
                       onChange={(e) => setFechaInicioEditar(e.target.value)}
-                      className="pl-10 border-orange-300 focus:ring-orange-500 font-bold"
+                      className="pl-10 border-orange-300 focus:ring-orange-500 font-bold bg-white"
                       disabled={editando}
                     />
                   </div>
-                  <p className="text-[10px] text-orange-700 mt-1">Modifica esta fecha para corregir cuándo inició el crédito en el sistema.</p>
                 </div>
 
                 <div className="pt-2 border-t border-orange-200">
@@ -2345,11 +2520,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       type="date"
                       value={fechaFinEditar}
                       onChange={(e) => setFechaFinEditar(e.target.value)}
-                      className="pl-10 border-orange-300 focus:ring-orange-500"
+                      className="pl-10 border-orange-300 focus:ring-orange-500 bg-white"
                       disabled={editando}
                     />
                   </div>
-                  <p className="text-[10px] text-orange-700 mt-1">Opcional: Si se ingresa una fecha aquí, sobreescribirá el cálculo automático del sistema permanentemente.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-orange-200">
@@ -2377,8 +2551,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-orange-700 mt-1">Llenar estos campos de días o próximo pago fuerza su aparición saltando las fórmulas.</p>
-
               </div>
 
               {/* Microseguros */}
@@ -2445,7 +2617,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleCancelEdicion}
+                onClick={handleCancelEditarBoleta}
                 disabled={editando}
                 className="flex-1"
               >
@@ -2453,8 +2625,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </Button>
               <Button
                 type="submit"
-                disabled={editando || !nombreEditar.trim() || !apellidoEditar.trim() || !documentoEditar.trim()}
-                className="bg-purple-600 hover:bg-purple-700"
+                disabled={editando || !montoEditar || !interesEditar || !cuotasEditar || !tipoPagoEditar}
+                className="bg-teal-600 hover:bg-teal-700 flex-1 text-white"
               >
                 {editando ? (
                   <>
@@ -2464,7 +2636,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 ) : (
                   <>
                     <Edit className="h-4 w-4 mr-2" />
-                    Actualizar Datos
+                    Actualizar Boleta
                   </>
                 )}
               </Button>

@@ -40,6 +40,7 @@ interface InformeDelDia {
   saldoInicial: number
   saldoEfectivo: number
   totalPorCobrar: number
+  expectativaCobroHoy: number
   cerrado: boolean
   cierreId?: string
   cantidadPagos: number
@@ -349,71 +350,44 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
             </div>
 
             {/* Tarjetas de resumen principal */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="animate-fadeInScale">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {/* Meta de Cobro Hoy */}
+              <Card className="animate-fadeInScale border-blue-200 bg-blue-50/30">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Cobrado</CardTitle>
+                  <CardTitle className="text-sm font-semibold text-blue-900">Cobro Esperado Hoy</CardTitle>
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {formatCurrency(informe.expectativaCobroHoy)}
+                  </div>
+                  <p className="text-xs text-blue-600/80 mt-1">
+                    Meta a recoger según cuotas programadas
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Total Recaudado */}
+              <Card className="animate-fadeInScale" style={{ animationDelay: '0.05s' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Recaudado Hoy</CardTitle>
                   <TrendingUp className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">
                     {formatCurrency(informe.totalCobrado)}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {informe.cantidadPagos} pago{informe.cantidadPagos !== 1 ? 's' : ''}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {informe.cantidadPagos} cobro{informe.cantidadPagos !== 1 ? 's' : ''} registrado{informe.cantidadPagos !== 1 ? 's' : ''} hoy
                   </p>
                 </CardContent>
               </Card>
 
+              {/* Saldo en Efectivo */}
               <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total por Cobrar</CardTitle>
-                  <DollarSign className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(informe.totalPorCobrar)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Saldos pendientes
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Mora Cobrada</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-orange-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(informe.moraCobrada)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Pagos con mora
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-fadeInScale" style={{ animationDelay: '0.3s' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Dinero en Transferencia</CardTitle>
-                  <DollarSign className="h-4 w-4 text-purple-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {formatCurrency(informe.dineroTransferencia)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Transferencias bancarias
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="animate-fadeInScale" style={{ animationDelay: '0.4s' }}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Saldo en Efectivo</CardTitle>
-                  <Wallet className="h-4 w-4 text-indigo-600" />
+                  <CardTitle className="text-sm font-medium">Efectivo en Caja</CardTitle>
+                  <Wallet className="h-4 w-4 text-emerald-600" />
                 </CardHeader>
                 <CardContent>
                   <div className={`text-2xl font-bold ${
@@ -421,8 +395,56 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                   }`}>
                     {formatCurrency(informe.saldoEfectivo)}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Saldo inicial: {formatCurrency(informe.saldoInicial)}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Efectivo físico estimado (Caja inicial: {formatCurrency(informe.saldoInicial)})
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Transferencias */}
+              <Card className="animate-fadeInScale" style={{ animationDelay: '0.15s' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Dinero en Banco</CardTitle>
+                  <RefreshCw className="h-4 w-4 text-purple-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(informe.dineroTransferencia)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recaudado por transferencias/depósitos
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Mora Cobrada */}
+              <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Recargo por Mora</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-orange-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {formatCurrency(informe.moraCobrada)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Interés adicional cobrado por retrasos
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Total en Calle (Cartera) */}
+              <Card className="animate-fadeInScale" style={{ animationDelay: '0.25s' }}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total en Calle (Cartera)</CardTitle>
+                  <DollarSign className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-700">
+                    {formatCurrency(informe.totalPorCobrar)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Suma total de saldos de créditos activos
                   </p>
                 </CardContent>
               </Card>
@@ -440,22 +462,22 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     <div className="text-2xl font-bold text-blue-600">
                       {informe.resumenClientes.clientesNuevos}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Registrados hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Registrados hoy en la ruta
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Clientes Visitados</CardTitle>
+                    <CardTitle className="text-sm font-medium">Clientes Visitados (Con Abonos)</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
                       {informe.resumenClientes.clientesVisitados}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Con pagos hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Registraron abono o pago hoy
                     </p>
                   </CardContent>
                 </Card>
@@ -468,22 +490,22 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     <div className="text-2xl font-bold text-yellow-600">
                       {informe.resumenClientes.clientesPendientes}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Sin pago hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Tienen crédito activo pero no abonaron hoy
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.3s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Clientes por Visitar</CardTitle>
+                    <CardTitle className="text-sm font-medium">Clientes Restantes</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-600">
                       {informe.resumenClientes.clientesPorVisitar}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Con préstamos activos
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Préstamos activos por cobrar en esta fecha
                     </p>
                   </CardContent>
                 </Card>
@@ -503,53 +525,53 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     <div className="text-2xl font-bold text-blue-600">
                       {informe.resumenPrestamos.nuevosPrestamos}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Otorgados hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Créditos nuevos entregados hoy
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Préstamos Realizados</CardTitle>
+                    <CardTitle className="text-sm font-medium">Créditos Totales Activos</CardTitle>
                     <Wallet className="h-4 w-4 text-indigo-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-indigo-600">
                       {informe.resumenPrestamos.prestamosRealizados}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Total activos
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total de préstamos no cancelados
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Prestado</CardTitle>
+                    <CardTitle className="text-sm font-medium">Dinero Colocado</CardTitle>
                     <TrendingDown className="h-4 w-4 text-blue-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">
                       {formatCurrency(informe.totalPrestado)}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {informe.cantidadPrestamos} préstamo{informe.cantidadPrestamos !== 1 ? 's' : ''} hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {informe.cantidadPrestamos} préstamo{informe.cantidadPrestamos !== 1 ? 's' : ''} entregado{informe.cantidadPrestamos !== 1 ? 's' : ''} hoy
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="animate-fadeInScale" style={{ animationDelay: '0.3s' }}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Gastos</CardTitle>
+                    <CardTitle className="text-sm font-medium">Gastos Operativos</CardTitle>
                     <DollarSign className="h-4 w-4 text-red-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-600">
                       {formatCurrency(informe.totalGastos)}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {informe.cantidadGastos} gasto{informe.cantidadGastos !== 1 ? 's' : ''}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Gastos declarados hoy ({informe.cantidadGastos} registro{informe.cantidadGastos !== 1 ? 's' : ''})
                     </p>
                   </CardContent>
                 </Card>

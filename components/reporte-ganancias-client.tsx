@@ -52,6 +52,7 @@ interface ReporteGanancias {
     moraCobrada: number
     utilidadNeta: number
     roi: number
+    expectativaCobroPeriodo: number
   }
   estadisticas: {
     cantidadPrestamos: number
@@ -297,6 +298,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
         titulo: "Reporte de Ganancias",
         periodo: `${formatDate(reporte.periodo.fechaInicio)} - ${formatDate(reporte.periodo.fechaFin)}`,
         metricas: {
+          "Cobro Esperado del Período": formatCurrency(reporte.metricas.expectativaCobroPeriodo),
           "Capital Invertido": formatCurrency(reporte.metricas.capitalInvertido),
           "Balance Pendiente": formatCurrency(reporte.metricas.balancePendiente),
           "Capital Recuperado": formatCurrency(reporte.metricas.capitalRecuperado),
@@ -462,6 +464,22 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
 
         {/* Métricas principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Cobro Esperado del Período */}
+          <Card className="border-blue-200 bg-blue-50/30">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-blue-900">Cobro Esperado del Período</CardTitle>
+              <Calendar className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-700">
+                {formatCurrency(reporte.metricas.expectativaCobroPeriodo)}
+              </div>
+              <p className="text-xs text-blue-600/80">
+                Meta de cobro programado para el rango de fechas
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Capital Invertido */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -473,7 +491,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.capitalInvertido)}
               </div>
               <p className="text-xs text-gray-600">
-                {reporte.estadisticas.cantidadPrestamos} préstamos
+                {reporte.estadisticas.cantidadPrestamos} créditos creados en el período
               </p>
             </CardContent>
           </Card>
@@ -481,7 +499,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
           {/* Balance Pendiente */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Balance Pendiente</CardTitle>
+              <CardTitle className="text-sm font-medium">Total en Calle (Cartera Activa)</CardTitle>
               <Clock className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
@@ -489,7 +507,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.balancePendiente)}
               </div>
               <p className="text-xs text-gray-600">
-                {reporte.estadisticas.prestamosAlDia + reporte.estadisticas.prestamosVencidos} préstamos pendientes
+                {reporte.estadisticas.prestamosAlDia + reporte.estadisticas.prestamosVencidos} préstamos con saldo pendiente
               </p>
             </CardContent>
           </Card>
@@ -497,7 +515,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
           {/* Capital Recuperado */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Capital Recuperado</CardTitle>
+              <CardTitle className="text-sm font-medium">Capital Recuperado (Cobrado)</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -505,7 +523,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.capitalRecuperado)}
               </div>
               <p className="text-xs text-gray-600">
-                {reporte.estadisticas.cantidadPagos} pagos recibidos
+                {reporte.estadisticas.cantidadPagos} pagos registrados en el período
               </p>
             </CardContent>
           </Card>
@@ -521,15 +539,15 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.capitalNoRecuperado)}
               </div>
               <p className="text-xs text-gray-600">
-                {reporte.estadisticas.prestamosVencidos} préstamos vencidos
+                {reporte.estadisticas.prestamosVencidos} préstamos vencidos sin saldo cancelado
               </p>
             </CardContent>
           </Card>
 
-          {/* Total Intereses */}
+          {/* Total Intereses Proyectados */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Intereses</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Intereses Proyectados</CardTitle>
               <TrendingUp className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
@@ -537,7 +555,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.totalIntereses)}
               </div>
               <p className="text-xs text-gray-600">
-                Intereses generados
+                Intereses esperados de los nuevos préstamos
               </p>
             </CardContent>
           </Card>
@@ -553,7 +571,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.interesesCobrados)}
               </div>
               <p className="text-xs text-gray-600">
-                {formatPercentage((reporte.metricas.interesesCobrados / Math.max(reporte.metricas.totalIntereses, 1)) * 100)} del total
+                {formatPercentage((reporte.metricas.interesesCobrados / Math.max(reporte.metricas.totalIntereses, 1)) * 100)} del total proyectado
               </p>
             </CardContent>
           </Card>
@@ -569,7 +587,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.totalGastos)}
               </div>
               <p className="text-xs text-gray-600">
-                {reporte.estadisticas.cantidadGastos} gastos registrados
+                {reporte.estadisticas.cantidadGastos} egresos registrados en caja chica
               </p>
             </CardContent>
           </Card>
@@ -585,13 +603,13 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.moraCobrada)}
               </div>
               <p className="text-xs text-gray-600">
-                Por pagos tardíos
+                Recargos cobrados por pagos tardíos
               </p>
             </CardContent>
           </Card>
 
           {/* Utilidad Neta */}
-          <Card className="md:col-span-2 lg:col-span-1">
+          <Card className="md:col-span-2 lg:col-span-3">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Utilidad Neta</CardTitle>
               <Calculator className="h-4 w-4 text-emerald-600" />
@@ -602,7 +620,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 {formatCurrency(reporte.metricas.utilidadNeta)}
               </div>
               <p className="text-xs text-gray-600">
-                ROI: {formatPercentage(reporte.metricas.roi)}
+                Rendimiento neto (ROI: {formatPercentage(reporte.metricas.roi)})
               </p>
               <Badge variant={reporte.metricas.utilidadNeta >= 0 ? "default" : "destructive"} className="mt-2">
                 {reporte.metricas.utilidadNeta >= 0 ? "Ganancia" : "Pérdida"}

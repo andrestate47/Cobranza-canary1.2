@@ -368,7 +368,7 @@ export default function NuevoGastoModal({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-gray-600">
                         <Receipt className="h-4 w-4 mr-2" />
-                        <span className="truncate max-w-[200px]">{foto.name}</span>
+                        <span className="truncate max-w-[200px]">{typeof foto === 'string' ? 'Archivo cargado' : foto.name}</span>
                       </div>
                       <Button
                         type="button"

@@ -8,6 +8,46 @@ import { getEcuadorDayRange } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
+function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): boolean {
+  const inicio = new Date(fechaInicio)
+  const evaluar = new Date(fechaEvaluar)
+  
+  // Normalizar a fechas sin hora (12:00:00 UTC) para evitar desfases de zona horaria
+  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
+  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
+  
+  if (evaluarUTC < inicioUTC) return false
+  
+  const diffTime = evaluarUTC - inicioUTC
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+  
+  const diaSemana = evaluar.getUTCDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  
+  if (tipoPago === 'DIARIO') {
+    return diaSemana !== 0 // Domingo no se cobra
+  }
+  if (tipoPago === 'LUNES_A_SABADO') {
+    return diaSemana !== 0 // Domingo no se cobra
+  }
+  if (tipoPago === 'LUNES_A_VIERNES') {
+    return diaSemana !== 0 && diaSemana !== 6 // Sábado y Domingo no se cobra
+  }
+  if (tipoPago === 'SEMANAL') {
+    return diffDays % 7 === 0
+  }
+  if (tipoPago === 'CATORCENAL') {
+    return diffDays % 14 === 0
+  }
+  if (tipoPago === 'QUINCENAL') {
+    return diffDays % 15 === 0
+  }
+  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
+    return inicio.getUTCDate() === evaluar.getUTCDate()
+  }
+  
+  return false
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -256,6 +296,17 @@ export async function GET(request: NextRequest) {
       totalPorCobrar += saldoPendiente
     }
 
+    // Calcular expectativa de cobro hoy (suma de valorCuota de préstamos que deberían pagar hoy)
+    let expectativaCobroHoy = 0
+    for (const prestamo of prestamosActivos) {
+      const fechaInicioPrestamo = new Date(prestamo.fechaInicio)
+      if (fechaInicioPrestamo <= fechaFin) {
+        if (esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, fecha)) {
+          expectativaCobroHoy += parseFloat(prestamo.valorCuota.toString())
+        }
+      }
+    }
+
     // Verificar si ya hay un cierre para este día
     const cierreDia = await prisma.cierreDia.findUnique({
       where: { fecha }
@@ -276,6 +327,7 @@ export async function GET(request: NextRequest) {
       saldoInicial,
       saldoEfectivo,
       totalPorCobrar,
+      expectativaCobroHoy,
       cerrado: !!cierreDia,
       cierreId: cierreDia?.id,
       cantidadPagos: pagos.length,

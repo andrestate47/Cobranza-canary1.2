@@ -9,6 +9,46 @@ import { getEcuadorDayRange, getEcuadorRange } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
+function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): boolean {
+  const inicio = new Date(fechaInicio)
+  const evaluar = new Date(fechaEvaluar)
+  
+  // Normalizar a fechas sin hora (12:00:00 UTC) para evitar desfases de zona horaria
+  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
+  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
+  
+  if (evaluarUTC < inicioUTC) return false
+  
+  const diffTime = evaluarUTC - inicioUTC
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+  
+  const diaSemana = evaluar.getUTCDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  
+  if (tipoPago === 'DIARIO') {
+    return diaSemana !== 0 // Domingo no se cobra
+  }
+  if (tipoPago === 'LUNES_A_SABADO') {
+    return diaSemana !== 0 // Domingo no se cobra
+  }
+  if (tipoPago === 'LUNES_A_VIERNES') {
+    return diaSemana !== 0 && diaSemana !== 6 // Sábado y Domingo no se cobra
+  }
+  if (tipoPago === 'SEMANAL') {
+    return diffDays % 7 === 0
+  }
+  if (tipoPago === 'CATORCENAL') {
+    return diffDays % 14 === 0
+  }
+  if (tipoPago === 'QUINCENAL') {
+    return diffDays % 15 === 0
+  }
+  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
+    return inicio.getUTCDate() === evaluar.getUTCDate()
+  }
+  
+  return false
+}
+
 interface PrestamoConCliente {
   id: string
   monto: Decimal | number
@@ -282,6 +322,39 @@ export async function GET(request: NextRequest) {
     const capitalInvertido = (prestamos as PrestamoConCliente[]).reduce((sum: number, prestamo) => 
       sum + parseFloat(prestamo.monto.toString()), 0
     )
+
+    // Expectativa de cobro en el período (suma de las cuotas programadas en el rango)
+    const prestamosVigentesPeriodo = await prisma.prestamo.findMany({
+      where: {
+        fechaInicio: {
+          lte: fechaFinDate
+        },
+        fechaFin: {
+          gte: fechaInicioDate
+        }
+      }
+    })
+
+    const diasPeriodo: Date[] = []
+    let tempDia = new Date(fechaInicioDate)
+    while (tempDia <= fechaFinDate) {
+      diasPeriodo.push(new Date(tempDia))
+      tempDia.setDate(tempDia.getDate() + 1)
+    }
+
+    let expectativaCobroPeriodo = 0
+    for (const prestamo of prestamosVigentesPeriodo) {
+      const inicioPrestamo = new Date(prestamo.fechaInicio)
+      const finPrestamo = new Date(prestamo.fechaFin)
+      
+      for (const dia of diasPeriodo) {
+        if (dia >= inicioPrestamo && dia <= finPrestamo) {
+          if (esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, dia)) {
+            expectativaCobroPeriodo += parseFloat(prestamo.valorCuota.toString())
+          }
+        }
+      }
+    }
 
     // 2. Balance Pendiente (suma de todos los saldos pendientes)
     let balancePendiente = 0
@@ -635,7 +708,8 @@ export async function GET(request: NextRequest) {
         totalGastos,
         moraCobrada,
         utilidadNeta,
-        roi
+        roi,
+        expectativaCobroPeriodo
       },
       estadisticas: {
         cantidadPrestamos,
