@@ -30,7 +30,8 @@ import {
   UserX,
   Crown,
   User,
-  Settings
+  Settings,
+  FileText
 } from "lucide-react"
 import FormularioUsuario from "@/components/formulario-usuario"
 import PermisosUsuario from "@/components/permisos-usuario"
@@ -56,6 +57,7 @@ interface Usuario {
     name: string
     email: string
   }>
+  documentoIdentificacion?: string
   permissions: string[]
   stats?: {
     prestamos: number
@@ -74,6 +76,7 @@ export default function AdminUsuarios() {
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showPermissionsModal, setShowPermissionsModal] = useState(false)
+  const [documentToView, setDocumentToView] = useState<string | null>(null)
   const { isAdmin, isAuthenticated } = usePermissions()
   const { toast } = useToast()
 
@@ -437,6 +440,17 @@ export default function AdminUsuarios() {
                       Permisos
                     </Button>
                     
+                    {usuario.documentoIdentificacion && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDocumentToView(usuario.documentoIdentificacion || null)}
+                        title="Ver Documento"
+                      >
+                        <FileText className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    )}
+                    
                     <Button
                       variant="outline"
                       size="sm"
@@ -502,6 +516,24 @@ export default function AdminUsuarios() {
                 }}
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para ver documento */}
+      <Dialog open={!!documentToView} onOpenChange={(open) => !open && setDocumentToView(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Documento de Identificación</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center items-center p-4">
+            {documentToView && documentToView.startsWith('data:image') ? (
+              <img src={documentToView} alt="Documento" className="max-w-full max-h-[70vh] object-contain rounded-md shadow-sm" />
+            ) : documentToView === 'pdf' ? (
+              <div className="text-center p-8 text-gray-500">Documento PDF guardado</div>
+            ) : documentToView ? (
+               <img src={documentToView} alt="Documento" className="max-w-full max-h-[70vh] object-contain rounded-md shadow-sm" />
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

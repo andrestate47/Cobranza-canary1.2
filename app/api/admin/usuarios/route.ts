@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       createdAt: usuario.createdAt,
       supervisor: usuario.supervisor,
       supervisados: usuario.supervisados,
+      documentoIdentificacion: usuario.documentoIdentificacion,
       permissions: usuario.permissions.map(p => p.permission),
       stats: {
         prestamos: usuario._count.prestamos,
@@ -236,6 +237,7 @@ export async function POST(request: NextRequest) {
       isActive: usuarioCompleto!.isActive,
       timeLimit: usuarioCompleto!.timeLimit,
       supervisor: usuarioCompleto!.supervisor,
+      documentoIdentificacion: usuarioCompleto!.documentoIdentificacion,
       permissions: usuarioCompleto!.permissions.map(p => p.permission)
     })
 

@@ -67,6 +67,7 @@ export async function GET(
       createdAt: usuario.createdAt,
       supervisor: usuario.supervisor,
       supervisados: usuario.supervisados,
+      documentoIdentificacion: usuario.documentoIdentificacion,
       permissions: usuario.permissions.map(p => p.permission),
       timeUsage: usuario.timeUsage
     })
@@ -271,6 +272,7 @@ export async function PUT(
       isActive: usuarioActualizado!.isActive,
       timeLimit: usuarioActualizado!.timeLimit,
       supervisor: usuarioActualizado!.supervisor,
+      documentoIdentificacion: usuarioActualizado!.documentoIdentificacion,
       permissions: usuarioActualizado!.permissions.map(p => p.permission)
     })
 
