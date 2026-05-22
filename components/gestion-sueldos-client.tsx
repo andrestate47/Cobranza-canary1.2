@@ -41,7 +41,8 @@ import {
   Calendar,
   AlertCircle,
   Home,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
@@ -224,6 +225,27 @@ export default function GestionSueldosClient() {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al guardar configuración')
+    }
+  }
+
+  const handleDeleteConfig = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta configuración?')) return
+
+    try {
+      const response = await fetch(`/api/sueldos/configuracion/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Configuración eliminada')
+        cargarDatos()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Error al eliminar configuración')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al eliminar configuración')
     }
   }
 
@@ -460,6 +482,14 @@ export default function GestionSueldosClient() {
                             onClick={() => abrirModalComisiones(config.userId)}
                           >
                             <Calculator className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteConfig(config.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
