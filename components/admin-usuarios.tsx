@@ -60,6 +60,16 @@ interface Usuario {
   documentoIdentificacion?: string
   profilePhoto?: string
   permissions: string[]
+  // Campos de contacto y ubicación
+  phone?: string
+  phoneReferencial?: string
+  address?: string
+  pais?: string
+  ciudad?: string
+  ubicacion?: string
+  mapLink?: string
+  referenciaFamiliar?: string
+  referenciaTrabajo?: string
   stats?: {
     prestamos: number
     pagos: number

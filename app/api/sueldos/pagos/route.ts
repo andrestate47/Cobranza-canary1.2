@@ -101,16 +101,45 @@ export async function POST(request: NextRequest) {
       metodoPago
     } = data
 
+    // DEBUG: log exacto de lo que llega
+    console.log("[POST /api/sueldos/pagos] Body recibido:", JSON.stringify({
+      cobradorId,
+      tipo,
+      periodo,
+      montoBase,
+      montoComisiones,
+      montoTotal,
+      montoAvances,
+      montoFinal,
+      observaciones,
+      metodoPago
+    }))
+
+    // Parsear valores numéricos antes de validar
+    const parsedMontoBase       = parseFloat(montoBase       || "0") || 0
+    const parsedMontoComisiones = parseFloat(montoComisiones || "0") || 0
+    const parsedMontoTotal      = parseFloat(montoTotal      || "0") || 0
+    const parsedMontoAvances    = parseFloat(montoAvances    || "0") || 0
+    const parsedMontoFinal      = parseFloat(montoFinal      || "0") || 0
+
+    console.log("[POST /api/sueldos/pagos] Valores parseados:", {
+      parsedMontoBase, parsedMontoComisiones, parsedMontoTotal,
+      parsedMontoAvances, parsedMontoFinal
+    })
+
     // Validaciones
     if (!cobradorId) {
+      console.log("[POST /api/sueldos/pagos] FALLA: cobradorId vacío")
       return NextResponse.json({ error: "ID de cobrador requerido" }, { status: 400 })
     }
 
     if (!tipo) {
+      console.log("[POST /api/sueldos/pagos] FALLA: tipo vacío")
       return NextResponse.json({ error: "Tipo de pago requerido" }, { status: 400 })
     }
 
-    if (!montoFinal || montoFinal <= 0) {
+    if (!parsedMontoFinal || parsedMontoFinal <= 0) {
+      console.log("[POST /api/sueldos/pagos] FALLA: montoFinal inválido =>", montoFinal, "=> parsed:", parsedMontoFinal)
       return NextResponse.json({ error: "Monto final debe ser mayor a 0" }, { status: 400 })
     }
 
@@ -132,11 +161,11 @@ export async function POST(request: NextRequest) {
         configuracionId: configuracion?.id,
         tipo,
         periodo,
-        montoBase: parseFloat(montoBase || "0"),
-        montoComisiones: parseFloat(montoComisiones || "0"),
-        montoTotal: parseFloat(montoTotal || "0"),
-        montoAvances: parseFloat(montoAvances || "0"),
-        montoFinal: parseFloat(montoFinal),
+        montoBase:       parsedMontoBase,
+        montoComisiones: parsedMontoComisiones,
+        montoTotal:      parsedMontoTotal,
+        montoAvances:    parsedMontoAvances,
+        montoFinal:      parsedMontoFinal,
         observaciones,
         metodoPago,
         estado: 'PENDIENTE'

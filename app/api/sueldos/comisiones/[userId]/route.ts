@@ -93,6 +93,45 @@ export async function GET(
       }
     })
 
+    // Si no hay configuración, devolver resumen vacío con los cobros del período
+    if (!configuracion) {
+      const totalCobrado = pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+      return NextResponse.json({
+        periodo: mes || 'personalizado',
+        configuracion: {
+          salarioBase: 0,
+          comisionPorcentaje: 0,
+          limitePorcentajeAvance: 0,
+          montoMinimoAvance: 0
+        },
+        cobros: {
+          totalCobrado,
+          cantidadCobros: pagos.length,
+          totalComisiones: 0
+        },
+        sueldo: {
+          salarioBase: 0,
+          comisiones: 0,
+          total: 0
+        },
+        avances: {
+          totalOtorgados: 0,
+          limiteDisponible: 0,
+          disponible: 0,
+          puedeAvanzar: false
+        },
+        sinConfiguracion: true,
+        detalleCobros: pagos.map(pago => ({
+          id: pago.id,
+          fecha: pago.fecha,
+          monto: parseFloat(pago.monto.toString()),
+          comision: 0,
+          cliente: `${pago.prestamo.cliente.nombre} ${pago.prestamo.cliente.apellido}`,
+          prestamoId: pago.prestamo.id
+        }))
+      })
+    }
+
     // Calcular comisiones
     const comisionPorcentaje = parseFloat(configuracion.comisionPorCobro.toString())
     const totalCobrado = pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)

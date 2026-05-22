@@ -314,7 +314,9 @@ export async function DELETE(
           select: {
             prestamos: true,
             pagos: true,
-            gastos: true
+            gastos: true,
+            pagosSueldoCobrador: true,
+            pagosSueldoPagador: true,
           }
         }
       }
@@ -330,11 +332,20 @@ export async function DELETE(
     // Verificar si el usuario tiene registros asociados
     const tieneRegistros = usuario._count.prestamos > 0 || 
                           usuario._count.pagos > 0 || 
-                          usuario._count.gastos > 0
+                          usuario._count.gastos > 0 ||
+                          usuario._count.pagosSueldoCobrador > 0 ||
+                          usuario._count.pagosSueldoPagador > 0
 
     if (tieneRegistros) {
+      const detalles = []
+      if (usuario._count.prestamos > 0) detalles.push(`${usuario._count.prestamos} préstamo(s)`)
+      if (usuario._count.pagos > 0) detalles.push(`${usuario._count.pagos} pago(s) de clientes`)
+      if (usuario._count.gastos > 0) detalles.push(`${usuario._count.gastos} gasto(s)`)
+      if (usuario._count.pagosSueldoCobrador > 0) detalles.push(`${usuario._count.pagosSueldoCobrador} pago(s) de sueldo`)
+      if (usuario._count.pagosSueldoPagador > 0) detalles.push(`${usuario._count.pagosSueldoPagador} liquidación(es) emitidas`)
+
       return NextResponse.json(
-        { error: "No se puede eliminar el usuario porque tiene registros asociados (préstamos, pagos, gastos)" },
+        { error: `No se puede eliminar el usuario porque tiene registros asociados: ${detalles.join(', ')}. Eliminá esos registros primero o desactivá el usuario.` },
         { status: 400 }
       )
     }

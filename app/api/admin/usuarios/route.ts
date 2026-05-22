@@ -64,6 +64,16 @@ export async function GET(request: NextRequest) {
       documentoIdentificacion: usuario.documentoIdentificacion,
       profilePhoto: usuario.profilePhoto,
       permissions: usuario.permissions.map(p => p.permission),
+      // Campos de contacto y ubicación
+      phone: usuario.phone,
+      phoneReferencial: usuario.phoneReferencial,
+      address: usuario.address,
+      pais: usuario.pais,
+      ciudad: usuario.ciudad,
+      ubicacion: usuario.ubicacion,
+      mapLink: usuario.mapLink,
+      referenciaFamiliar: usuario.referenciaFamiliar,
+      referenciaTrabajo: usuario.referenciaTrabajo,
       stats: {
         prestamos: usuario._count.prestamos,
         pagos: usuario._count.pagos,
