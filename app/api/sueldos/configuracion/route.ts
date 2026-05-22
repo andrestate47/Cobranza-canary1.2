@@ -96,18 +96,18 @@ export async function POST(request: NextRequest) {
     const configuracion = await prisma.configuracionSueldo.upsert({
       where: { userId },
       update: {
-        salarioBase: parseFloat(salarioBase),
-        comisionPorCobro: parseFloat(comisionPorCobro),
-        limitePorcentajeAvance: parseInt(limitePorcentajeAvance),
+        salarioBase: parseFloat(salarioBase || "0"),
+        comisionPorCobro: parseFloat(comisionPorCobro || "0"),
+        limitePorcentajeAvance: parseInt(limitePorcentajeAvance || "50"),
         montoMinimoAvance: parseFloat(montoMinimoAvance || "0"),
         activo: true,
         updatedAt: new Date()
       },
       create: {
         userId,
-        salarioBase: parseFloat(salarioBase),
-        comisionPorCobro: parseFloat(comisionPorCobro),
-        limitePorcentajeAvance: parseInt(limitePorcentajeAvance),
+        salarioBase: parseFloat(salarioBase || "0"),
+        comisionPorCobro: parseFloat(comisionPorCobro || "0"),
+        limitePorcentajeAvance: parseInt(limitePorcentajeAvance || "50"),
         montoMinimoAvance: parseFloat(montoMinimoAvance || "0"),
         activo: true
       },

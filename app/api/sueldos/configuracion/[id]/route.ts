@@ -42,10 +42,10 @@ export async function PUT(
     const configuracion = await prisma.configuracionSueldo.update({
       where: { id: params.id },
       data: {
-        ...(salarioBase !== undefined && { salarioBase: parseFloat(salarioBase) }),
-        ...(comisionPorCobro !== undefined && { comisionPorCobro: parseFloat(comisionPorCobro) }),
-        ...(limitePorcentajeAvance !== undefined && { limitePorcentajeAvance: parseInt(limitePorcentajeAvance) }),
-        ...(montoMinimoAvance !== undefined && { montoMinimoAvance: parseFloat(montoMinimoAvance) }),
+        ...(salarioBase !== undefined && { salarioBase: parseFloat(salarioBase || "0") }),
+        ...(comisionPorCobro !== undefined && { comisionPorCobro: parseFloat(comisionPorCobro || "0") }),
+        ...(limitePorcentajeAvance !== undefined && { limitePorcentajeAvance: parseInt(limitePorcentajeAvance || "50") }),
+        ...(montoMinimoAvance !== undefined && { montoMinimoAvance: parseFloat(montoMinimoAvance || "0") }),
         ...(activo !== undefined && { activo }),
         updatedAt: new Date()
       },
