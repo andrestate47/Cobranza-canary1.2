@@ -426,6 +426,7 @@ export default function NuevoGastoModal({
         isOpen={showCameraModal}
         onClose={() => setShowCameraModal(false)}
         onCapture={handleCameraCapture}
+        mode="simple"
       />
     </Dialog>
   )

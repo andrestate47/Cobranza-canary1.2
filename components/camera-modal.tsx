@@ -17,12 +17,14 @@ import { useToast } from "@/hooks/use-toast"
 interface CameraModalProps {
   isOpen: boolean
   onClose: () => void
-  clienteId: string
-  clienteNombre: string
+  clienteId?: string
+  clienteNombre?: string
   onPhotoSaved?: () => void
+  onCapture?: (fotoBase64: string) => void
+  mode?: 'cliente' | 'simple'
 }
 
-type PhotoType = 'cliente' | 'dni' | null
+type PhotoType = 'cliente' | 'dni' | 'comprobante' | null
 type PhotoMode = 'select' | 'camera' | 'upload'
 
 export default function CameraModal({
@@ -30,7 +32,9 @@ export default function CameraModal({
   onClose,
   clienteId,
   clienteNombre,
-  onPhotoSaved
+  onPhotoSaved,
+  onCapture,
+  mode = 'cliente'
 }: CameraModalProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [photoType, setPhotoType] = useState<PhotoType>(null)
@@ -177,7 +181,16 @@ export default function CameraModal({
   }, [])
 
   const savePhoto = useCallback(async () => {
-    if (!capturedImage || !photoType) return
+    if (!capturedImage) return
+
+    if (mode === 'simple' && onCapture) {
+      onCapture(capturedImage)
+      resetAllStates()
+      onClose()
+      return
+    }
+
+    if (!photoType || !clienteId) return
 
     setIsSaving(true)
     try {
@@ -240,7 +253,7 @@ export default function CameraModal({
     } finally {
       setIsSaving(false)
     }
-  }, [capturedImage, photoType, photoMode, selectedFile, clienteId, toast, onPhotoSaved])
+  }, [capturedImage, photoType, photoMode, selectedFile, clienteId, toast, onPhotoSaved, mode, onCapture, resetAllStates, onClose])
 
   const resetAllStates = useCallback(() => {
     setCapturedImage(null)
@@ -278,6 +291,14 @@ export default function CameraModal({
     return () => stopCamera()
   }, [isOpen, photoMode, startCamera, stopCamera])
 
+  useEffect(() => {
+    if (isOpen && mode === 'simple') {
+      setPhotoType('comprobante')
+    } else if (!isOpen) {
+      setPhotoType(null)
+    }
+  }, [isOpen, mode])
+
   // Limpiar al cerrar
   useEffect(() => {
     return () => {
@@ -300,7 +321,7 @@ export default function CameraModal({
             <span>
               {photoMode === 'camera' ? 'Capturar Foto' :
                 photoMode === 'upload' ? 'Subir Imagen' :
-                  'Agregar Foto'} - {clienteNombre}
+                  'Agregar Foto'} {mode === 'cliente' && clienteNombre ? `- ${clienteNombre}` : ''}
             </span>
           </DialogTitle>
           <DialogDescription>
@@ -315,7 +336,7 @@ export default function CameraModal({
 
         <div className="p-6 pt-0">
           {/* Paso 1: Selector de tipo de foto */}
-          {photoMode === 'select' && !photoType && (
+          {photoMode === 'select' && !photoType && mode !== 'simple' && (
             <div className="space-y-4 mb-6">
               <h3 className="text-sm font-medium">¿Qué foto deseas agregar?</h3>
               <div className="flex space-x-3">
@@ -342,28 +363,30 @@ export default function CameraModal({
           {/* Paso 2: Selector de método cuando se ha elegido el tipo */}
           {photoMode === 'select' && photoType && !capturedImage && (
             <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="flex items-center space-x-1">
-                  {photoType === 'cliente' ? (
-                    <User className="h-3 w-3" />
-                  ) : (
-                    <CreditCard className="h-3 w-3" />
-                  )}
-                  <span>
-                    {photoType === 'cliente' ? 'Foto del Cliente' : 'Foto del DNI'}
-                  </span>
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setPhotoType(null)
-                    resetAllStates()
-                  }}
-                >
-                  Cambiar tipo
-                </Button>
-              </div>
+              {mode !== 'simple' && (
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="flex items-center space-x-1">
+                    {photoType === 'cliente' ? (
+                      <User className="h-3 w-3" />
+                    ) : (
+                      <CreditCard className="h-3 w-3" />
+                    )}
+                    <span>
+                      {photoType === 'cliente' ? 'Foto del Cliente' : 'Foto del DNI'}
+                    </span>
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPhotoType(null)
+                      resetAllStates()
+                    }}
+                  >
+                    Cambiar tipo
+                  </Button>
+                </div>
+              )}
 
               <h3 className="text-sm font-medium">¿Cómo deseas agregar la foto?</h3>
               <div className="flex space-x-3">
@@ -397,16 +420,18 @@ export default function CameraModal({
           {photoType && photoMode !== 'select' && (
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className="flex items-center space-x-1">
-                  {photoType === 'cliente' ? (
-                    <User className="h-3 w-3" />
-                  ) : (
-                    <CreditCard className="h-3 w-3" />
-                  )}
-                  <span>
-                    {photoType === 'cliente' ? 'Foto del Cliente' : 'Foto del DNI'}
-                  </span>
-                </Badge>
+                {mode !== 'simple' && (
+                  <Badge variant="outline" className="flex items-center space-x-1">
+                    {photoType === 'cliente' ? (
+                      <User className="h-3 w-3" />
+                    ) : (
+                      <CreditCard className="h-3 w-3" />
+                    )}
+                    <span>
+                      {photoType === 'cliente' ? 'Foto del Cliente' : 'Foto del DNI'}
+                    </span>
+                  </Badge>
+                )}
                 <Badge className="flex items-center space-x-1">
                   {photoMode === 'camera' ? (
                     <Camera className="h-3 w-3" />
