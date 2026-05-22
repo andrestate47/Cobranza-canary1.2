@@ -198,8 +198,8 @@ export async function PUT(
       }
       
       const buffer = Buffer.from(await documentoFile.arrayBuffer())
-      const fileName = `usuarios/documentos/${Date.now()}-${documentoFile.name}`
-      documentoUrl = await uploadFile(buffer, fileName)
+      const mimeType = documentoFile.type || 'application/octet-stream'
+      documentoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
     }
 
     // Preparar datos de actualización con valores correctamente procesados

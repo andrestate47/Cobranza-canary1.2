@@ -171,8 +171,8 @@ export async function POST(request: NextRequest) {
     let documentoUrl = null
     if (documentoFile && documentoFile.size > 0) {
       const buffer = Buffer.from(await documentoFile.arrayBuffer())
-      const fileName = `usuarios/documentos/${Date.now()}-${documentoFile.name}`
-      documentoUrl = await uploadFile(buffer, fileName)
+      const mimeType = documentoFile.type || 'application/octet-stream'
+      documentoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
     }
 
     // Encriptar contraseña
