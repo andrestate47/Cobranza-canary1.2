@@ -180,6 +180,22 @@ export default function CameraModal({
     fileInputRef.current?.click()
   }, [])
 
+  const resetAllStates = useCallback(() => {
+    setCapturedImage(null)
+    setPhotoType(null)
+    setPhotoMode('select')
+    setSelectedFile(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [])
+
+  const handleClose = useCallback(() => {
+    stopCamera()
+    resetAllStates()
+    onClose()
+  }, [stopCamera, resetAllStates, onClose])
+
   const savePhoto = useCallback(async () => {
     if (!capturedImage) return
 
@@ -253,23 +269,7 @@ export default function CameraModal({
     } finally {
       setIsSaving(false)
     }
-  }, [capturedImage, photoType, photoMode, selectedFile, clienteId, toast, onPhotoSaved, mode, onCapture, resetAllStates, onClose])
-
-  const resetAllStates = useCallback(() => {
-    setCapturedImage(null)
-    setPhotoType(null)
-    setPhotoMode('select')
-    setSelectedFile(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }, [])
-
-  const handleClose = useCallback(() => {
-    stopCamera()
-    resetAllStates()
-    onClose()
-  }, [stopCamera, resetAllStates, onClose])
+  }, [capturedImage, photoType, photoMode, selectedFile, clienteId, toast, onPhotoSaved, mode, onCapture, resetAllStates, handleClose, onClose])
 
   const downloadPhoto = useCallback(() => {
     if (capturedImage) {
