@@ -51,6 +51,7 @@ interface InformeDelDia {
     clientesVisitados: number
     clientesPendientes: number
     clientesPorVisitar: number
+    clientesMora: number
   }
   resumenPrestamos: {
     nuevosPrestamos: number
@@ -102,6 +103,15 @@ interface InformeDelDia {
     nombre: string
     apellido: string
     documento: string
+  }>
+  detalleClientesMora: Array<{
+    id: string
+    nombre: string
+    apellido: string
+    telefono: string
+    prestamoId: string
+    saldoPendiente: number
+    diasMora: number
   }>
 }
 
@@ -350,7 +360,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
             </div>
 
             {/* Tarjetas de resumen principal */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Meta de Cobro Hoy */}
               <Card className="animate-fadeInScale border-blue-200 bg-blue-50/30">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -453,7 +463,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
             {/* Resumen de Clientes y Créditos */}
             <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Resumen de Clientes y Créditos</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card className="animate-fadeInScale">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Clientes Nuevos</CardTitle>
@@ -506,6 +516,20 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Préstamos activos por cobrar en esta fecha
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="animate-fadeInScale" style={{ animationDelay: '0.4s' }}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Clientes en Mora</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-700">
+                      {informe.resumenClientes.clientesMora}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Con préstamos vencidos
                     </p>
                   </CardContent>
                 </Card>
@@ -802,6 +826,54 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     ) : (
                       <p className="text-gray-500 text-center py-8">
                         No hay préstamos registrados
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Detalle de clientes en mora */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-red-700 flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      Clientes en Mora ({informe.resumenClientes.clientesMora})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 max-h-80 overflow-y-auto">
+                    {informe.detalleClientesMora && informe.detalleClientesMora.length > 0 ? (
+                      informe.detalleClientesMora.map(cliente => (
+                        <div key={cliente.id} className="border-l-4 border-red-500 pl-3 py-2 bg-red-50/50 rounded-r-md">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-semibold text-sm text-gray-900">
+                                {cliente.nombre} {cliente.apellido}
+                              </p>
+                              {cliente.telefono && (
+                                <p className="text-xs text-gray-600">
+                                  Tel: {cliente.telefono}
+                                </p>
+                              )}
+                              <p className="text-xs text-red-600 font-medium mt-1">
+                                Retraso: {cliente.diasMora} día(s)
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-500 mb-1">Saldo pendiente:</p>
+                              <p className="font-bold text-red-700">
+                                {formatCurrency(cliente.saldoPendiente)}
+                              </p>
+                              <Link href={`/clientes/${cliente.id}`}>
+                                <Button variant="link" size="sm" className="h-6 px-0 text-blue-600">
+                                  Ver cliente
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">
+                        No hay clientes en mora
                       </p>
                     )}
                   </CardContent>

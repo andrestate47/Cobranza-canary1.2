@@ -121,7 +121,15 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        pagos: true
+        pagos: true,
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            telefono: true
+          }
+        }
       }
     })
 
@@ -307,6 +315,34 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Calcular Clientes en Mora (préstamos vencidos)
+    const detalleClientesMora: any[] = []
+    const clientesMoraIds = new Set<string>()
+
+    const prestamosMora = prestamosActivos.filter(p => p.fechaFin < fecha)
+    for (const prestamo of prestamosMora) {
+      if (!clientesMoraIds.has(prestamo.cliente.id)) {
+        clientesMoraIds.add(prestamo.cliente.id)
+        
+        // Calcular saldo pendiente
+        const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
+        const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+        const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+        
+        const diasMora = Math.floor((fecha.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24))
+
+        detalleClientesMora.push({
+          id: prestamo.cliente.id,
+          nombre: prestamo.cliente.nombre,
+          apellido: prestamo.cliente.apellido,
+          telefono: prestamo.cliente.telefono || "",
+          prestamoId: prestamo.id,
+          saldoPendiente: saldoPendiente,
+          diasMora: diasMora > 0 ? diasMora : 0
+        })
+      }
+    }
+
     // Verificar si ya hay un cierre para este día
     const cierreDia = await prisma.cierreDia.findUnique({
       where: { fecha }
@@ -338,7 +374,8 @@ export async function GET(request: NextRequest) {
         clientesNuevos: clientesNuevos.length,
         clientesVisitados: clientesVisitadosIds.length,
         clientesPendientes: clientesPendientes.length,
-        clientesPorVisitar: clientesConPrestamosActivos.length - clientesVisitadosIds.length
+        clientesPorVisitar: clientesConPrestamosActivos.length - clientesVisitadosIds.length,
+        clientesMora: detalleClientesMora.length
       },
       // Resumen de préstamos
       resumenPrestamos: {
@@ -393,7 +430,8 @@ export async function GET(request: NextRequest) {
         nombre: cliente.nombre,
         apellido: cliente.apellido,
         documento: cliente.documento
-      }))
+      })),
+      detalleClientesMora
     }
 
     return NextResponse.json(informe)

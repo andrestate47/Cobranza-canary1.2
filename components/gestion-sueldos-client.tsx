@@ -304,6 +304,25 @@ export default function GestionSueldosClient() {
     }
   }
 
+  const handleDeletePago = async (pagoId: string) => {
+    try {
+      const response = await fetch(`/api/sueldos/pagos/${pagoId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Pago eliminado correctamente')
+        cargarDatos()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Error al eliminar pago')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al eliminar pago')
+    }
+  }
+
   const cargarComisiones = async (userId: string, mes: string) => {
     try {
       const response = await fetch(`/api/sueldos/comisiones/${userId}?mes=${mes}`)
@@ -722,6 +741,37 @@ export default function GestionSueldosClient() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {(session?.user as any)?.role === 'ADMINISTRADOR' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                    title="Eliminar Pago"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="w-[95vw] max-w-md rounded-lg">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar este pago?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción no se puede deshacer. Se eliminará el registro de este pago del historial.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                    <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeletePago(pago.id)}
+                                      className="bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -805,6 +855,37 @@ export default function GestionSueldosClient() {
                       <Eye className="w-3.5 h-3.5" />
                       Ver Detalles
                     </Button>
+                    {(session?.user as any)?.role === 'ADMINISTRADOR' && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 bg-white flex items-center gap-1.5 text-xs h-8"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Eliminar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="w-[95vw] max-w-md rounded-lg">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar este pago?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Se eliminará el registro de este pago del historial.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeletePago(pago.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </CardContent>
               </Card>
