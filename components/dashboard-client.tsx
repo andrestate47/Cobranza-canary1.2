@@ -47,6 +47,13 @@ export default function DashboardClient({ session }: DashboardClientProps) {
 
   const baseMenuItems = [
     {
+      title: "Ruta del Día",
+      description: "Organiza y gestiona tus cobros diarios",
+      icon: MapPin,
+      href: "/ruta-del-dia",
+      color: "bg-teal-500 hover:bg-teal-600",
+    },
+    {
       title: "Listado General",
       description: "Clientes con saldos pendientes",
       icon: Users,

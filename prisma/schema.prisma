@@ -56,6 +56,7 @@ model User {
   supervisor              User?                   @relation("UserSupervisor", fields: [supervisorId], references: [id])
   supervisados            User[]                  @relation("UserSupervisor")
   visitasCliente          VisitaCliente[]
+  ordenesRuta             OrdenRutaDia[]
 
   @@map("users")
 }
@@ -488,6 +489,19 @@ model Configuracion {
   updatedAt DateTime @updatedAt
 
   @@map("configuracion")
+}
+
+model OrdenRutaDia {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  fecha     DateTime @db.Date
+  orden     String   // Guardará el array serializado: ["prestamoId1", "prestamoId2", ...]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fecha])
+  @@map("orden_ruta_dia")
 }
 
 enum UserRole {
