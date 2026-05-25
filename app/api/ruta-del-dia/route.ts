@@ -103,67 +103,62 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Filtrar los que corresponden a hoy (o están vencidos/mora) y calcular saldos
-    const prestamosHoy = prestamos.filter(prestamo => {
-      const fechaInicioPrestamo = new Date(prestamo.fechaInicio)
-      // Debe haber iniciado ya
-      if (fechaInicioPrestamo > fin) return false
+    // Procesar TODOS los préstamos activos: calcular saldos y pagos de hoy
+    const procesados = prestamos
+      .filter(p => new Date(p.fechaInicio) <= fin) // solo los que ya iniciaron
+      .map(prestamo => {
+        const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+        const montoTotal = parseFloat(prestamo.monto.toString()) +
+          (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
 
-      // 1. Validar si corresponde cobrar hoy
-      const esHoy = esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, inicio)
+        const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
 
-      // 2. O si está en mora (ya venció y no está cancelado)
-      const esMora = prestamo.fechaFin < inicio
+        const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
+          ? totalPagado / parseFloat(prestamo.valorCuota.toString())
+          : 0
+        const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
 
-      return esHoy || esMora
-    })
+        // Pagos de HOY (sin importar si era día de cobro o no)
+        const pagosHoy = prestamo.pagos.filter(pago => {
+          const pFecha = new Date(pago.fecha)
+          return pFecha >= inicio && pFecha <= fin
+        })
 
-    const procesados = prestamosHoy.map(prestamo => {
-      const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
-      const montoTotal = parseFloat(prestamo.monto.toString()) + 
-        (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
-      
-      const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
-      
-      const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
-        ? totalPagado / parseFloat(prestamo.valorCuota.toString())
-        : 0
-      const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
+        const pagadoHoyMonto = pagosHoy.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+        const yaPagoHoy = pagosHoy.length > 0
 
-      // Buscar si tiene algún pago registrado hoy
-      const pagosHoy = prestamo.pagos.filter(pago => {
-        const pFecha = new Date(pago.fecha)
-        return pFecha >= inicio && pFecha <= fin
+        // ¿Corresponde cobrar hoy según frecuencia o mora?
+        const esMora = prestamo.fechaFin < inicio
+        const esHoy = esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, inicio)
+        const enRutaHoy = esHoy || esMora
+
+        const diasMora = esMora ? Math.floor((inicio.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24)) : 0
+
+        return {
+          id: prestamo.id,
+          monto: parseFloat(prestamo.monto.toString()),
+          interes: parseFloat(prestamo.interes.toString()),
+          cuotas: prestamo.cuotas,
+          valorCuota: parseFloat(prestamo.valorCuota.toString()),
+          fechaInicio: prestamo.fechaInicio,
+          fechaFin: prestamo.fechaFin,
+          estado: prestamo.estado,
+          tipoPago: prestamo.tipoPago,
+          cliente: prestamo.cliente,
+          saldoPendiente,
+          cuotasPagadas,
+          yaPagoHoy,
+          pagadoHoyMonto,
+          diasMora: diasMora > 0 ? diasMora : 0,
+          enRutaHoy
+        }
       })
 
-      const pagadoHoyMonto = pagosHoy.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
-      const yaPagoHoy = pagosHoy.length > 0
+    // COBRADOS: cualquier préstamo activo que registró un pago hoy (sin importar si era día de cobro)
+    const cobrados = procesados.filter(p => p.yaPagoHoy)
 
-      // Calcular mora (si está vencido)
-      const esMora = prestamo.fechaFin < inicio
-      const diasMora = esMora ? Math.floor((inicio.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24)) : 0
-
-      return {
-        id: prestamo.id,
-        monto: parseFloat(prestamo.monto.toString()),
-        interes: parseFloat(prestamo.interes.toString()),
-        cuotas: prestamo.cuotas,
-        valorCuota: parseFloat(prestamo.valorCuota.toString()),
-        fechaInicio: prestamo.fechaInicio,
-        fechaFin: prestamo.fechaFin,
-        estado: prestamo.estado,
-        tipoPago: prestamo.tipoPago,
-        cliente: prestamo.cliente,
-        saldoPendiente,
-        cuotasPagadas,
-        yaPagoHoy,
-        pagadoHoyMonto,
-        diasMora: diasMora > 0 ? diasMora : 0
-      }
-    })
-
-    // Filtrar solo préstamos con saldo pendiente, o que hayan pagado hoy
-    const conSaldoOPagadosHoy = procesados.filter(p => p.saldoPendiente > 0 || p.yaPagoHoy)
+    // POR COBRAR: los que corresponden a hoy (frecuencia/mora), NO pagaron hoy, y tienen saldo
+    const porCobrar = procesados.filter(p => !p.yaPagoHoy && p.enRutaHoy && p.saldoPendiente > 0)
 
     // Obtener orden guardado para hoy
     const ordenGuardado = await prisma.ordenRutaDia.findUnique({
@@ -183,10 +178,6 @@ export async function GET(request: NextRequest) {
         console.error("Error al parsear orden guardado:", e)
       }
     }
-
-    // Dividir en Por Cobrar y Cobrados
-    const porCobrar = conSaldoOPagadosHoy.filter(p => !p.yaPagoHoy)
-    const cobrados = conSaldoOPagadosHoy.filter(p => p.yaPagoHoy)
 
     // Si el usuario es ADMIN o SUPERVISOR, también traemos la lista de cobradores
     let cobradores: any[] = []
@@ -214,13 +205,9 @@ export async function GET(request: NextRequest) {
         const indexA = ordenArray.indexOf(a.id)
         const indexB = ordenArray.indexOf(b.id)
         
-        // Si ambos están en el orden guardado
         if (indexA !== -1 && indexB !== -1) return indexA - indexB
-        // Si solo a está en el orden
         if (indexA !== -1) return -1
-        // Si solo b está en el orden
         if (indexB !== -1) return 1
-        // Si ninguno está, mantener orden por ID o nombre
         return 0
       })
     }
