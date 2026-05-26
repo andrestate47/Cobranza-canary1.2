@@ -61,9 +61,11 @@ interface PrestamoConDetalles {
 
 interface CobradorInfo {
   id: string
-  firstName: string
-  lastName: string
-  name: string
+  firstName?: string
+  lastName?: string
+  name?: string
+  nombre?: string
+  numero?: string
 }
 
 export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
