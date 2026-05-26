@@ -76,11 +76,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
     }
 
-    // Obtener todos los préstamos activos del cobrador
+    // Obtener todos los préstamos activos de los clientes en la ruta del cobrador
+    // Si el cobrador no tiene ruta asignada, usar sus propios préstamos
     const prestamos = await prisma.prestamo.findMany({
       where: {
-        userId: targetUserId,
-        estado: "ACTIVO"
+        estado: "ACTIVO",
+        ...(cobrador.rutaId 
+            ? { cliente: { rutaId: cobrador.rutaId } } 
+            : { userId: targetUserId }
+        )
       },
       include: {
         cliente: {
@@ -184,8 +188,11 @@ export async function GET(request: NextRequest) {
     if (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR") {
       cobradores = await prisma.user.findMany({
         where: {
-          role: "COBRADOR",
-          isActive: true
+          isActive: true,
+          OR: [
+            { role: "COBRADOR" },
+            { rutaId: { not: null } }
+          ]
         },
         select: {
           id: true,
