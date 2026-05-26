@@ -238,7 +238,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                   onChange={(e) => setSelectedCobradorId(e.target.value)}
                   className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer"
                 >
-                  <option value="">Mi Ruta</option>
+                  <option value="">-- Seleccione una Ruta --</option>
                   {cobradores.map(ruta => (
                     <option key={ruta.id} value={ruta.id}>
                       {ruta.nombre} {ruta.numero ? `(${ruta.numero})` : ""}
