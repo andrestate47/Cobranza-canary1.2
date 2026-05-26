@@ -55,35 +55,39 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const fechaParam = searchParams.get("fecha")
-    const userIdParam = searchParams.get("userId")
+    const rutaIdParam = searchParams.get("rutaId")
 
-    // Determinar usuario objetivo
-    let targetUserId = session.user.id
-    if (userIdParam && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
-      targetUserId = userIdParam
+    // Determinar ruta objetivo
+    let targetRutaId: string | null = null
+    if (rutaIdParam && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
+      targetRutaId = rutaIdParam
     }
 
     // Obtener fecha del informe
     const { inicio, fin } = getEcuadorDayRange(fechaParam)
 
-    // Obtener datos del cobrador
+    // Obtener datos del cobrador actual para saber su ruta por defecto
     const cobrador = await prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: { id: true, rutaId: true, name: true, firstName: true }
+      where: { id: session.user.id },
+      select: { id: true, rutaId: true }
     })
 
     if (!cobrador) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
     }
 
-    // Obtener todos los préstamos activos de los clientes en la ruta del cobrador
-    // Si el cobrador no tiene ruta asignada, usar sus propios préstamos
+    // Si no se pasó un rutaId explícito, usar la del cobrador
+    if (!targetRutaId && cobrador.rutaId) {
+      targetRutaId = cobrador.rutaId
+    }
+
+    // Obtener todos los préstamos activos
     const prestamos = await prisma.prestamo.findMany({
       where: {
         estado: "ACTIVO",
-        ...(cobrador.rutaId 
-            ? { cliente: { rutaId: cobrador.rutaId } } 
-            : { userId: targetUserId }
+        ...(targetRutaId 
+            ? { cliente: { rutaId: targetRutaId } } 
+            : { userId: session.user.id }
         )
       },
       include: {
@@ -164,11 +168,12 @@ export async function GET(request: NextRequest) {
     // POR COBRAR: los que corresponden a hoy (frecuencia/mora), NO pagaron hoy, y tienen saldo
     const porCobrar = procesados.filter(p => !p.yaPagoHoy && p.enRutaHoy && p.saldoPendiente > 0)
 
-    // Obtener orden guardado para hoy
+    // Obtener orden guardado para hoy (asociado a la ruta)
+    // Usamos el targetRutaId, o el userId si no hay ruta
     const ordenGuardado = await prisma.ordenRutaDia.findUnique({
       where: {
         userId_fecha: {
-          userId: targetUserId,
+          userId: targetRutaId || session.user.id,
           fecha: inicio
         }
       }
@@ -183,25 +188,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Si el usuario es ADMIN o SUPERVISOR, también traemos la lista de cobradores
-    let cobradores: any[] = []
+    // Si el usuario es ADMIN o SUPERVISOR, traemos la lista de Rutas
+    let rutas: any[] = []
     if (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR") {
-      cobradores = await prisma.user.findMany({
+      rutas = await prisma.ruta.findMany({
         where: {
-          isActive: true,
-          OR: [
-            { role: "COBRADOR" },
-            { rutaId: { not: null } }
-          ]
+          activa: true
         },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
-          name: true
+          nombre: true,
+          numero: true
         },
         orderBy: {
-          firstName: "asc"
+          nombre: "asc"
         }
       })
     }
@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
       porCobrar,
       cobrados,
       orden: ordenArray,
-      cobradores,
+      cobradores: rutas, // Mantenemos la key 'cobradores' en el JSON para no romper el cliente, aunque ahora sean rutas
       fecha: inicio.toISOString().split("T")[0]
     })
   } catch (error) {
@@ -240,16 +240,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { orden, fecha, userId } = body
+    const { orden, fecha, userId } = body // userId aquí en realidad vendrá como el ID de la ruta desde el frontend
 
     if (!Array.isArray(orden)) {
       return NextResponse.json({ error: "El campo 'orden' debe ser un arreglo de IDs" }, { status: 400 })
     }
 
-    // Determinar usuario objetivo
-    let targetUserId = session.user.id
+    // Determinar objetivo para guardar el orden (la ruta seleccionada o el propio usuario)
+    let targetId = session.user.id
     if (userId && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
-      targetUserId = userId
+      targetId = userId
     }
 
     // Obtener fecha del día
@@ -259,7 +259,7 @@ export async function PUT(request: NextRequest) {
     await prisma.ordenRutaDia.upsert({
       where: {
         userId_fecha: {
-          userId: targetUserId,
+          userId: targetId,
           fecha: inicio
         }
       },
@@ -267,7 +267,7 @@ export async function PUT(request: NextRequest) {
         orden: JSON.stringify(orden)
       },
       create: {
-        userId: targetUserId,
+        userId: targetId,
         fecha: inicio,
         orden: JSON.stringify(orden)
       }

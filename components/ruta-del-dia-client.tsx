@@ -230,16 +230,16 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
 
             {(user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") && cobradores.length > 0 && (
               <div className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200">
-                <User className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                <MapPin className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
                 <select
                   value={selectedCobradorId}
                   onChange={(e) => setSelectedCobradorId(e.target.value)}
                   className="bg-transparent text-xs font-medium text-gray-700 outline-none cursor-pointer"
                 >
                   <option value="">Mi Ruta</option>
-                  {cobradores.map(cob => (
-                    <option key={cob.id} value={cob.id}>
-                      {cob.firstName || cob.name} {cob.lastName || ""}
+                  {cobradores.map(ruta => (
+                    <option key={ruta.id} value={ruta.id}>
+                      {ruta.nombre} {ruta.numero ? `(${ruta.numero})` : ""}
                     </option>
                   ))}
                 </select>
