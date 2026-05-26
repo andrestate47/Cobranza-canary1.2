@@ -82,40 +82,45 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener todos los préstamos activos
-    const prestamos = await prisma.prestamo.findMany({
-      where: {
-        estado: "ACTIVO",
-        ...(targetRutaId 
-            ? { cliente: { rutaId: targetRutaId } } 
-            : { userId: session.user.id }
-        )
-      },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCliente: true,
-            direccionCobro: true,
-            mapLink: true
-          }
+    const isAdminOrSupervisor = session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR"
+    let prestamos: any[] = []
+
+    if (targetRutaId || !isAdminOrSupervisor) {
+      prestamos = await prisma.prestamo.findMany({
+        where: {
+          estado: "ACTIVO",
+          ...(targetRutaId 
+              ? { cliente: { rutaId: targetRutaId } } 
+              : { userId: session.user.id }
+          )
         },
-        pagos: {
-          orderBy: {
-            fecha: "desc"
+        include: {
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCliente: true,
+              direccionCobro: true,
+              mapLink: true
+            }
+          },
+          pagos: {
+            orderBy: {
+              fecha: "desc"
+            }
           }
         }
-      }
-    })
+      })
+    }
 
     // Procesar TODOS los préstamos activos: calcular saldos y pagos de hoy
     const procesados = prestamos
       .filter(p => new Date(p.fechaInicio) <= fin) // solo los que ya iniciaron
       .map(prestamo => {
-        const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+        const totalPagado = prestamo.pagos.reduce((sum: number, pago: any) => sum + parseFloat(pago.monto.toString()), 0)
         const montoTotal = parseFloat(prestamo.monto.toString()) +
           (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
 
@@ -127,12 +132,12 @@ export async function GET(request: NextRequest) {
         const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
 
         // Pagos de HOY (sin importar si era día de cobro o no)
-        const pagosHoy = prestamo.pagos.filter(pago => {
+        const pagosHoy = prestamo.pagos.filter((pago: any) => {
           const pFecha = new Date(pago.fecha)
           return pFecha >= inicio && pFecha <= fin
         })
 
-        const pagadoHoyMonto = pagosHoy.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+        const pagadoHoyMonto = pagosHoy.reduce((sum: number, p: any) => sum + parseFloat(p.monto.toString()), 0)
         const yaPagoHoy = pagosHoy.length > 0
 
         // ¿Corresponde cobrar hoy según frecuencia o mora?
@@ -170,21 +175,23 @@ export async function GET(request: NextRequest) {
 
     // Obtener orden guardado para hoy (asociado a la ruta)
     // Usamos el targetRutaId, o el userId si no hay ruta
-    const ordenGuardado = await prisma.ordenRutaDia.findUnique({
-      where: {
-        userId_fecha: {
-          userId: targetRutaId || session.user.id,
-          fecha: inicio
-        }
-      }
-    })
-
     let ordenArray: string[] = []
-    if (ordenGuardado) {
-      try {
-        ordenArray = JSON.parse(ordenGuardado.orden)
-      } catch (e) {
-        console.error("Error al parsear orden guardado:", e)
+    if (targetRutaId || !isAdminOrSupervisor) {
+      const ordenGuardado = await prisma.ordenRutaDia.findUnique({
+        where: {
+          userId_fecha: {
+            userId: targetRutaId || session.user.id,
+            fecha: inicio
+          }
+        }
+      })
+
+      if (ordenGuardado) {
+        try {
+          ordenArray = JSON.parse(ordenGuardado.orden)
+        } catch (e) {
+          console.error("Error al parsear orden guardado:", e)
+        }
       }
     }
 
@@ -248,8 +255,12 @@ export async function PUT(request: NextRequest) {
 
     // Determinar objetivo para guardar el orden (la ruta seleccionada o el propio usuario)
     let targetId = session.user.id
-    if (rutaId && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
+    const isAdminOrSupervisor = session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR"
+    if (rutaId && isAdminOrSupervisor) {
       targetId = rutaId
+    } else if (isAdminOrSupervisor && !rutaId) {
+      // Si es admin o supervisor y no hay rutaId, no guardamos orden porque no tiene ruta propia
+      return NextResponse.json({ success: true })
     }
 
     // Obtener fecha del día

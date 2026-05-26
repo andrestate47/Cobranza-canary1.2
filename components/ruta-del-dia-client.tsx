@@ -276,9 +276,19 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
 
               {porCobrar.length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
-                  <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
-                  <p className="text-gray-700 font-medium text-sm">¡Ruta limpia para hoy!</p>
-                  <p className="text-gray-400 text-xs mt-1">No quedan cobros pendientes.</p>
+                  {!selectedCobradorId && (user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") ? (
+                    <>
+                      <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-700 font-medium text-sm">Por favor, seleccione una ruta</p>
+                      <p className="text-gray-400 text-xs mt-1">Use el selector de arriba para ver los cobros de una ruta específica.</p>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
+                      <p className="text-gray-700 font-medium text-sm">¡Ruta limpia para hoy!</p>
+                      <p className="text-gray-400 text-xs mt-1">No quedan cobros pendientes.</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -429,9 +439,19 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
 
               {cobrados.length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
-                  <DollarSign className="h-10 w-10 mx-auto mb-2 text-gray-200" />
-                  <p className="text-gray-500 font-medium text-sm">Sin cobros aún</p>
-                  <p className="text-gray-400 text-xs mt-1">Aquí aparecerán los clientes que abonen hoy.</p>
+                  {!selectedCobradorId && (user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") ? (
+                    <>
+                      <DollarSign className="h-10 w-10 mx-auto mb-2 text-gray-200" />
+                      <p className="text-gray-500 font-medium text-sm">Seleccione una ruta</p>
+                      <p className="text-gray-400 text-xs mt-1">Aquí aparecerán los cobros de la ruta seleccionada.</p>
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="h-10 w-10 mx-auto mb-2 text-gray-200" />
+                      <p className="text-gray-500 font-medium text-sm">Sin cobros aún</p>
+                      <p className="text-gray-400 text-xs mt-1">Aquí aparecerán los clientes que abonen hoy.</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">

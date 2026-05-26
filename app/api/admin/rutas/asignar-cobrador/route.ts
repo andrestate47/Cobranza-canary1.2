@@ -33,6 +33,14 @@ export async function POST(req: Request) {
       )
     }
 
+    // Evitar asignar rutas a usuarios que no sean cobradores
+    if (usuario.role !== "COBRADOR") {
+      return NextResponse.json(
+        { error: "Solo se pueden asignar rutas a usuarios con el rol de Cobrador" },
+        { status: 400 }
+      )
+    }
+
     // Si rutaId es null, desasignar al usuario de cualquier ruta
     if (rutaId === null) {
       await prisma.user.update({
