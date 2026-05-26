@@ -240,7 +240,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { orden, fecha, userId } = body // userId aquí en realidad vendrá como el ID de la ruta desde el frontend
+    const { orden, fecha, rutaId } = body
 
     if (!Array.isArray(orden)) {
       return NextResponse.json({ error: "El campo 'orden' debe ser un arreglo de IDs" }, { status: 400 })
@@ -248,8 +248,8 @@ export async function PUT(request: NextRequest) {
 
     // Determinar objetivo para guardar el orden (la ruta seleccionada o el propio usuario)
     let targetId = session.user.id
-    if (userId && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
-      targetId = userId
+    if (rutaId && (session.user.role === "ADMINISTRADOR" || session.user.role === "SUPERVISOR")) {
+      targetId = rutaId
     }
 
     // Obtener fecha del día

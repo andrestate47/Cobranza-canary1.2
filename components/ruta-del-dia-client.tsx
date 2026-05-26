@@ -91,7 +91,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
     setLoading(true)
     try {
       let url = `/api/ruta-del-dia?fecha=${fecha}`
-      if (selectedCobradorId) url += `&userId=${selectedCobradorId}`
+      if (selectedCobradorId) url += `&rutaId=${selectedCobradorId}`
 
       const response = await fetch(url)
       if (!response.ok) throw new Error("No se pudo cargar la ruta del día")
@@ -117,7 +117,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
       await fetch("/api/ruta-del-dia", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orden: ids, fecha, userId: selectedCobradorId || undefined })
+        body: JSON.stringify({ orden: ids, fecha, rutaId: selectedCobradorId || undefined })
       })
     } catch (error) {
       toast({ title: "Error de Guardado", description: "No se pudo sincronizar el nuevo orden.", variant: "destructive" })
