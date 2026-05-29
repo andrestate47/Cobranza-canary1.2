@@ -356,6 +356,7 @@ export async function GET(request: NextRequest) {
       cobradorId: usuario?.id || null,
       rutaId: usuario?.rutaId || null,
       totalCobrado,
+      totalCobradoEfectivo,
       moraCobrada,
       dineroTransferencia,
       totalPrestado,

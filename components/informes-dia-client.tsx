@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Eye,
   Lock,
-  CheckCircle
+  CheckCircle,
+  ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,6 +34,7 @@ interface InformeDelDia {
   cobradorId: string | null
   rutaId: string | null
   totalCobrado: number
+  totalCobradoEfectivo: number
   moraCobrada: number
   dineroTransferencia: number
   totalPrestado: number
@@ -405,9 +407,35 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                   }`}>
                     {formatCurrency(informe.saldoEfectivo)}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Efectivo físico estimado (Caja inicial: {formatCurrency(informe.saldoInicial)})
-                  </p>
+                  
+                  <details className="mt-3 text-xs group cursor-pointer" open={false}>
+                    <summary className="flex items-center justify-between font-medium text-muted-foreground outline-none list-none [&::-webkit-details-marker]:hidden">
+                      Ver detalle de caja
+                      <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="mt-3 space-y-2 border-t pt-3 pb-1">
+                      <div className="flex justify-between items-center text-green-600 font-medium">
+                        <span>(+) Caja Inicial</span>
+                        <span>{formatCurrency(informe.saldoInicial)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-green-600 font-medium">
+                        <span>(+) Cobrado en Efectivo</span>
+                        <span>{formatCurrency(informe.totalCobradoEfectivo)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-red-500 font-medium">
+                        <span>(-) Préstamos Entregados</span>
+                        <span>{formatCurrency(informe.totalPrestado)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-red-500 font-medium">
+                        <span>(-) Gastos Registrados</span>
+                        <span>{formatCurrency(informe.totalGastos)}</span>
+                      </div>
+                      <div className={`flex justify-between items-center border-t pt-2 font-bold ${informe.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span>Total Efectivo</span>
+                        <span>{formatCurrency(informe.saldoEfectivo)}</span>
+                      </div>
+                    </div>
+                  </details>
                 </CardContent>
               </Card>
 
