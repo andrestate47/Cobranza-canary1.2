@@ -271,7 +271,14 @@ export async function GET(request: NextRequest) {
     // Transferencias pendientes (por ahora 0, se puede implementar lógica específica)
     const transferenciasPendientes = 0
     
+    // Préstamos totales (para compatibilidad)
     const totalPrestado = prestamos.reduce((sum, prestamo) => 
+      sum + parseFloat(prestamo.monto.toString()), 0
+    )
+
+    // Préstamos solo en efectivo (los que realmente salen de la caja)
+    const prestamosEfectivo = prestamos.filter(p => p.tipoCredito === "EFECTIVO" || p.tipoCredito == null)
+    const totalPrestadoEfectivo = prestamosEfectivo.reduce((sum, prestamo) => 
       sum + parseFloat(prestamo.monto.toString()), 0
     )
     
@@ -291,7 +298,7 @@ export async function GET(request: NextRequest) {
       parseFloat(cierreAnterior.saldoEfectivo.toString()) : 0
 
     // Calcular saldo actual (solo efectivo, sin transferencias/depósitos)
-    const saldoEfectivo = saldoInicial + totalCobradoEfectivo - totalPrestado - totalGastos
+    const saldoEfectivo = saldoInicial + totalCobradoEfectivo - totalPrestadoEfectivo - totalGastos
 
     // Calcular total por cobrar (suma de saldos pendientes de todos los préstamos activos)
     let totalPorCobrar = 0
@@ -360,6 +367,7 @@ export async function GET(request: NextRequest) {
       moraCobrada,
       dineroTransferencia,
       totalPrestado,
+      totalPrestadoEfectivo,
       totalGastos,
       saldoInicial,
       saldoEfectivo,

@@ -38,6 +38,7 @@ interface InformeDelDia {
   moraCobrada: number
   dineroTransferencia: number
   totalPrestado: number
+  totalPrestadoEfectivo: number
   totalGastos: number
   saldoInicial: number
   saldoEfectivo: number
@@ -424,7 +425,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                       </div>
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Préstamos Entregados</span>
-                        <span>{formatCurrency(informe.totalPrestado)}</span>
+                        <span>{formatCurrency(informe.totalPrestadoEfectivo)}</span>
                       </div>
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Gastos Registrados</span>
