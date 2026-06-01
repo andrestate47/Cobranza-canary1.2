@@ -35,10 +35,13 @@ interface InformeDelDia {
   rutaId: string | null
   totalCobrado: number
   totalCobradoEfectivo: number
+  totalCobradoTransferencia: number
+  totalCobradoDeposito: number
   moraCobrada: number
   dineroTransferencia: number
   totalPrestado: number
   totalPrestadoEfectivo: number
+  totalPrestadoTransferencia: number
   totalGastos: number
   saldoInicial: number
   saldoEfectivo: number
@@ -396,10 +399,10 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                 </CardContent>
               </Card>
 
-              {/* Saldo en Efectivo */}
+              {/* Saldo en Caja General */}
               <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Efectivo en Caja</CardTitle>
+                  <CardTitle className="text-sm font-medium">Caja General (Efectivo y Bancos)</CardTitle>
                   <Wallet className="h-4 w-4 text-emerald-600" />
                 </CardHeader>
                 <CardContent>
@@ -423,16 +426,28 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(+) Cobrado en Efectivo</span>
                         <span>{formatCurrency(informe.totalCobradoEfectivo)}</span>
                       </div>
+                      <div className="flex justify-between items-center text-emerald-600 font-medium">
+                        <span>(+) Transferencias Recibidas</span>
+                        <span>{formatCurrency(informe.totalCobradoTransferencia)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-emerald-600 font-medium">
+                        <span>(+) Depósitos Recibidos</span>
+                        <span>{formatCurrency(informe.totalCobradoDeposito)}</span>
+                      </div>
                       <div className="flex justify-between items-center text-red-500 font-medium">
-                        <span>(-) Préstamos Entregados</span>
+                        <span>(-) Préstamos en Efectivo</span>
                         <span>{formatCurrency(informe.totalPrestadoEfectivo)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-red-500 font-medium">
+                        <span>(-) Préstamos por Transferencia</span>
+                        <span>{formatCurrency(informe.totalPrestadoTransferencia)}</span>
                       </div>
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Gastos Registrados</span>
                         <span>{formatCurrency(informe.totalGastos)}</span>
                       </div>
                       <div className={`flex justify-between items-center border-t pt-2 font-bold ${informe.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        <span>Total Efectivo</span>
+                        <span>Balance General</span>
                         <span>{formatCurrency(informe.saldoEfectivo)}</span>
                       </div>
                     </div>

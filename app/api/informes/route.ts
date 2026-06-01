@@ -237,8 +237,17 @@ export async function GET(request: NextRequest) {
     )
 
     // Calcular total cobrado en efectivo (sin transferencias ni depósitos)
+    // Calcular cobros por método de pago
     const totalCobradoEfectivo = pagos
       .filter(p => p.metodoPago === "EFECTIVO")
+      .reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+
+    const totalCobradoTransferencia = pagos
+      .filter(p => p.metodoPago === "TRANSFERENCIA")
+      .reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+
+    const totalCobradoDeposito = pagos
+      .filter(p => p.metodoPago === "DEPOSITO")
       .reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
 
     // Calcular mora cobrada (pagos en préstamos vencidos)
@@ -258,27 +267,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Calcular dinero en transferencia (pagos con método TRANSFERENCIA o DEPOSITO)
-    const pagosTransferencia = pagos.filter(p => 
-      p.metodoPago === "TRANSFERENCIA" || p.metodoPago === "DEPOSITO"
-    )
-    const dineroTransferencia = pagosTransferencia.reduce((sum, p) => 
-      sum + parseFloat(p.monto.toString()), 0
-    )
+    const dineroTransferencia = totalCobradoTransferencia + totalCobradoDeposito
     
     // Transferencias realizadas (pagos con método TRANSFERENCIA o DEPOSITO)
-    const transferenciasRealizadas = pagosTransferencia.length
+    const transferenciasRealizadas = pagos.filter(p => 
+      p.metodoPago === "TRANSFERENCIA" || p.metodoPago === "DEPOSITO"
+    ).length
     
     // Transferencias pendientes (por ahora 0, se puede implementar lógica específica)
     const transferenciasPendientes = 0
     
-    // Préstamos totales (para compatibilidad)
+    // Préstamos totales
     const totalPrestado = prestamos.reduce((sum, prestamo) => 
       sum + parseFloat(prestamo.monto.toString()), 0
     )
 
-    // Préstamos solo en efectivo (los que realmente salen de la caja)
+    // Préstamos solo en efectivo (los que realmente salen de la caja física)
     const prestamosEfectivo = prestamos.filter(p => p.tipoCredito === "EFECTIVO" || p.tipoCredito == null)
     const totalPrestadoEfectivo = prestamosEfectivo.reduce((sum, prestamo) => 
+      sum + parseFloat(prestamo.monto.toString()), 0
+    )
+
+    // Préstamos entregados por transferencia bancaria
+    const prestamosTransferencia = prestamos.filter(p => p.tipoCredito === "TRANSFERENCIA")
+    const totalPrestadoTransferencia = prestamosTransferencia.reduce((sum, prestamo) => 
       sum + parseFloat(prestamo.monto.toString()), 0
     )
     
@@ -301,8 +313,8 @@ export async function GET(request: NextRequest) {
     const saldoInicial = cierreAnterior ? 
       parseFloat(cierreAnterior.saldoEfectivo.toString()) : 0
 
-    // Calcular saldo actual (solo efectivo, sin transferencias/depósitos)
-    const saldoEfectivo = saldoInicial + totalCobradoEfectivo - totalPrestadoEfectivo - totalGastos
+    // Calcular saldo actual (efectivo + bancos)
+    const saldoEfectivo = saldoInicial + totalCobrado - totalPrestado - totalGastos
 
     // Calcular total por cobrar (suma de saldos pendientes de todos los préstamos activos)
     let totalPorCobrar = 0
@@ -368,10 +380,13 @@ export async function GET(request: NextRequest) {
       rutaId: usuario?.rutaId || null,
       totalCobrado,
       totalCobradoEfectivo,
+      totalCobradoTransferencia,
+      totalCobradoDeposito,
       moraCobrada,
       dineroTransferencia,
       totalPrestado,
       totalPrestadoEfectivo,
+      totalPrestadoTransferencia,
       totalGastos,
       saldoInicial,
       saldoEfectivo,
