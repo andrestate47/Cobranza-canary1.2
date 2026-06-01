@@ -416,7 +416,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                     </summary>
                     <div className="mt-3 space-y-2 border-t pt-3 pb-1">
                       <div className="flex justify-between items-center text-green-600 font-medium">
-                        <span>(+) Caja Inicial</span>
+                        <span>(+) Saldo Anterior</span>
                         <span>{formatCurrency(informe.saldoInicial)}</span>
                       </div>
                       <div className="flex justify-between items-center text-green-600 font-medium">

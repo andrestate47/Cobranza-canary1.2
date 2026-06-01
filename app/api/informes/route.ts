@@ -286,12 +286,16 @@ export async function GET(request: NextRequest) {
       sum + parseFloat(gasto.monto.toString()), 0
     )
 
-    // Obtener saldo inicial (efectivo del día anterior)
-    const fechaAnterior = new Date(fecha)
-    fechaAnterior.setDate(fechaAnterior.getDate() - 1)
-    
-    const cierreAnterior = await prisma.cierreDia.findUnique({
-      where: { fecha: fechaAnterior }
+    // Buscar el último cierre de caja registrado (sin importar si fue ayer o hace varios días)
+    const cierreAnterior = await prisma.cierreDia.findFirst({
+      where: {
+        fecha: {
+          lt: fechaInicio
+        }
+      },
+      orderBy: {
+        fecha: 'desc'
+      }
     })
     
     const saldoInicial = cierreAnterior ? 
