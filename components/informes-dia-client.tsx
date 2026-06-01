@@ -219,6 +219,19 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
       return
     }
 
+    // Verificar que se haya seleccionado un cobrador si es un admin viendo todas las rutas
+    if (session.user.role === "ADMINISTRADOR" && !cobradorSeleccionado) {
+      toast({
+        title: "Selecciona un cobrador",
+        description: "Debes seleccionar un cobrador específico para cerrar su caja. No puedes hacer un cierre global.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Usar el cobradorId del informe, o el usuario logueado como fallback
+    const cobradorId = informe.cobradorId || session.user.id
+
     try {
       const response = await fetch('/api/cierre-dia', {
         method: 'POST',
@@ -230,7 +243,8 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
           totalCobrado: informe.totalCobrado,
           totalPrestado: informe.totalPrestado,
           totalGastos: informe.totalGastos,
-          saldoEfectivo: informe.saldoEfectivo
+          saldoEfectivo: informe.saldoEfectivo,
+          cobradorId: cobradorId
         }),
       })
 
@@ -239,7 +253,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
           title: "Día cerrado",
           description: "El cierre del día se ha registrado exitosamente",
         })
-        fetchInforme(fechaSeleccionada) // Recargar informe
+        fetchInforme(fechaSeleccionada, cobradorSeleccionado) // Recargar informe
       } else {
         const error = await response.json()
         toast({

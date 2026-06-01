@@ -24,19 +24,31 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { fecha, totalCobrado, totalPrestado, totalGastos, saldoEfectivo, observaciones } = body
+    const { fecha, totalCobrado, totalPrestado, totalGastos, saldoEfectivo, observaciones, cobradorId } = body
+
+    if (!cobradorId) {
+      return NextResponse.json(
+        { error: "Se requiere especificar el cobrador (cobradorId) para cerrar su caja" },
+        { status: 400 }
+      )
+    }
 
     // Normalizar a la medianoche de Ecuador para evitar colisiones por zona horaria
     const fechaCierre = normalizeToEcuadorMidnight(fecha)
 
-    // Verificar que no exista ya un cierre para esta fecha
+    // Verificar que no exista ya un cierre para esta fecha y este cobrador
     const cierreExistente = await prisma.cierreDia.findUnique({
-      where: { fecha: fechaCierre }
+      where: { 
+        userId_fecha: {
+          userId: cobradorId,
+          fecha: fechaCierre
+        }
+      }
     })
 
     if (cierreExistente) {
       return NextResponse.json(
-        { error: "Ya existe un cierre para esta fecha" },
+        { error: "Ya existe un cierre para este cobrador en esta fecha" },
         { status: 400 }
       )
     }
@@ -45,7 +57,7 @@ export async function POST(request: NextRequest) {
     const cierre = await prisma.cierreDia.create({
       data: {
         fecha: fechaCierre,
-        userId: session.user.id,
+        userId: cobradorId,
         totalCobrado: parseFloat(totalCobrado),
         totalPrestado: parseFloat(totalPrestado),
         totalGastos: parseFloat(totalGastos),

@@ -298,9 +298,10 @@ export async function GET(request: NextRequest) {
       sum + parseFloat(gasto.monto.toString()), 0
     )
 
-    // Buscar el último cierre de caja registrado (sin importar si fue ayer o hace varios días)
+    // Buscar el último cierre de caja registrado para el cobrador actual
     const cierreAnterior = await prisma.cierreDia.findFirst({
       where: {
+        userId: userId, // Filtramos por el cobrador
         fecha: {
           lt: fechaInicio
         }

@@ -221,7 +221,7 @@ model Gasto {
 model CierreDia {
   id            String   @id @default(cuid())
   userId        String   @map("user_id")
-  fecha         DateTime @unique
+  fecha         DateTime
   totalCobrado  Decimal  @db.Decimal(12, 2)
   totalPrestado Decimal  @db.Decimal(12, 2)
   totalGastos   Decimal  @db.Decimal(12, 2)
@@ -231,6 +231,7 @@ model CierreDia {
   updatedAt     DateTime @updatedAt
   usuario       User     @relation(fields: [userId], references: [id])
 
+  @@unique([userId, fecha])
   @@map("cierres_dia")
 }
 
