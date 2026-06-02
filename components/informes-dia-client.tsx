@@ -416,7 +416,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
               {/* Saldo en Caja General */}
               <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Caja General (Efectivo y Bancos)</CardTitle>
+                  <CardTitle className="text-sm font-medium">Caja de Hoy (Efectivo y Bancos)</CardTitle>
                   <Wallet className="h-4 w-4 text-emerald-600" />
                 </CardHeader>
                 <CardContent>
