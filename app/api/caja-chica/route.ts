@@ -47,9 +47,9 @@ export async function GET(request: NextRequest) {
     let totalDevuelto = new Decimal(0)
 
     movimientos.forEach((mov) => {
-      if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA") {
+      if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA" || mov.tipo === "INGRESO" || mov.tipo === "APERTURA_CAJA") {
         totalEntregado = totalEntregado.plus(mov.monto)
-      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO") {
+      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL") {
         totalGastado = totalGastado.plus(mov.monto)
       } else if (mov.tipo === "DEVUELTO" || mov.tipo === "DEVOLUCION") {
         totalDevuelto = totalDevuelto.plus(mov.monto)

@@ -275,9 +275,12 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
     const totales = movimientosFiltrados.reduce((acc, mov) => {
       switch (mov.tipo) {
         case "ENTREGADO":
+        case "INGRESO":
           acc.totalEntregado += mov.monto
           break
         case "GASTADO":
+        case "GASTO":
+        case "EGRESO":
           acc.totalGastado += mov.monto
           break
         case "DEVUELTO":
