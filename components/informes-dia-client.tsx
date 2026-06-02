@@ -332,14 +332,13 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
             <div>
               <Label htmlFor="cobrador">Cobrador</Label>
               <Select
-                value={cobradorSeleccionado || "TODOS"}
-                onValueChange={(value) => setCobradorSeleccionado(value === "TODOS" ? "" : value)}
+                value={cobradorSeleccionado || ""}
+                onValueChange={(value) => setCobradorSeleccionado(value)}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Todos los cobradores" />
+                  <SelectValue placeholder="Seleccione un cobrador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="TODOS">Todos los cobradores</SelectItem>
                   {cobradores.map((cobrador) => (
                     <SelectItem key={cobrador.id} value={cobrador.id}>
                       {cobrador.firstName} {cobrador.lastName}
