@@ -665,6 +665,8 @@ enum TipoMovimientoCaja {
   GASTADO
   APERTURA_CAJA
   EGRESO_GENERAL
+  INGRESO
+  EGRESO
 }
 
 enum PlanSuscripcion {
