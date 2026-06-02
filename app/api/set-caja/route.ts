@@ -36,10 +36,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `No se encontró ningún cobrador con el nombre ${nombre}` }, { status: 404 })
     }
 
-    // Buscar el último cierre de este cobrador (cualquiera que sea su fecha)
+    const { getEcuadorDayRange } = await import('@/lib/date-utils')
+    const { inicio: fechaInicio } = getEcuadorDayRange()
+
+    // Buscar el cierre anterior (el que se usa como Caja Anterior HOY)
     const ultimoCierre = await prisma.cierreDia.findFirst({
       where: {
-        userId: cobrador.id
+        userId: cobrador.id,
+        fecha: {
+          lt: fechaInicio
+        }
       },
       orderBy: {
         fecha: 'desc'
