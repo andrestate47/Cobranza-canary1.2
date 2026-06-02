@@ -7,22 +7,31 @@ export async function GET(request: Request) {
     const nombre = searchParams.get("nombre")
 
     if (!nombre) {
-      return NextResponse.json({ error: "Falta el parámetro nombre. Ejemplo: /api/fix-caja?nombre=Daniel" }, { status: 400 })
+      const cobradores = await prisma.user.findMany({ where: { role: "COBRADOR" }, select: { id: true, firstName: true, name: true, email: true } })
+      return NextResponse.json({ 
+        error: "Falta el parámetro nombre. Ejemplo: /api/fix-caja?nombre=Daniel",
+        cobradoresDisponibles: cobradores 
+      }, { status: 400 })
     }
 
     // Buscar al cobrador
     const cobrador = await prisma.user.findFirst({
       where: {
-        firstName: {
-          contains: nombre,
-          mode: 'insensitive'
-        },
+        OR: [
+          { firstName: { contains: nombre, mode: 'insensitive' } },
+          { name: { contains: nombre, mode: 'insensitive' } },
+          { id: nombre }
+        ],
         role: "COBRADOR"
       }
     })
 
     if (!cobrador) {
-      return NextResponse.json({ error: `No se encontró ningún cobrador con el nombre ${nombre}` }, { status: 404 })
+      const cobradores = await prisma.user.findMany({ where: { role: "COBRADOR" }, select: { id: true, firstName: true, name: true, email: true } })
+      return NextResponse.json({ 
+        error: `No se encontró ningún cobrador con el nombre ${nombre}`,
+        cobradoresDisponibles: cobradores
+      }, { status: 404 })
     }
 
     // Buscar si ya existe un cierre de ayer
