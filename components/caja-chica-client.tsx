@@ -185,14 +185,15 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
     }
   }
 
-  const [openGastoDialog, setOpenGastoDialog] = useState(false)
-  const [gastoData, setGastoData] = useState({
+  const [openMovimientoDialog, setOpenMovimientoDialog] = useState(false)
+  const [tipoMovimiento, setTipoMovimiento] = useState<"GASTO" | "INGRESO" | "EGRESO">("GASTO")
+  const [movimientoData, setMovimientoData] = useState({
     monto: "",
     descripcion: ""
   })
 
-  const handleRegistrarGasto = async () => {
-    if (!gastoData.monto) {
+  const handleRegistrarMovimiento = async () => {
+    if (!movimientoData.monto) {
       toast({
         title: "Error",
         description: "Debe ingresar un monto",
@@ -206,27 +207,27 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tipo: "GASTO",
-          monto: parseFloat(gastoData.monto),
-          descripcion: gastoData.descripcion,
+          tipo: tipoMovimiento,
+          monto: parseFloat(movimientoData.monto),
+          descripcion: movimientoData.descripcion,
           cobradorId: user?.id
         })
       })
 
-      if (!response.ok) throw new Error("Error al registrar gasto")
+      if (!response.ok) throw new Error("Error al registrar movimiento")
 
       toast({
         title: "Éxito",
-        description: "Gasto registrado correctamente"
+        description: "Movimiento registrado correctamente"
       })
 
-      setOpenGastoDialog(false)
-      setGastoData({ monto: "", descripcion: "" })
+      setOpenMovimientoDialog(false)
+      setMovimientoData({ monto: "", descripcion: "" })
       cargarDatos()
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo registrar el gasto",
+        description: "No se pudo registrar el movimiento",
         variant: "destructive"
       })
     }
@@ -411,46 +412,59 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         )}
         
         {isCobrador && (
-          <Dialog open={openGastoDialog} onOpenChange={setOpenGastoDialog}>
-            <DialogTrigger asChild>
-              <Button variant="destructive">
-                <TrendingDown className="mr-2 h-4 w-4" />
-                Registrar Gasto de Viáticos
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setTipoMovimiento("INGRESO"); setOpenMovimientoDialog(true) }}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Ingreso de Efectivo
+            </Button>
+            <Button variant="destructive" className="bg-orange-600 hover:bg-orange-700" onClick={() => { setTipoMovimiento("EGRESO"); setOpenMovimientoDialog(true) }}>
+              <TrendingDown className="mr-2 h-4 w-4" />
+              Egreso de Efectivo
+            </Button>
+            <Button variant="destructive" onClick={() => { setTipoMovimiento("GASTO"); setOpenMovimientoDialog(true) }}>
+              <TrendingDown className="mr-2 h-4 w-4" />
+              Gasto de Viáticos
+            </Button>
+          </div>
+        )}
+        
+        {isCobrador && (
+          <Dialog open={openMovimientoDialog} onOpenChange={setOpenMovimientoDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Registrar Gasto</DialogTitle>
+                <DialogTitle>Registrar {tipoMovimiento}</DialogTitle>
                 <DialogDescription>
-                  Registra un gasto que se descontará de tus viáticos actuales
+                  {tipoMovimiento === "GASTO" && "Registra un gasto que se descontará de tus viáticos"}
+                  {tipoMovimiento === "INGRESO" && "Registra un ingreso extra a tu caja o viáticos"}
+                  {tipoMovimiento === "EGRESO" && "Registra un egreso o devolución de tu caja"}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Monto a descontar (Bs.)</Label>
+                  <Label>Monto (Bs.)</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    value={gastoData.monto}
-                    onChange={(e) => setGastoData({...gastoData, monto: e.target.value})}
+                    value={movimientoData.monto}
+                    onChange={(e) => setMovimientoData({...movimientoData, monto: e.target.value})}
                     placeholder="0.00"
                   />
                 </div>
                 <div>
                   <Label>Motivo / Descripción</Label>
                   <Textarea
-                    value={gastoData.descripcion}
-                    onChange={(e) => setGastoData({...gastoData, descripcion: e.target.value})}
-                    placeholder="Ej. Gasolina, almuerzo, etc."
+                    value={movimientoData.descripcion}
+                    onChange={(e) => setMovimientoData({...movimientoData, descripcion: e.target.value})}
+                    placeholder={tipoMovimiento === "GASTO" ? "Ej. Gasolina, almuerzo, etc." : "Motivo del movimiento..."}
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenGastoDialog(false)}>
+                <Button variant="outline" onClick={() => setOpenMovimientoDialog(false)}>
                   Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleRegistrarGasto}>
-                  Registrar Gasto
+                <Button variant={tipoMovimiento === "INGRESO" ? "default" : "destructive"} className={tipoMovimiento === "INGRESO" ? "bg-emerald-600" : ""} onClick={handleRegistrarMovimiento}>
+                  Registrar {tipoMovimiento}
                 </Button>
               </DialogFooter>
             </DialogContent>

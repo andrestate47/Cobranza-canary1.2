@@ -114,9 +114,9 @@ export async function POST(request: NextRequest) {
 
     const isCobrador = session.user.role === "COBRADOR"
     if (isCobrador) {
-      if (tipo !== "GASTO" && tipo !== "GASTADO") {
+      if (tipo !== "GASTO" && tipo !== "GASTADO" && tipo !== "INGRESO" && tipo !== "EGRESO") {
         return NextResponse.json(
-          { error: "Los cobradores solo pueden registrar gastos" },
+          { error: "Los cobradores solo pueden registrar gastos, ingresos y egresos" },
           { status: 403 }
         )
       }
