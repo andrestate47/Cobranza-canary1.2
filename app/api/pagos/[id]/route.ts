@@ -41,7 +41,12 @@ export async function DELETE(
             // Si el pago no es de hoy, y es cobrador, tal vez no debería eliminarlo?
             // O si ya hubo cierre de día.
             const cierreHoy = await prisma.cierreDia.findUnique({
-                where: { fecha: hoy }
+                where: {
+                    userId_fecha: {
+                        userId: session.user.id,
+                        fecha: hoy
+                    }
+                }
             })
 
             if (cierreHoy) {

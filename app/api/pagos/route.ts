@@ -104,7 +104,12 @@ export async function POST(request: NextRequest) {
       const hoy = normalizeToEcuadorMidnight()
 
       const cierreHoy = await prisma.cierreDia.findUnique({
-        where: { fecha: hoy }
+        where: {
+          userId_fecha: {
+            userId: session.user.id,
+            fecha: hoy
+          }
+        }
       })
 
       if (cierreHoy) {

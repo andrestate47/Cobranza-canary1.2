@@ -367,9 +367,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Verificar si ya hay un cierre para este día
+    // Verificar si ya hay un cierre para este día (y este cobrador)
     const cierreDia = await prisma.cierreDia.findUnique({
-      where: { fecha }
+      where: {
+        userId_fecha: {
+          userId: userId,
+          fecha: fecha
+        }
+      }
     })
 
     const informe = {
