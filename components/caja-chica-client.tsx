@@ -185,6 +185,53 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
     }
   }
 
+  const [openGastoDialog, setOpenGastoDialog] = useState(false)
+  const [gastoData, setGastoData] = useState({
+    monto: "",
+    descripcion: ""
+  })
+
+  const handleRegistrarGasto = async () => {
+    if (!gastoData.monto) {
+      toast({
+        title: "Error",
+        description: "Debe ingresar un monto",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const response = await fetch("/api/caja-chica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: "GASTO",
+          monto: parseFloat(gastoData.monto),
+          descripcion: gastoData.descripcion,
+          cobradorId: user?.id
+        })
+      })
+
+      if (!response.ok) throw new Error("Error al registrar gasto")
+
+      toast({
+        title: "Éxito",
+        description: "Gasto registrado correctamente"
+      })
+
+      setOpenGastoDialog(false)
+      setGastoData({ monto: "", descripcion: "" })
+      cargarDatos()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo registrar el gasto",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleAprobarRechazar = async (movimientoId: string, accion: 'APROBADO' | 'RECHAZADO') => {
     try {
       const response = await fetch(`/api/caja-chica/${movimientoId}`, {
@@ -357,6 +404,53 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                 </Button>
                 <Button onClick={handleAsignarEfectivo}>
                   Asignar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        
+        {isCobrador && (
+          <Dialog open={openGastoDialog} onOpenChange={setOpenGastoDialog}>
+            <DialogTrigger asChild>
+              <Button variant="destructive">
+                <TrendingDown className="mr-2 h-4 w-4" />
+                Registrar Gasto de Viáticos
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Registrar Gasto</DialogTitle>
+                <DialogDescription>
+                  Registra un gasto que se descontará de tus viáticos actuales
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Monto a descontar (Bs.)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={gastoData.monto}
+                    onChange={(e) => setGastoData({...gastoData, monto: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label>Motivo / Descripción</Label>
+                  <Textarea
+                    value={gastoData.descripcion}
+                    onChange={(e) => setGastoData({...gastoData, descripcion: e.target.value})}
+                    placeholder="Ej. Gasolina, almuerzo, etc."
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenGastoDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleRegistrarGasto}>
+                  Registrar Gasto
                 </Button>
               </DialogFooter>
             </DialogContent>

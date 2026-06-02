@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    // Solo admin y supervisor pueden asignar caja chica
-    if (!["ADMINISTRADOR", "SUPERVISOR"].includes(session.user.role)) {
+    // Validar permisos
+    if (!["ADMINISTRADOR", "SUPERVISOR", "COBRADOR"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "No tienes permisos para esta acción" },
         { status: 403 }
@@ -110,7 +110,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { cobradorId, tipo, monto, descripcion, observaciones, comprobante } = body
+    let { cobradorId, tipo, monto, descripcion, observaciones, comprobante } = body
+
+    const isCobrador = session.user.role === "COBRADOR"
+    if (isCobrador) {
+      if (tipo !== "GASTO" && tipo !== "GASTADO") {
+        return NextResponse.json(
+          { error: "Los cobradores solo pueden registrar gastos" },
+          { status: 403 }
+        )
+      }
+      // Forzar que el cobrador solo pueda afectar su propia caja
+      cobradorId = session.user.id
+    }
 
     // Validaciones - APERTURA_CAJA y EGRESO_GENERAL no requieren cobradorId
     if (tipo === "APERTURA_CAJA" || tipo === "EGRESO_GENERAL") {
@@ -118,6 +130,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: "Faltan datos requeridos" },
           { status: 400 }
+        )
+      }
+      if (isCobrador) {
+        return NextResponse.json(
+          { error: "No tienes permisos para registrar egresos generales ni apertura de caja" },
+          { status: 403 }
         )
       }
     } else {
