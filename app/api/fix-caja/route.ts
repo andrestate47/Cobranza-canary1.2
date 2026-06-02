@@ -34,13 +34,14 @@ export async function GET(request: Request) {
       }, { status: 404 })
     }
 
-    // Buscar si ya existe un cierre de ayer
-    const ayer = new Date()
-    ayer.setDate(ayer.getDate() - 1)
-    ayer.setHours(0, 0, 0, 0)
+    // Obtener la fecha de ayer usando la misma lógica de Ecuador que usa el sistema
+    const hoy = new Date()
+    hoy.setDate(hoy.getDate() - 1)
+    const fechaAyerString = hoy.toISOString().split('T')[0]
     
-    // Obtener cierre anterior del administrador para copiar el monto si se desea,
-    // o simplemente crearlo con 667
+    // Importación dinámica porque estamos en la misma ruta
+    const { getEcuadorDayRange } = await import('@/lib/date-utils')
+    const { inicio: ayer } = getEcuadorDayRange(fechaAyerString)
     
     const monto = 667.00
 
@@ -49,16 +50,24 @@ export async function GET(request: Request) {
       where: {
         userId: cobrador.id,
         fecha: {
-          gte: ayer,
-          lt: new Date(new Date().setHours(0, 0, 0, 0))
+          gte: ayer
         }
       }
     })
 
     if (existe) {
+      // Si ya existe, vamos a actualizarlo en vez de fallar!
+      const cierreActualizado = await prisma.cierreDia.update({
+        where: { id: existe.id },
+        data: {
+          saldoEfectivo: monto,
+          observaciones: "Actualización manual de saldo migrado (667.00)"
+        }
+      })
       return NextResponse.json({ 
-        mensaje: "El cobrador ya tiene un cierre registrado para ayer", 
-        cierre: existe 
+        success: true,
+        mensaje: "El cobrador ya tenía un cierre registrado para ayer, así que lo actualicé para que tenga los $667.00 exactos.", 
+        cierre: cierreActualizado 
       })
     }
 
