@@ -43,6 +43,10 @@ interface InformeDelDia {
   totalPrestadoEfectivo: number
   totalPrestadoTransferencia: number
   totalGastos: number
+  gastosOperativos?: number
+  gastosCajaChica?: number
+  ingresosExtraCaja?: number
+  egresosExtraCaja?: number
   saldoInicial: number
   saldoEfectivo: number
   totalPorCobrar: number
@@ -455,6 +459,18 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(-) Préstamos por Transferencia</span>
                         <span>{formatCurrency(informe.totalPrestadoTransferencia)}</span>
                       </div>
+                      {informe.ingresosExtraCaja !== undefined && informe.ingresosExtraCaja > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600 font-medium">
+                          <span>(+) Ingresos Extra (Caja Chica)</span>
+                          <span>{formatCurrency(informe.ingresosExtraCaja)}</span>
+                        </div>
+                      )}
+                      {informe.egresosExtraCaja !== undefined && informe.egresosExtraCaja > 0 && (
+                        <div className="flex justify-between items-center text-red-500 font-medium">
+                          <span>(-) Egresos Extra (Caja Chica)</span>
+                          <span>{formatCurrency(informe.egresosExtraCaja)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Gastos Registrados</span>
                         <span>{formatCurrency(informe.totalGastos)}</span>

@@ -298,6 +298,32 @@ export async function GET(request: NextRequest) {
       sum + parseFloat(gasto.monto.toString()), 0
     )
 
+    // Obtener movimientos de caja chica del día (filtrados por usuario)
+    const movimientosCajaChica = await prisma.movimientoCajaChica.findMany({
+      where: {
+        cobradorId: userId,
+        fecha: {
+          gte: fechaInicio,
+          lte: fechaFin
+        }
+      }
+    })
+
+    const ingresosExtraCaja = movimientosCajaChica
+      .filter(m => m.tipo === "INGRESO" || m.tipo === "ENTREGADO" || m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
+      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+
+    const egresosExtraCaja = movimientosCajaChica
+      .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION")
+      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+
+    const gastosCajaChica = movimientosCajaChica
+      .filter(m => m.tipo === "GASTO" || m.tipo === "GASTADO")
+      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+
+    // Agregamos gastos de caja chica a gastos totales
+    const totalGastosReal = totalGastos + gastosCajaChica
+
     // Buscar el último cierre de caja registrado para el cobrador actual
     const cierreAnterior = await prisma.cierreDia.findFirst({
       where: {
@@ -314,8 +340,8 @@ export async function GET(request: NextRequest) {
     const saldoInicial = cierreAnterior ? 
       parseFloat(cierreAnterior.saldoEfectivo.toString()) : 0
 
-    // Calcular saldo actual (efectivo + bancos)
-    const saldoEfectivo = saldoInicial + totalCobrado - totalPrestado - totalGastos
+    // Calcular saldo actual (efectivo + bancos + extra)
+    const saldoEfectivo = saldoInicial + totalCobrado - totalPrestado - totalGastosReal + ingresosExtraCaja - egresosExtraCaja
 
     // Calcular total por cobrar (suma de saldos pendientes de todos los préstamos activos)
     let totalPorCobrar = 0
@@ -393,7 +419,11 @@ export async function GET(request: NextRequest) {
       totalPrestado,
       totalPrestadoEfectivo,
       totalPrestadoTransferencia,
-      totalGastos,
+      totalGastos: totalGastosReal,
+      gastosOperativos: totalGastos,
+      gastosCajaChica,
+      ingresosExtraCaja,
+      egresosExtraCaja,
       saldoInicial,
       saldoEfectivo,
       totalPorCobrar,
