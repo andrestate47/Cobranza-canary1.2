@@ -330,17 +330,17 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
           {/* Selector de cobrador (solo para administradores) */}
           {session.user.role === 'ADMINISTRADOR' && (
             <div>
-              <Label htmlFor="cobrador">Cobrador</Label>
+              <Label htmlFor="cobrador" className="font-bold text-gray-900 dark:text-gray-100">Cobrador</Label>
               <Select
                 value={cobradorSeleccionado || ""}
                 onValueChange={(value) => setCobradorSeleccionado(value)}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 font-bold text-gray-900 dark:text-gray-100 border-gray-400">
                   <SelectValue placeholder="Seleccione un cobrador" />
                 </SelectTrigger>
                 <SelectContent>
                   {cobradores.map((cobrador) => (
-                    <SelectItem key={cobrador.id} value={cobrador.id}>
+                    <SelectItem key={cobrador.id} value={cobrador.id} className="font-bold text-gray-900 dark:text-gray-100">
                       {cobrador.firstName} {cobrador.lastName}
                       {cobrador.numeroRuta && ` - Ruta ${cobrador.numeroRuta}`}
                     </SelectItem>
