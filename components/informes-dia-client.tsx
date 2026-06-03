@@ -146,7 +146,9 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
   })
   const [showDetalle, setShowDetalle] = useState(false)
   const [cobradores, setCobradores] = useState<Cobrador[]>([])
-  const [cobradorSeleccionado, setCobradorSeleccionado] = useState<string>("")
+  const [cobradorSeleccionado, setCobradorSeleccionado] = useState<string>(
+    session.user.role === 'ADMINISTRADOR' ? 'todos' : ''
+  )
   const { toast } = useToast()
   const { format: formatCurrency } = useCurrency()
 
@@ -224,7 +226,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
     }
 
     // Verificar que se haya seleccionado un cobrador si es un admin viendo todas las rutas
-    if (session.user.role === "ADMINISTRADOR" && !cobradorSeleccionado) {
+    if (session.user.role === "ADMINISTRADOR" && (!cobradorSeleccionado || cobradorSeleccionado === "todos")) {
       toast({
         title: "Selecciona un cobrador",
         description: "Debes seleccionar un cobrador específico para cerrar su caja. No puedes hacer un cierre global.",
@@ -343,6 +345,9 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                   <SelectValue placeholder="Seleccione un cobrador" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todos" className="font-bold text-gray-900 dark:text-gray-100">
+                    -- Todos --
+                  </SelectItem>
                   {cobradores.map((cobrador) => (
                     <SelectItem key={cobrador.id} value={cobrador.id} className="font-bold text-gray-900 dark:text-gray-100">
                       {cobrador.firstName} {cobrador.lastName}
@@ -803,7 +808,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                 {showDetalle ? 'Ocultar' : 'Ver'} Detalle
               </Button>
 
-              {!informe.cerrado && session.user.role === "ADMINISTRADOR" && (
+              {!informe.cerrado && session.user.role === "ADMINISTRADOR" && cobradorSeleccionado !== "todos" && (
                 <Button
                   onClick={handleCerrarDia}
                   className="flex-1 btn-primary"
