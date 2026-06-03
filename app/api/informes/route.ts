@@ -312,8 +312,78 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     }
   })
   
-  const saldoInicial = cierreAnterior ? 
-    parseFloat(cierreAnterior.saldoEfectivo.toString()) : 0
+  let saldoInicial = 0
+  
+  if (cierreAnterior) {
+    saldoInicial = parseFloat(cierreAnterior.saldoEfectivo.toString())
+    
+    // Si hay días intermedios sin cerrar, sumar sus movimientos
+    const fechaFinCierre = new Date(cierreAnterior.fecha)
+    fechaFinCierre.setDate(fechaFinCierre.getDate() + 1)
+    
+    if (fechaFinCierre < fechaInicio) {
+      const pagosAnteriores = await prisma.pago.aggregate({
+        _sum: { monto: true },
+        where: { userId, metodoPago: "EFECTIVO", fecha: { gte: fechaFinCierre, lt: fechaInicio } }
+      })
+      const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
+      
+      const prestamosAnteriores = await prisma.prestamo.aggregate({
+        _sum: { monto: true },
+        where: { userId, createdAt: { gte: fechaFinCierre, lt: fechaInicio }, OR: [{ tipoCredito: "EFECTIVO" }, { tipoCredito: null }] }
+      })
+      const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
+      
+      const gastosAnteriores = await prisma.gasto.aggregate({
+        _sum: { monto: true },
+        where: { userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
+      })
+      const gastadoAnterior = parseFloat(gastosAnteriores._sum.monto?.toString() || "0")
+      
+      const cajaChicaAnteriores = await prisma.movimientoCajaChica.findMany({
+        where: { cobradorId: userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
+      })
+      const ingresosExtra = cajaChicaAnteriores
+        .filter(m => m.tipo === "INGRESO" || m.tipo === "ENTREGADO" || m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
+        .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+      const egresosExtra = cajaChicaAnteriores
+        .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION" || m.tipo === "GASTO" || m.tipo === "GASTADO")
+        .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        
+      saldoInicial = saldoInicial + cobradoAnterior - prestadoAnterior - gastadoAnterior + ingresosExtra - egresosExtra
+    }
+  } else {
+    // Si nunca ha cerrado caja, calcular el acumulado desde el inicio
+    const pagosAnteriores = await prisma.pago.aggregate({
+      _sum: { monto: true },
+      where: { userId, metodoPago: "EFECTIVO", fecha: { lt: fechaInicio } }
+    })
+    const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
+    
+    const prestamosAnteriores = await prisma.prestamo.aggregate({
+      _sum: { monto: true },
+      where: { userId, createdAt: { lt: fechaInicio }, OR: [{ tipoCredito: "EFECTIVO" }, { tipoCredito: null }] }
+    })
+    const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
+    
+    const gastosAnteriores = await prisma.gasto.aggregate({
+      _sum: { monto: true },
+      where: { userId, fecha: { lt: fechaInicio } }
+    })
+    const gastadoAnterior = parseFloat(gastosAnteriores._sum.monto?.toString() || "0")
+    
+    const cajaChicaAnteriores = await prisma.movimientoCajaChica.findMany({
+      where: { cobradorId: userId, fecha: { lt: fechaInicio } }
+    })
+    const ingresosExtra = cajaChicaAnteriores
+      .filter(m => m.tipo === "INGRESO" || m.tipo === "ENTREGADO" || m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
+      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+    const egresosExtra = cajaChicaAnteriores
+      .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION" || m.tipo === "GASTO" || m.tipo === "GASTADO")
+      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+      
+    saldoInicial = cobradoAnterior - prestadoAnterior - gastadoAnterior + ingresosExtra - egresosExtra
+  }
 
   const saldoEfectivo = saldoInicial + totalCobrado - totalPrestado - totalGastosReal + ingresosExtraCaja - egresosExtraCaja
 
