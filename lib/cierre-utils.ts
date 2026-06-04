@@ -8,10 +8,10 @@ export async function calcularSaldoParaDia(userId: string, fechaInicio: Date, fe
   })
   const totalCobrado = Number(pagos._sum.monto || 0)
 
-  // Préstamos en efectivo del día
+  // Préstamos del día
   const prestamos = await prisma.prestamo.aggregate({
     _sum: { monto: true },
-    where: { userId, createdAt: { gte: fechaInicio, lte: fechaFin }, tipoCredito: "EFECTIVO" }
+    where: { userId, createdAt: { gte: fechaInicio, lte: fechaFin } }
   })
   const totalPrestado = Number(prestamos._sum.monto || 0)
 
