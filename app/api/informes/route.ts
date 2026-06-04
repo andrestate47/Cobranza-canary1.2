@@ -554,24 +554,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Sin permisos" }, { status: 403 })
       }
 
-      // Obtener cobradores activos Y administradores que tengan transacciones propias
+      // Obtener solo cobradores activos (no incluir administradores que tienen data histórica de prueba)
       const cobradores = await prisma.user.findMany({
         where: {
-          isActive: true,
-          OR: [
-            { role: "COBRADOR" },
-            // Incluir administradores que tengan pagos o préstamos propios
-            {
-              role: "ADMINISTRADOR",
-              AND: [
-                {
-                  pagos: {
-                    some: {}
-                  }
-                }
-              ]
-            }
-          ]
+          role: "COBRADOR",
+          isActive: true
         }
       })
 
