@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
-import { normalizeToEcuadorMidnight } from "@/lib/date-utils"
+import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
+import { calcularSaldoParaDia } from "@/lib/cierre-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +37,68 @@ export async function POST(request: NextRequest) {
     // Normalizar a la medianoche de Ecuador para evitar colisiones por zona horaria
     const fechaCierre = normalizeToEcuadorMidnight(fecha)
 
+    // Cierre Global (Todos los cobradores)
+    if (cobradorId === "todos") {
+      const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(fecha.split('T')[0] || fecha)
+      
+      const cobradores = await prisma.user.findMany({
+        where: { role: "COBRADOR", isActive: true },
+        select: { id: true, firstName: true, lastName: true, name: true }
+      })
+
+      let creados = 0
+      let omitidos = 0
+
+      for (const cobrador of cobradores) {
+        // Verificar existencia de cierre
+        const cierreExistente = await prisma.cierreDia.findUnique({
+          where: { userId_fecha: { userId: cobrador.id, fecha: fechaCierre } }
+        })
+
+        if (cierreExistente) {
+          omitidos++
+          continue
+        }
+
+        // Obtener último cierre
+        const ultimoCierre = await prisma.cierreDia.findFirst({
+          where: { userId: cobrador.id, fecha: { lt: fechaInicio } },
+          orderBy: { fecha: 'desc' }
+        })
+        const saldoInicialDia = ultimoCierre ? Number(ultimoCierre.saldoEfectivo) : 0
+
+        // Calcular totales
+        const { totalCobrado, totalPrestado, totalGastos, saldoEfectivo } =
+          await calcularSaldoParaDia(cobrador.id, fechaInicio, fechaFin, saldoInicialDia)
+
+        // Omitir si no hubo actividad (saldo $0 y sin movimientos en el día)
+        if (totalCobrado === 0 && totalPrestado === 0 && totalGastos === 0 && saldoEfectivo === 0) {
+          omitidos++
+          continue
+        }
+
+        // Crear cierre
+        await prisma.cierreDia.create({
+          data: {
+            fecha: fechaCierre,
+            userId: cobrador.id,
+            totalCobrado,
+            totalPrestado,
+            totalGastos,
+            saldoEfectivo,
+            observaciones: observaciones?.trim() || "Cierre global automático"
+          }
+        })
+        creados++
+      }
+
+      return NextResponse.json({
+        message: `Día cerrado exitosamente. Cajas cerradas: ${creados}, Omitidas/Sin actividad: ${omitidos}`,
+        cierre: { id: "global", observaciones: `Cierre global automático` }
+      })
+    }
+
+    // Cierre individual
     // Verificar que no exista ya un cierre para esta fecha y este cobrador
     const cierreExistente = await prisma.cierreDia.findUnique({
       where: { 

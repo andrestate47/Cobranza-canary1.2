@@ -229,18 +229,15 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
       return
     }
 
-    // Verificar que se haya seleccionado un cobrador si es un admin viendo todas las rutas
-    if (session.user.role === "ADMINISTRADOR" && (!cobradorSeleccionado || cobradorSeleccionado === "todos")) {
-      toast({
-        title: "Selecciona un cobrador",
-        description: "Debes seleccionar un cobrador específico para cerrar su caja. No puedes hacer un cierre global.",
-        variant: "destructive",
-      })
-      return
+    const esCierreGlobal = cobradorSeleccionado === "todos"
+
+    if (esCierreGlobal) {
+      const confirmado = window.confirm("¿Estás seguro de que deseas cerrar la caja de TODOS los cobradores para este día?")
+      if (!confirmado) return
     }
 
-    // Usar el cobradorId del informe, o el usuario logueado como fallback
-    const cobradorId = informe.cobradorId || session.user.id
+    // Usar "todos", el cobradorId del informe, o el usuario logueado como fallback
+    const cobradorId = esCierreGlobal ? "todos" : (informe.cobradorId || session.user.id)
 
     try {
       const response = await fetch('/api/cierre-dia', {
@@ -259,9 +256,10 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
       })
 
       if (response.ok) {
+        const data = await response.json()
         toast({
           title: "Día cerrado",
-          description: "El cierre del día se ha registrado exitosamente",
+          description: data.message || "El cierre del día se ha registrado exitosamente",
         })
         fetchInforme(fechaSeleccionada, cobradorSeleccionado) // Recargar informe
       } else {
@@ -812,13 +810,13 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                 {showDetalle ? 'Ocultar' : 'Ver'} Detalle
               </Button>
 
-              {!informe.cerrado && session.user.role === "ADMINISTRADOR" && cobradorSeleccionado !== "todos" && (
+              {!informe.cerrado && session.user.role === "ADMINISTRADOR" && (
                 <Button
                   onClick={handleCerrarDia}
                   className="flex-1 btn-primary"
                 >
                   <Lock className="h-4 w-4 mr-2" />
-                  Cerrar Día
+                  Cerrar Día {cobradorSeleccionado === "todos" ? "(Todos)" : ""}
                 </Button>
               )}
 
