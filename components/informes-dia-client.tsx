@@ -142,7 +142,11 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
   const [informe, setInforme] = useState<InformeDelDia | null>(null)
   const [loading, setLoading] = useState(true)
   const [fechaSeleccionada, setFechaSeleccionada] = useState(() => {
-    return new Date().toISOString().split('T')[0]
+    // Forzar zona horaria de Ecuador (UTC -5)
+    const d = new Date()
+    const utc = d.getTime() + (d.getTimezoneOffset() * 60 * 1000)
+    const ecuadorDate = new Date(utc - (5 * 60 * 60 * 1000))
+    return ecuadorDate.toISOString().split('T')[0]
   })
   const [showDetalle, setShowDetalle] = useState(false)
   const [cobradores, setCobradores] = useState<Cobrador[]>([])
