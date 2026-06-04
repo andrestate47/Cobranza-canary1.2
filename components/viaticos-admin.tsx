@@ -97,8 +97,8 @@ export function ViaticosAdmin() {
     try {
       setSubmitting(true)
       
-      // Limpiar el monto: eliminar separadores de miles (puntos) y dejar solo dígitos y punto decimal
-      const montoLimpio = monto.replace(/\./g, '').replace(/,/g, '.')
+      // Convertir comas a puntos para decimales, y dejar que parseFloat haga el resto
+      const montoLimpio = monto.replace(/,/g, '.')
       const montoNumerico = parseFloat(montoLimpio)
       
       if (isNaN(montoNumerico) || montoNumerico <= 0) {
