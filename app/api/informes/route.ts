@@ -330,7 +330,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       
       const prestamosAnteriores = await prisma.prestamo.aggregate({
         _sum: { monto: true },
-        where: { userId, createdAt: { gte: fechaFinCierre, lt: fechaInicio }, OR: [{ tipoCredito: "EFECTIVO" }, { tipoCredito: null }] }
+        where: { userId, createdAt: { gte: fechaFinCierre, lt: fechaInicio }, tipoCredito: "EFECTIVO" }
       })
       const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
       
@@ -362,7 +362,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     
     const prestamosAnteriores = await prisma.prestamo.aggregate({
       _sum: { monto: true },
-      where: { userId, createdAt: { lt: fechaInicio }, OR: [{ tipoCredito: "EFECTIVO" }, { tipoCredito: null }] }
+      where: { userId, createdAt: { lt: fechaInicio }, tipoCredito: "EFECTIVO" }
     })
     const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
     
