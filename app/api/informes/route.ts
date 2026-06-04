@@ -324,7 +324,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     if (fechaFinCierre < fechaInicio) {
       const pagosAnteriores = await prisma.pago.aggregate({
         _sum: { monto: true },
-        where: { userId, metodoPago: "EFECTIVO", fecha: { gte: fechaFinCierre, lt: fechaInicio } }
+        where: { userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
       })
       const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
       
@@ -356,7 +356,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     // Si nunca ha cerrado caja, calcular el acumulado desde el inicio
     const pagosAnteriores = await prisma.pago.aggregate({
       _sum: { monto: true },
-      where: { userId, metodoPago: "EFECTIVO", fecha: { lt: fechaInicio } }
+      where: { userId, fecha: { lt: fechaInicio } }
     })
     const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
     
