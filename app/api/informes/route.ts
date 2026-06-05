@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
 import { getEcuadorDayRange } from "@/lib/date-utils"
+import { obtenerSaldoInicialParaDia } from "@/lib/cierre-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -299,96 +300,8 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
 
   const totalGastosReal = totalGastos + gastosCajaChica
 
-  // Buscar el último cierre de caja registrado para el cobrador actual
-  const cierreAnterior = await prisma.cierreDia.findFirst({
-    where: {
-      userId: userId,
-      fecha: {
-        lt: fechaInicio
-      }
-    },
-    orderBy: {
-      fecha: 'desc'
-    }
-  })
-  
-  let saldoInicial = 0
-  let diasSinCerrar = 0
-  
-  if (cierreAnterior) {
-    saldoInicial = parseFloat(cierreAnterior.saldoEfectivo.toString())
-    
-    // Si hay días intermedios sin cerrar, sumar sus movimientos
-    const fechaFinCierre = new Date(cierreAnterior.fecha)
-    fechaFinCierre.setDate(fechaFinCierre.getDate() + 1)
-    
-    if (fechaFinCierre < fechaInicio) {
-      diasSinCerrar = Math.floor((fechaInicio.getTime() - fechaFinCierre.getTime()) / (1000 * 60 * 60 * 24))
-
-      const pagosAnteriores = await prisma.pago.aggregate({
-        _sum: { monto: true },
-        where: { userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
-      })
-      const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
-      
-      const prestamosAnteriores = await prisma.prestamo.aggregate({
-        _sum: { monto: true },
-        where: { userId, createdAt: { gte: fechaFinCierre, lt: fechaInicio } }
-      })
-      const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
-      
-      const gastosAnteriores = await prisma.gasto.aggregate({
-        _sum: { monto: true },
-        where: { userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
-      })
-      const gastadoAnterior = parseFloat(gastosAnteriores._sum.monto?.toString() || "0")
-      
-      const cajaChicaAnteriores = await prisma.movimientoCajaChica.findMany({
-        where: { cobradorId: userId, fecha: { gte: fechaFinCierre, lt: fechaInicio } }
-      })
-      const ingresosExtra = cajaChicaAnteriores
-        .filter(m => m.tipo === "INGRESO" || m.tipo === "ENTREGADO" || m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
-        .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-      const egresosExtra = cajaChicaAnteriores
-        .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION" || m.tipo === "GASTO" || m.tipo === "GASTADO")
-        .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-        
-      saldoInicial = saldoInicial + cobradoAnterior - prestadoAnterior - gastadoAnterior + ingresosExtra - egresosExtra
-    }
-  } else {
-    // Si nunca ha cerrado caja, calcular el acumulado desde el inicio
-    diasSinCerrar = 1 // Usar 1 para activar la alerta si no hay cierres
-    
-    const pagosAnteriores = await prisma.pago.aggregate({
-      _sum: { monto: true },
-      where: { userId, fecha: { lt: fechaInicio } }
-    })
-    const cobradoAnterior = parseFloat(pagosAnteriores._sum.monto?.toString() || "0")
-    
-    const prestamosAnteriores = await prisma.prestamo.aggregate({
-      _sum: { monto: true },
-      where: { userId, createdAt: { lt: fechaInicio } }
-    })
-    const prestadoAnterior = parseFloat(prestamosAnteriores._sum.monto?.toString() || "0")
-    
-    const gastosAnteriores = await prisma.gasto.aggregate({
-      _sum: { monto: true },
-      where: { userId, fecha: { lt: fechaInicio } }
-    })
-    const gastadoAnterior = parseFloat(gastosAnteriores._sum.monto?.toString() || "0")
-    
-    const cajaChicaAnteriores = await prisma.movimientoCajaChica.findMany({
-      where: { cobradorId: userId, fecha: { lt: fechaInicio } }
-    })
-    const ingresosExtra = cajaChicaAnteriores
-      .filter(m => m.tipo === "INGRESO" || m.tipo === "ENTREGADO" || m.tipo === "ENTREGA" || m.tipo === "APERTURA_CAJA")
-      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-    const egresosExtra = cajaChicaAnteriores
-      .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION" || m.tipo === "GASTO" || m.tipo === "GASTADO")
-      .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-      
-    saldoInicial = cobradoAnterior - prestadoAnterior - gastadoAnterior + ingresosExtra - egresosExtra
-  }
+  // Obtener saldo inicial y días sin cerrar de forma centralizada
+  const { saldoInicial, diasSinCerrar } = await obtenerSaldoInicialParaDia(userId, fechaInicio)
 
   const saldoEfectivo = saldoInicial + totalCobrado - totalPrestado - totalGastosReal + ingresosExtraCaja - egresosExtraCaja
 

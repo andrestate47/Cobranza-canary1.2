@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { recalcularYPropagarSaldos } from "@/lib/cierre-utils"
 
 export async function GET(request: Request) {
   try {
@@ -61,9 +62,13 @@ export async function GET(request: Request) {
           observaciones: `Actualización manual de saldo a ${monto}`
         }
       })
+      
+      // Propagar el saldo corregido hacia cualquier cierre posterior
+      await recalcularYPropagarSaldos(cobrador.id, ultimoCierre.fecha)
+
       return NextResponse.json({ 
         success: true,
-        mensaje: `¡Listo! Se actualizó el ÚLTIMO cierre de ${cobrador.firstName} (fecha: ${ultimoCierre.fecha.toISOString()}) para que su saldo sea $${monto}`, 
+        mensaje: `¡Listo! Se actualizó el ÚLTIMO cierre de ${cobrador.firstName} (fecha: ${ultimoCierre.fecha.toISOString()}) y se propagó el nuevo saldo, para que su saldo sea $${monto}`, 
         cierre: cierreActualizado 
       })
     } else {
@@ -85,6 +90,10 @@ export async function GET(request: Request) {
           observaciones: `Creación manual de saldo inicial (${monto})`
         }
       })
+
+      // Propagar el saldo corregido hacia cualquier cierre posterior
+      await recalcularYPropagarSaldos(cobrador.id, ayer)
+
       return NextResponse.json({ 
         success: true, 
         mensaje: `¡Listo! Se ha creado un cierre inicial de ayer para ${cobrador.firstName} con un saldo de $${monto}`,

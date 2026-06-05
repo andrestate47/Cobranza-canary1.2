@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
 import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
-import { calcularSaldoParaDia } from "@/lib/cierre-utils"
+import { calcularSaldoParaDia, obtenerSaldoInicialParaDia, recalcularYPropagarSaldos } from "@/lib/cierre-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -60,14 +60,10 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Obtener último cierre
-        const ultimoCierre = await prisma.cierreDia.findFirst({
-          where: { userId: cobrador.id, fecha: { lt: fechaInicio } },
-          orderBy: { fecha: 'desc' }
-        })
-        const saldoInicialDia = ultimoCierre ? Number(ultimoCierre.saldoEfectivo) : 0
+        // Obtener saldo inicial de forma centralizada (acumulando días intermedios no cerrados)
+        const { saldoInicial: saldoInicialDia } = await obtenerSaldoInicialParaDia(cobrador.id, fechaInicio)
 
-        // Calcular totales
+        // Calcular totales del día actual basándose en ese saldo inicial
         const { totalCobrado, totalPrestado, totalGastos, saldoEfectivo } =
           await calcularSaldoParaDia(cobrador.id, fechaInicio, fechaFin, saldoInicialDia)
 
@@ -89,6 +85,10 @@ export async function POST(request: NextRequest) {
             observaciones: observaciones?.trim() || "Cierre global automático"
           }
         })
+        
+        // Propagar cambios
+        await recalcularYPropagarSaldos(cobrador.id, fechaCierre)
+        
         creados++
       }
 
@@ -137,6 +137,9 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Propagar saldo corregido hacia cualquier cierre posterior
+    await recalcularYPropagarSaldos(cierre.userId, cierre.fecha)
 
     return NextResponse.json({
       message: "Día cerrado exitosamente",
@@ -261,6 +264,9 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    // Propagar el cambio a cierres posteriores
+    await recalcularYPropagarSaldos(cierre.userId, cierre.fecha)
+
     return NextResponse.json({
       message: "Cierre actualizado exitosamente",
       cierre: {
@@ -312,9 +318,18 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.cierreDia.delete({
+    const cierreADeletar = await prisma.cierreDia.findUnique({
       where: { id }
     })
+
+    if (cierreADeletar) {
+      await prisma.cierreDia.delete({
+        where: { id }
+      })
+
+      // Propagar a partir de la fecha de cierre eliminada
+      await recalcularYPropagarSaldos(cierreADeletar.userId, cierreADeletar.fecha)
+    }
 
     return NextResponse.json({
       message: "Cierre eliminado exitosamente"

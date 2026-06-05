@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { recalcularYPropagarSaldos } from "@/lib/cierre-utils"
 
 export async function GET(request: Request) {
   try {
@@ -64,9 +65,13 @@ export async function GET(request: Request) {
           observaciones: "Actualización manual de saldo migrado (667.00)"
         }
       })
+
+      // Propagar el saldo corregido hacia cualquier cierre posterior
+      await recalcularYPropagarSaldos(cobrador.id, existe.fecha)
+
       return NextResponse.json({ 
         success: true,
-        mensaje: "El cobrador ya tenía un cierre registrado para ayer, así que lo actualicé para que tenga los $667.00 exactos.", 
+        mensaje: "El cobrador ya tenía un cierre registrado para ayer, así que lo actualicé para que tenga los $667.00 exactos y propagué el saldo.", 
         cierre: cierreActualizado 
       })
     }
@@ -83,6 +88,9 @@ export async function GET(request: Request) {
         observaciones: "Asignación manual de saldo migrado (667.00)"
       }
     })
+
+    // Propagar el saldo corregido hacia cualquier cierre posterior
+    await recalcularYPropagarSaldos(cobrador.id, ayer)
 
     return NextResponse.json({ 
       success: true, 

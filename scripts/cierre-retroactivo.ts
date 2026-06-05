@@ -10,6 +10,7 @@
  */
 
 import { PrismaClient } from "@prisma/client"
+import { obtenerSaldoInicialParaDia } from "../lib/cierre-utils"
 
 const prisma = new PrismaClient()
 
@@ -110,12 +111,8 @@ async function main() {
       continue
     }
 
-    // Obtener el último cierre anterior para saber el saldo inicial de ese día
-    const ultimoCierre = await prisma.cierreDia.findFirst({
-      where: { userId: cobrador.id, fecha: { lt: fechaInicio } },
-      orderBy: { fecha: 'desc' }
-    })
-    const saldoInicialDia = ultimoCierre ? Number(ultimoCierre.saldoEfectivo) : 0
+    // Obtener saldo inicial de forma centralizada (acumulando días intermedios no cerrados)
+    const { saldoInicial: saldoInicialDia } = await obtenerSaldoInicialParaDia(cobrador.id, fechaInicio)
 
     // Calcular los totales del día
     const { totalCobrado, totalPrestado, totalGastos, saldoEfectivo } =
