@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const dryRun = searchParams.get("dry") === "true"
+    const dryRun   = searchParams.get("dry") === "true"
+    const desdeStr = searchParams.get("desde") // ej: "2026-06-01"
+
 
     const cobradores = await prisma.user.findMany({
       where: { role: 'COBRADOR' },
@@ -71,30 +73,50 @@ export async function GET(request: NextRequest) {
     for (const cobrador of cobradores) {
       const nombre = `${cobrador.firstName || ''} ${cobrador.lastName || ''}`.trim() || cobrador.email
 
+      // Definir la fecha de inicio del filtro
+      let fechaDesdeFiltro: Date | null = null
+      if (desdeStr) {
+        // Usamos inicio del día para incluir cualquier cierre en esa fecha
+        const ecStr = desdeStr // YYYY-MM-DD
+        const [year, month, day] = ecStr.split('-').map(Number)
+        fechaDesdeFiltro = new Date(Date.UTC(year, month - 1, day, 5, 0, 0))
+      }
+
+      // Obtener el último cierre ANTES de la fecha desde (si hay filtro)
+      let saldoAcumulado = 0
+      let finCierreAnterior: Date | null = null
+
+      if (fechaDesdeFiltro) {
+        const cierrePrevio = await prisma.cierreDia.findFirst({
+          where: { userId: cobrador.id, fecha: { lt: fechaDesdeFiltro } },
+          orderBy: { fecha: 'desc' }
+        })
+        if (cierrePrevio) {
+          saldoAcumulado = Number(cierrePrevio.saldoEfectivo)
+          const { fin } = getEcuadorDayRange(cierrePrevio.fecha)
+          finCierreAnterior = fin
+        }
+      }
+
+      // Obtener los cierres a reparar (desde la fecha dada, o todos)
       const cierres = await prisma.cierreDia.findMany({
-        where: { userId: cobrador.id },
+        where: {
+          userId: cobrador.id,
+          ...(fechaDesdeFiltro ? { fecha: { gte: fechaDesdeFiltro } } : {})
+        },
         orderBy: { fecha: 'asc' }
       })
 
       const detalles: any[] = []
-      // saldo acumulado correcto hasta el cierre anterior
-      let saldoAcumulado = 0
-      // fin del día del cierre anterior (para calcular gap)
-      let finCierreAnterior: Date | null = null
 
       for (const cierre of cierres) {
         const { inicio, fin } = getEcuadorDayRange(cierre.fecha)
 
         // Si hay un gap entre el cierre anterior y este, sumar movimientos intermedios
         if (finCierreAnterior !== null && finCierreAnterior < inicio) {
-          const gap = await calcularMovimientosEnRango(cobrador.id, finCierreAnterior, inicio)
-          // fin del cierre anterior es exclusivo aquí, ajustar:
-          // finCierreAnterior ya es el fin del día anterior, inicio es el comienzo de este día
-          // entonces el rango intermedio es (finCierreAnterior, inicio) exclusive
-          // pero como inicio = UTC fin_dia_anterior + 1 segundo aprox, podemos usar:
-          // gte: dia_siguiente_al_cierre_anterior, lt: inicio de este cierre
           const diaGapInicio = new Date(finCierreAnterior.getTime() + 1)
-          const gapMovs = await calcularMovimientosEnRango(cobrador.id, diaGapInicio, new Date(inicio.getTime() - 1))
+          const diaGapFin = new Date(inicio.getTime() - 1)
+          const gapMovs = await calcularMovimientosEnRango(cobrador.id, diaGapInicio, diaGapFin)
           saldoAcumulado += gapMovs.neto
         }
 
