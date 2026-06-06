@@ -46,6 +46,29 @@ function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): b
   return false
 }
 
+function getCuotasEsperadas(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): number {
+  const inicio = new Date(fechaInicio)
+  const evaluar = new Date(fechaEvaluar)
+  
+  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
+  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
+  
+  if (evaluarUTC < inicioUTC) return 0
+  
+  let expected = 0
+  let currentUTC = inicioUTC
+  
+  // Contamos cuántos días de cobro válidos hay desde el inicio hasta la fecha a evaluar
+  while (currentUTC <= evaluarUTC) {
+    const d = new Date(currentUTC)
+    if (esDiaDePago(tipoPago, inicio, d)) {
+      expected++
+    }
+    currentUTC += 1000 * 60 * 60 * 24
+  }
+  return expected
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -143,9 +166,21 @@ export async function GET(request: NextRequest) {
         // ¿Corresponde cobrar hoy según frecuencia o mora?
         const esMora = prestamo.fechaFin < inicio
         const esHoy = esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, inicio)
-        const enRutaHoy = esHoy || esMora
+        
+        // Calcular si está adelantado
+        const cuotasEsperadas = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, inicio)
+        const estaAlDiaOAdelantado = cuotasPagadasRaw >= cuotasEsperadas
 
-        const diasMora = esMora ? Math.floor((inicio.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24)) : 0
+        // Si está adelantado (ya cubrió sus cuotas hasta hoy inclusive), no lo ponemos en la ruta
+        const enRutaHoy = !estaAlDiaOAdelantado && (esHoy || esMora)
+
+        // Dias de mora: Cuotas esperadas - Cuotas pagadas (solo si debe algo y ya pasó la fecha de inicio)
+        let diasMora = 0
+        if (!estaAlDiaOAdelantado) {
+          // Diferencia entre lo que debió pagar y lo que ha pagado
+          diasMora = Math.floor(cuotasEsperadas - cuotasPagadasRaw)
+        }
+        if (diasMora < 0) diasMora = 0
 
         return {
           id: prestamo.id,
