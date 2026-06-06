@@ -5,13 +5,8 @@ import { prisma } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
-function getEcuadorEndOfDay(fecha: Date | string) {
-  const d = typeof fecha === 'string' ? new Date(fecha + 'T12:00:00Z') : fecha
-  const ecStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' })
-  const [year, month, day] = ecStr.split('-').map(Number)
-  // Fin del día Ecuador (UTC-5) = 04:59:59 UTC del día siguiente
-  return new Date(Date.UTC(year, month - 1, day + 1, 4, 59, 59))
-}
+const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
+const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
 
 function getEcuadorDayRange(fecha: Date) {
   const ecStr = fecha.toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' })
@@ -21,65 +16,36 @@ function getEcuadorDayRange(fecha: Date) {
   return { inicio, fin }
 }
 
-/**
- * Calcula el saldo efectivo ACUMULADO de un cobrador desde el principio de los tiempos
- * hasta el fin del día indicado. Esta es la fuente de verdad absoluta.
- */
-async function calcularSaldoAcumuladoHasta(userId: string, hasta: Date) {
-  const [pagos, prestamos, gastos, movimientos] = await Promise.all([
-    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { lte: hasta } } }),
-    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { lte: hasta } } }),
-    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { lte: hasta } } }),
-    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { lte: hasta } } })
+/** Suma los movimientos netos de un rango de fechas */
+async function calcularMovimientosEnRango(userId: string, desde: Date, hasta: Date) {
+  const [pagos, prestamos, gastos, cajas] = await Promise.all([
+    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: desde, lte: hasta } } }),
+    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: desde, lte: hasta } } }),
+    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: desde, lte: hasta } } }),
+    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: desde, lte: hasta } } })
   ])
-
-  const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
-  const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
-  const ingresosExtra = movimientos.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-  const egresosExtra  = movimientos.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-
-  return Number(pagos._sum.monto || 0)
-    - Number(prestamos._sum.monto || 0)
-    - Number(gastos._sum.monto || 0)
-    + ingresosExtra
-    - egresosExtra
-}
-
-/**
- * Calcula los totales solo del día (para almacenar en el cierre).
- */
-async function calcularMovimientosDelDia(userId: string, inicio: Date, fin: Date) {
-  const [pagos, prestamos, gastos, movimientos] = await Promise.all([
-    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: inicio, lte: fin } } }),
-    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: inicio, lte: fin } } }),
-    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: inicio, lte: fin } } }),
-    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: inicio, lte: fin } } })
-  ])
-
-  const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
-  const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
-  const ingresosExtra = movimientos.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-  const egresosExtra  = movimientos.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-
+  const ingresosExtra = cajas.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+  const egresosExtra  = cajas.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
   return {
-    totalCobrado:  Number(pagos._sum.monto || 0),
-    totalPrestado: Number(prestamos._sum.monto || 0),
-    totalGastos:   Number(gastos._sum.monto || 0) + egresosExtra,
+    cobrado:  Number(pagos._sum.monto || 0),
+    prestado: Number(prestamos._sum.monto || 0),
+    gastos:   Number(gastos._sum.monto || 0),
     ingresosExtra,
-    egresosExtra
+    egresosExtra,
+    neto: Number(pagos._sum.monto || 0) - Number(prestamos._sum.monto || 0) - Number(gastos._sum.monto || 0) + ingresosExtra - egresosExtra
   }
 }
 
 /**
  * GET /api/admin/repair-cierres
  *
- * Recalcula el saldoEfectivo de cada cierre usando el acumulado histórico real
- * hasta el fin de ese día. Esto corrige automáticamente gaps de días sin cierre.
+ * Recalcula saldoEfectivo de cada cierre usando cadena correcta:
+ *   - Empieza desde saldoInicial=0 en el primer cierre
+ *   - Para gaps entre cierres, acumula los movimientos intermedios
+ *   - Cada cierre: saldoEfectivo = saldoAnterior + movimientosIntermedios + movimientosDia
  *
- * Parámetros:
- *   ?dry=true     → solo simula, no aplica cambios
- *   ?desde=YYYY-MM-DD → solo recalcula cierres POSTERIORES a esa fecha
- *                       (útil para no tocar datos históricos anteriores)
+ * Params:
+ *   ?dry=true  → simula sin guardar
  */
 export async function GET(request: NextRequest) {
   try {
@@ -93,8 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const dryRun   = searchParams.get("dry") === "true"
-    const desdeStr = searchParams.get("desde") // ej: "2026-05-30"
+    const dryRun = searchParams.get("dry") === "true"
 
     const cobradores = await prisma.user.findMany({
       where: { role: 'COBRADOR' },
@@ -105,73 +70,87 @@ export async function GET(request: NextRequest) {
 
     for (const cobrador of cobradores) {
       const nombre = `${cobrador.firstName || ''} ${cobrador.lastName || ''}`.trim() || cobrador.email
-      const cierresDelCobrador: any[] = []
-
-      const whereClause: any = { userId: cobrador.id }
-      if (desdeStr) {
-        whereClause.fecha = { gt: getEcuadorEndOfDay(desdeStr) }
-      }
 
       const cierres = await prisma.cierreDia.findMany({
-        where: whereClause,
+        where: { userId: cobrador.id },
         orderBy: { fecha: 'asc' }
       })
 
+      const detalles: any[] = []
+      // saldo acumulado correcto hasta el cierre anterior
+      let saldoAcumulado = 0
+      // fin del día del cierre anterior (para calcular gap)
+      let finCierreAnterior: Date | null = null
+
       for (const cierre of cierres) {
-        const finDelDia = getEcuadorEndOfDay(cierre.fecha)
-        const { inicio }  = getEcuadorDayRange(cierre.fecha)
+        const { inicio, fin } = getEcuadorDayRange(cierre.fecha)
 
-        // El saldo correcto es el acumulado histórico hasta el fin de ese día
-        const saldoEfectivoCorrecto = await calcularSaldoAcumuladoHasta(cobrador.id, finDelDia)
+        // Si hay un gap entre el cierre anterior y este, sumar movimientos intermedios
+        if (finCierreAnterior !== null && finCierreAnterior < inicio) {
+          const gap = await calcularMovimientosEnRango(cobrador.id, finCierreAnterior, inicio)
+          // fin del cierre anterior es exclusivo aquí, ajustar:
+          // finCierreAnterior ya es el fin del día anterior, inicio es el comienzo de este día
+          // entonces el rango intermedio es (finCierreAnterior, inicio) exclusive
+          // pero como inicio = UTC fin_dia_anterior + 1 segundo aprox, podemos usar:
+          // gte: dia_siguiente_al_cierre_anterior, lt: inicio de este cierre
+          const diaGapInicio = new Date(finCierreAnterior.getTime() + 1)
+          const gapMovs = await calcularMovimientosEnRango(cobrador.id, diaGapInicio, new Date(inicio.getTime() - 1))
+          saldoAcumulado += gapMovs.neto
+        }
 
-        // Los totales del día (para guardar en el registro del cierre)
-        const mov = await calcularMovimientosDelDia(cobrador.id, inicio, finDelDia)
+        // Movimientos del día del cierre
+        const movsDia = await calcularMovimientosEnRango(cobrador.id, inicio, fin)
+        const saldoNuevo = saldoAcumulado + movsDia.neto
 
         const saldoActual = Number(cierre.saldoEfectivo)
-        const hayDiferencia = Math.abs(saldoEfectivoCorrecto - saldoActual) > 0.01
+        const hayDiferencia = Math.abs(saldoNuevo - saldoActual) > 0.01
 
-        cierresDelCobrador.push({
-          fecha:          cierre.fecha.toISOString().split('T')[0],
-          saldoAnterior:  parseFloat(saldoActual.toFixed(2)),
-          saldoNuevo:     parseFloat(saldoEfectivoCorrecto.toFixed(2)),
-          totalCobrado:   parseFloat(mov.totalCobrado.toFixed(2)),
-          totalPrestado:  parseFloat(mov.totalPrestado.toFixed(2)),
-          totalGastos:    parseFloat(mov.totalGastos.toFixed(2)),
-          corregido:      hayDiferencia
+        detalles.push({
+          fecha:         cierre.fecha.toISOString().split('T')[0],
+          saldoAnterior: parseFloat(saldoActual.toFixed(2)),
+          saldoNuevo:    parseFloat(saldoNuevo.toFixed(2)),
+          saldoInicial:  parseFloat(saldoAcumulado.toFixed(2)),
+          totalCobrado:  parseFloat(movsDia.cobrado.toFixed(2)),
+          totalPrestado: parseFloat(movsDia.prestado.toFixed(2)),
+          totalGastos:   parseFloat((movsDia.gastos + movsDia.egresosExtra).toFixed(2)),
+          corregido:     hayDiferencia
         })
 
         if (hayDiferencia && !dryRun) {
           await prisma.cierreDia.update({
             where: { id: cierre.id },
             data: {
-              totalCobrado:  mov.totalCobrado,
-              totalPrestado: mov.totalPrestado,
-              totalGastos:   mov.totalGastos,
-              saldoEfectivo: saldoEfectivoCorrecto
+              totalCobrado:  movsDia.cobrado,
+              totalPrestado: movsDia.prestado,
+              totalGastos:   movsDia.gastos,
+              saldoEfectivo: saldoNuevo
             }
           })
         }
+
+        // Actualizar para la siguiente iteración
+        saldoAcumulado = saldoNuevo
+        finCierreAnterior = fin
       }
 
       resultados.push({
         cobrador:     nombre,
         email:        cobrador.email,
         totalCierres: cierres.length,
-        corregidos:   cierresDelCobrador.filter(c => c.corregido).length,
-        cierres:      cierresDelCobrador
+        corregidos:   detalles.filter(d => d.corregido).length,
+        cierres:      detalles
       })
     }
 
     return NextResponse.json({
       dryRun,
-      desde:   desdeStr || "inicio de los tiempos",
       mensaje: dryRun
         ? "Simulación — no se aplicaron cambios. Quita ?dry=true para aplicar."
         : "Reparación aplicada correctamente.",
       resultados
     })
   } catch (error) {
-    console.error("Error en repair-cierres:", error)
+    console.error("Error repair-cierres:", error)
     return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }
