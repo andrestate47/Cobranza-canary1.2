@@ -2,11 +2,9 @@ import { prisma } from "./db"
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
-import isBefore from 'dayjs/plugin/isBefore'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
-dayjs.extend(isBefore)
 
 const ECUADOR_TZ = 'America/Guayaquil'
 const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
@@ -37,7 +35,7 @@ export async function obtenerSaldoInicialParaDia(userId: string, fechaInicio: Da
       // Contar días LABORALES sin cerrar (para la alerta, excluye domingos)
       let cursor = dayjs.tz(cierreAnterior.fecha, ECUADOR_TZ).add(1, 'day')
       const limite = dayjs.tz(fechaInicio, ECUADOR_TZ)
-      while (cursor.isBefore(limite)) {
+      while (cursor.valueOf() < limite.valueOf()) {
         if (cursor.day() !== 0) diasSinCerrar++ // 0 = domingo
         cursor = cursor.add(1, 'day')
       }
