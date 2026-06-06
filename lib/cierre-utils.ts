@@ -2,51 +2,64 @@ import { prisma } from "./db"
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import isBefore from 'dayjs/plugin/isBefore'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
+dayjs.extend(isBefore)
 
 const ECUADOR_TZ = 'America/Guayaquil'
+const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
+const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
 
+/**
+ * Calcula el saldo inicial para un día dado.
+ * Regla: saldoInicial = saldoEfectivo del último cierre anterior +
+ *        movimientos netos de los días sin cerrar entre ese cierre y el día actual.
+ * Esto permite gaps de varios días (ej: fin de semana, feriados) sin perder datos.
+ */
 export async function obtenerSaldoInicialParaDia(userId: string, fechaInicio: Date) {
-  // El saldo inicial de cualquier día es SIEMPRE el saldoEfectivo del último cierre anterior.
-  // Los domingos u otros días no laborales NO acumulan saldo — sus movimientos se cuentan
-  // dentro del día laboral donde realmente se registraron (los queries por fecha ya los capturan).
   const cierreAnterior = await prisma.cierreDia.findFirst({
-    where: {
-      userId: userId,
-      fecha: {
-        lt: fechaInicio
-      }
-    },
-    orderBy: {
-      fecha: 'desc'
-    }
+    where: { userId, fecha: { lt: fechaInicio } },
+    orderBy: { fecha: 'desc' }
   })
 
   let saldoInicial = 0
   let diasSinCerrar = 0
 
   if (cierreAnterior) {
-    // Saldo inicial = exactamente lo que quedó guardado en el último cierre
     saldoInicial = parseFloat(cierreAnterior.saldoEfectivo.toString())
 
-    // Calcular días laborales sin cerrar (para mostrar la alerta informativa)
-    // Solo contamos días de lunes a sábado entre el último cierre y hoy
-    const diaUltimoCierre = dayjs.tz(cierreAnterior.fecha, ECUADOR_TZ)
-    const diaConsultado = dayjs.tz(fechaInicio, ECUADOR_TZ)
-    let diasLaboralesSinCerrar = 0
-    let cursor = diaUltimoCierre.add(1, 'day')
-    while (cursor.isBefore(diaConsultado)) {
-      const dow = cursor.day() // 0=domingo, 6=sábado
-      if (dow !== 0) { // excluir domingos
-        diasLaboralesSinCerrar++
+    // Inicio del día siguiente al último cierre (en Ecuador)
+    const fechaDesde = dayjs.tz(cierreAnterior.fecha, ECUADOR_TZ).add(1, 'day').startOf('day').toDate()
+
+    if (fechaDesde < fechaInicio) {
+      // Contar días LABORALES sin cerrar (para la alerta, excluye domingos)
+      let cursor = dayjs.tz(cierreAnterior.fecha, ECUADOR_TZ).add(1, 'day')
+      const limite = dayjs.tz(fechaInicio, ECUADOR_TZ)
+      while (cursor.isBefore(limite)) {
+        if (cursor.day() !== 0) diasSinCerrar++ // 0 = domingo
+        cursor = cursor.add(1, 'day')
       }
-      cursor = cursor.add(1, 'day')
+
+      // Acumular movimientos de los días intermedios sin cierre
+      const [pagosAnt, prestamosAnt, gastosAnt, cajasAnt] = await Promise.all([
+        prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaDesde, lt: fechaInicio } } }),
+        prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: fechaDesde, lt: fechaInicio } } }),
+        prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaDesde, lt: fechaInicio } } }),
+        prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: fechaDesde, lt: fechaInicio } } })
+      ])
+
+      const cobradoAnt  = Number(pagosAnt._sum.monto || 0)
+      const prestadoAnt = Number(prestamosAnt._sum.monto || 0)
+      const gastadoAnt  = Number(gastosAnt._sum.monto || 0)
+      const ingresosAnt = cajasAnt.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+      const egresosAnt  = cajasAnt.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+
+      saldoInicial = saldoInicial + cobradoAnt - prestadoAnt - gastadoAnt + ingresosAnt - egresosAnt
     }
-    diasSinCerrar = diasLaboralesSinCerrar
   } else {
-    // Si nunca ha cerrado caja, activar alerta
+    // Sin cierres previos: activar alerta
     diasSinCerrar = 1
     saldoInicial = 0
   }
@@ -55,81 +68,47 @@ export async function obtenerSaldoInicialParaDia(userId: string, fechaInicio: Da
 }
 
 export async function calcularSaldoParaDia(userId: string, fechaInicio: Date, fechaFin: Date, saldoInicialDia: number) {
-  // Pagos del día (todos los métodos)
-  const pagos = await prisma.pago.aggregate({
-    _sum: { monto: true },
-    where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } }
-  })
-  const totalCobrado = Number(pagos._sum.monto || 0)
+  const [pagos, prestamos, gastos, movimientos] = await Promise.all([
+    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } } }),
+    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: fechaInicio, lte: fechaFin } } }),
+    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } } }),
+    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: fechaInicio, lte: fechaFin } } })
+  ])
 
-  // Préstamos del día
-  const prestamos = await prisma.prestamo.aggregate({
-    _sum: { monto: true },
-    where: { userId, createdAt: { gte: fechaInicio, lte: fechaFin } }
-  })
+  const totalCobrado  = Number(pagos._sum.monto || 0)
   const totalPrestado = Number(prestamos._sum.monto || 0)
-
-  // Gastos del día
-  const gastos = await prisma.gasto.aggregate({
-    _sum: { monto: true },
-    where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } }
-  })
-  const totalGastos = Number(gastos._sum.monto || 0)
-
-  // Movimientos de caja chica del día
-  const movimientos = await prisma.movimientoCajaChica.findMany({
-    where: { cobradorId: userId, fecha: { gte: fechaInicio, lte: fechaFin } }
-  })
-  const ingresosExtra = movimientos
-    .filter(m => ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"].includes(m.tipo))
-    .reduce((s, m) => s + Number(m.monto), 0)
-  const egresosExtra = movimientos
-    .filter(m => ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"].includes(m.tipo))
-    .reduce((s, m) => s + Number(m.monto), 0)
+  const totalGastos   = Number(gastos._sum.monto || 0)
+  const ingresosExtra = movimientos.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+  const egresosExtra  = movimientos.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
 
   const saldoEfectivo = saldoInicialDia + totalCobrado - totalPrestado - totalGastos + ingresosExtra - egresosExtra
-
   return { totalCobrado, totalPrestado, totalGastos, saldoEfectivo }
 }
 
+/**
+ * Propaga el saldo correcto hacia los cierres POSTERIORES al día indicado.
+ * Empieza desde el día SIGUIENTE para no sobreescribir el cierre recién creado.
+ */
 export async function recalcularYPropagarSaldos(userId: string, fechaDesde: Date) {
-  // Propagar saldos a los cierres POSTERIORES al fechaDesde (no al mismo día).
-  // El cierre del día fechaDesde ya fue guardado correctamente por quien llamó esta función.
   const { getEcuadorDayRange } = await import('./date-utils')
+
+  // Buscar solo cierres DESPUÉS de fechaDesde (no el mismo día)
   const fechaSiguiente = dayjs.tz(fechaDesde, ECUADOR_TZ).add(1, 'day').startOf('day').toDate()
 
   const cierres = await prisma.cierreDia.findMany({
-    where: {
-      userId,
-      fecha: {
-        gte: fechaSiguiente
-      }
-    },
-    orderBy: {
-      fecha: 'asc'
-    }
+    where: { userId, fecha: { gte: fechaSiguiente } },
+    orderBy: { fecha: 'asc' }
   })
 
   for (const cierre of cierres) {
     const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(cierre.fecha.toISOString())
-    
-    // Saldo inicial = saldoEfectivo del cierre anterior (ya corregido en iteración previa)
     const { saldoInicial } = await obtenerSaldoInicialParaDia(userId, fechaInicio)
-    
-    // Recalcular con el saldo inicial correcto
-    const { totalCobrado, totalPrestado, totalGastos, saldoEfectivo } = 
+    const { totalCobrado, totalPrestado, totalGastos, saldoEfectivo } =
       await calcularSaldoParaDia(userId, fechaInicio, fechaFin, saldoInicial)
-      
+
     await prisma.cierreDia.update({
       where: { id: cierre.id },
-      data: {
-        totalCobrado,
-        totalPrestado,
-        totalGastos,
-        saldoEfectivo
-      }
+      data: { totalCobrado, totalPrestado, totalGastos, saldoEfectivo }
     })
   }
 }
-
-
