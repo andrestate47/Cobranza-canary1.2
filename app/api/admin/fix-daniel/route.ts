@@ -25,15 +25,51 @@ export async function GET(request: NextRequest) {
     }
 
     const cierres = await prisma.cierreDia.findMany({
-      where: { userId: daniel.id, fecha: { gte: new Date('2026-06-01T00:00:00Z') } },
+      where: { userId: daniel.id },
       orderBy: { fecha: 'asc' }
     })
 
+    const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
+    const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
+
+    async function calcularMovimientosEnRango(userId: string, desde: Date, hasta: Date) {
+      const [pagos, prestamos, gastos, cajas] = await Promise.all([
+        prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: desde, lte: hasta } } }),
+        prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: desde, lte: hasta } } }),
+        prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: desde, lte: hasta } } }),
+        prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: desde, lte: hasta } } })
+      ])
+      const ingresosExtra = cajas.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+      const egresosExtra  = cajas.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
+      return {
+        neto: Number(pagos._sum.monto || 0) - Number(prestamos._sum.monto || 0) - Number(gastos._sum.monto || 0) + ingresosExtra - egresosExtra
+      }
+    }
+
+    function getEcuadorDayRange(fecha: Date) {
+      const ecStr = fecha.toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' })
+      const [year, month, day] = ecStr.split('-').map(Number)
+      const inicio = new Date(Date.UTC(year, month - 1, day, 5, 0, 0))
+      const fin    = new Date(Date.UTC(year, month - 1, day + 1, 4, 59, 59))
+      return { inicio, fin }
+    }
+
     const resultados = []
     let saldoAcumulado = 0
+    let finCierreAnterior: Date | null = null
 
     for (const cierre of cierres) {
-      const saldoNuevo = saldoAcumulado + Number(cierre.totalCobrado) - Number(cierre.totalPrestado) - Number(cierre.totalGastos)
+      const { inicio, fin } = getEcuadorDayRange(cierre.fecha)
+
+      if (finCierreAnterior !== null && finCierreAnterior < inicio) {
+        const diaGapInicio = new Date(finCierreAnterior.getTime() + 1)
+        const diaGapFin = new Date(inicio.getTime() - 1)
+        const gapMovs = await calcularMovimientosEnRango(daniel.id, diaGapInicio, diaGapFin)
+        saldoAcumulado += gapMovs.neto
+      }
+
+      const movsDia = await calcularMovimientosEnRango(daniel.id, inicio, fin)
+      const saldoNuevo = saldoAcumulado + movsDia.neto
       
       await prisma.cierreDia.update({
         where: { id: cierre.id },
@@ -42,11 +78,12 @@ export async function GET(request: NextRequest) {
       
       resultados.push({
         fecha: cierre.fecha.toISOString().split('T')[0],
-        saldoInicialUsado: saldoAcumulado,
-        saldoNuevo
+        saldoAnteriorGuardado: Number(cierre.saldoEfectivo),
+        saldoNuevoCorrecto: saldoNuevo
       })
 
       saldoAcumulado = saldoNuevo
+      finCierreAnterior = fin
     }
 
     return NextResponse.json({ mensaje: "Daniel reseteado a 0", resultados })
