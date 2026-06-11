@@ -477,7 +477,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(+) Cobrado en Efectivo</span>
                         <span>{formatCurrency(informe.totalCobradoEfectivo)}</span>
                       </div>
-                      {informe.totalCobradoRefinanciamiento !== undefined && informe.totalCobradoRefinanciamiento > 0 && (
+                      {informe.totalCobradoRefinanciamiento !== undefined && (
                         <div className="flex justify-between items-center text-emerald-600 font-medium">
                           <span>(+) Cobro por Refinanciación</span>
                           <span>{formatCurrency(informe.totalCobradoRefinanciamiento)}</span>
@@ -495,7 +495,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(-) Préstamos en Efectivo</span>
                         <span>{formatCurrency(informe.totalPrestadoEfectivo)}</span>
                       </div>
-                      {informe.totalPrestadoRefinanciamiento !== undefined && informe.totalPrestadoRefinanciamiento > 0 && (
+                      {informe.totalPrestadoRefinanciamiento !== undefined && (
                         <div className="flex justify-between items-center text-orange-500 font-medium">
                           <span>(-) Refinanciaciones</span>
                           <span>{formatCurrency(informe.totalPrestadoRefinanciamiento)}</span>
