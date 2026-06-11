@@ -220,9 +220,13 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     sum + parseFloat(pago.monto.toString()), 0
   )
 
-  // Calcular total cobrado en efectivo (sin transferencias ni depósitos)
+  // Separar pagos virtuales por refinanciamiento
+  const pagosRefinanciamiento = pagos.filter(p => p.observaciones?.startsWith("Liquidación por refinanciamiento"))
+  const totalCobradoRefinanciamiento = pagosRefinanciamiento.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+
+  // Calcular total cobrado en efectivo (sin transferencias ni depósitos ni refinanciaciones)
   const totalCobradoEfectivo = pagos
-    .filter(p => p.metodoPago === "EFECTIVO")
+    .filter(p => p.metodoPago === "EFECTIVO" && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
     .reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
 
   const totalCobradoTransferencia = pagos
@@ -261,7 +265,10 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     sum + parseFloat(prestamo.monto.toString()), 0
   )
 
-  const prestamosEfectivo = prestamos.filter(p => p.tipoCredito === "EFECTIVO" || p.tipoCredito == null)
+  const prestamosRefinanciamiento = prestamos.filter(p => p.observaciones?.startsWith("REFINANCIAMIENTO"))
+  const totalPrestadoRefinanciamiento = prestamosRefinanciamiento.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+  const prestamosEfectivo = prestamos.filter(p => (p.tipoCredito === "EFECTIVO" || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
   const totalPrestadoEfectivo = prestamosEfectivo.reduce((sum, prestamo) => 
     sum + parseFloat(prestamo.monto.toString()), 0
   )
@@ -292,6 +299,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
 
   const egresosExtraCaja = movimientosCajaChica
     .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION")
+    .filter(m => !(m.observaciones && m.observaciones.includes("Refinanciamiento préstamo:"))) // Fix double deduction
     .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
 
   const gastosCajaChica = movimientosCajaChica
@@ -369,12 +377,14 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     rutaId: usuario?.rutaId || null,
     totalCobrado,
     totalCobradoEfectivo,
+    totalCobradoRefinanciamiento,
     totalCobradoTransferencia,
     totalCobradoDeposito,
     moraCobrada,
     dineroTransferencia,
     totalPrestado,
     totalPrestadoEfectivo,
+    totalPrestadoRefinanciamiento,
     totalPrestadoTransferencia,
     totalGastos: totalGastosReal,
     gastosOperativos: totalGastos,
@@ -487,12 +497,14 @@ export async function GET(request: NextRequest) {
 
       const totalCobrado = informes.reduce((sum, i) => sum + i.totalCobrado, 0)
       const totalCobradoEfectivo = informes.reduce((sum, i) => sum + i.totalCobradoEfectivo, 0)
+      const totalCobradoRefinanciamiento = informes.reduce((sum, i) => sum + (i.totalCobradoRefinanciamiento || 0), 0)
       const totalCobradoTransferencia = informes.reduce((sum, i) => sum + i.totalCobradoTransferencia, 0)
       const totalCobradoDeposito = informes.reduce((sum, i) => sum + i.totalCobradoDeposito, 0)
       const moraCobrada = informes.reduce((sum, i) => sum + i.moraCobrada, 0)
       const dineroTransferencia = informes.reduce((sum, i) => sum + i.dineroTransferencia, 0)
       const totalPrestado = informes.reduce((sum, i) => sum + i.totalPrestado, 0)
       const totalPrestadoEfectivo = informes.reduce((sum, i) => sum + i.totalPrestadoEfectivo, 0)
+      const totalPrestadoRefinanciamiento = informes.reduce((sum, i) => sum + (i.totalPrestadoRefinanciamiento || 0), 0)
       const totalPrestadoTransferencia = informes.reduce((sum, i) => sum + i.totalPrestadoTransferencia, 0)
       const totalGastos = informes.reduce((sum, i) => sum + i.totalGastos, 0)
       const gastosOperativos = informes.reduce((sum, i) => sum + (i.gastosOperativos || 0), 0)
@@ -566,12 +578,14 @@ export async function GET(request: NextRequest) {
         rutaId: null,
         totalCobrado,
         totalCobradoEfectivo,
+        totalCobradoRefinanciamiento,
         totalCobradoTransferencia,
         totalCobradoDeposito,
         moraCobrada,
         dineroTransferencia,
         totalPrestado,
         totalPrestadoEfectivo,
+        totalPrestadoRefinanciamiento,
         totalPrestadoTransferencia,
         totalGastos,
         gastosOperativos,

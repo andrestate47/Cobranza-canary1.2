@@ -35,12 +35,14 @@ interface InformeDelDia {
   rutaId: string | null
   totalCobrado: number
   totalCobradoEfectivo: number
+  totalCobradoRefinanciamiento?: number
   totalCobradoTransferencia: number
   totalCobradoDeposito: number
   moraCobrada: number
   dineroTransferencia: number
   totalPrestado: number
   totalPrestadoEfectivo: number
+  totalPrestadoRefinanciamiento?: number
   totalPrestadoTransferencia: number
   totalGastos: number
   gastosOperativos?: number
@@ -475,6 +477,12 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(+) Cobrado en Efectivo</span>
                         <span>{formatCurrency(informe.totalCobradoEfectivo)}</span>
                       </div>
+                      {informe.totalCobradoRefinanciamiento !== undefined && informe.totalCobradoRefinanciamiento > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600 font-medium">
+                          <span>(+) Cobro por Refinanciación</span>
+                          <span>{formatCurrency(informe.totalCobradoRefinanciamiento)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-emerald-600 font-medium">
                         <span>(+) Transferencias Recibidas</span>
                         <span>{formatCurrency(informe.totalCobradoTransferencia)}</span>
@@ -487,6 +495,12 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(-) Préstamos en Efectivo</span>
                         <span>{formatCurrency(informe.totalPrestadoEfectivo)}</span>
                       </div>
+                      {informe.totalPrestadoRefinanciamiento !== undefined && informe.totalPrestadoRefinanciamiento > 0 && (
+                        <div className="flex justify-between items-center text-orange-500 font-medium">
+                          <span>(-) Refinanciaciones</span>
+                          <span>{formatCurrency(informe.totalPrestadoRefinanciamiento)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Préstamos por Transferencia</span>
                         <span>{formatCurrency(informe.totalPrestadoTransferencia)}</span>
