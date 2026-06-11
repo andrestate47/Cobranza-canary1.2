@@ -13,12 +13,59 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const url = new URL(request.url)
+    const fechaParam = url.searchParams.get("fecha")
     const userId = session.user.id
 
-    // Obtener todos los movimientos del cobrador
+    // Obtener TODOS los movimientos del cobrador para calcular el balance real (sin filtro de fecha)
+    const allMovimientos = await prisma.movimientoCajaChica.findMany({
+      where: {
+        cobradorId: userId,
+      },
+      select: { tipo: true, monto: true }
+    })
+
+    // Calcular balances
+    let totalEntregado = new Decimal(0)
+    let totalGastado = new Decimal(0)
+    let totalDevuelto = new Decimal(0)
+
+    allMovimientos.forEach((mov) => {
+      if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA" || mov.tipo === "INGRESO" || mov.tipo === "APERTURA_CAJA") {
+        totalEntregado = totalEntregado.plus(mov.monto)
+      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL") {
+        totalGastado = totalGastado.plus(mov.monto)
+      } else if (mov.tipo === "DEVUELTO" || mov.tipo === "DEVOLUCION") {
+        totalDevuelto = totalDevuelto.plus(mov.monto)
+      }
+    })
+
+    const balance = totalEntregado.minus(totalGastado).minus(totalDevuelto)
+
+    // Construir filtro de fecha para el historial
+    let dateFilter = {}
+    let limit = 50
+    if (fechaParam) {
+      const startOfDay = new Date(fechaParam + 'T00:00:00.000Z')
+      const endOfDay = new Date(fechaParam + 'T23:59:59.999Z')
+      
+      startOfDay.setHours(startOfDay.getHours() + 5)
+      endOfDay.setHours(endOfDay.getHours() + 5)
+      
+      dateFilter = {
+        fecha: {
+          gte: startOfDay,
+          lte: endOfDay,
+        }
+      }
+      limit = 500
+    }
+
+    // Obtener los movimientos filtrados para el historial
     const movimientos = await prisma.movimientoCajaChica.findMany({
       where: {
         cobradorId: userId,
+        ...dateFilter
       },
       include: {
         cobrador: {
@@ -39,24 +86,8 @@ export async function GET(request: NextRequest) {
       orderBy: {
         fecha: "desc",
       },
+      take: limit,
     })
-
-    // Calcular balances
-    let totalEntregado = new Decimal(0)
-    let totalGastado = new Decimal(0)
-    let totalDevuelto = new Decimal(0)
-
-    movimientos.forEach((mov) => {
-      if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA" || mov.tipo === "INGRESO" || mov.tipo === "APERTURA_CAJA") {
-        totalEntregado = totalEntregado.plus(mov.monto)
-      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL") {
-        totalGastado = totalGastado.plus(mov.monto)
-      } else if (mov.tipo === "DEVUELTO" || mov.tipo === "DEVOLUCION") {
-        totalDevuelto = totalDevuelto.plus(mov.monto)
-      }
-    })
-
-    const balance = totalEntregado.minus(totalGastado).minus(totalDevuelto)
 
     return NextResponse.json({
       balance: {

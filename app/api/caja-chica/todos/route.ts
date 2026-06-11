@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const url = new URL(request.url)
+    const fechaParam = url.searchParams.get("fecha")
+
     // Solo admin y supervisor pueden ver todos los movimientos
     if (!["ADMINISTRADOR", "SUPERVISOR"].includes(session.user.role)) {
       return NextResponse.json(
@@ -53,12 +56,60 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Obtener todos los movimientos recientes (últimos 50)
+    // Calculate overall totals from ALL movements (not limited to date or 50)
+    const allTimeMovements = await prisma.movimientoCajaChica.findMany({
+      select: { tipo: true, monto: true }
+    })
+    
+    let totalApertura = 0
+    let totalEntregas = 0
+    let totalDevoluciones = 0
+    let totalEgresosGenerales = 0
+    let totalGastosCobradores = 0
+
+    allTimeMovements.forEach(m => {
+      const montoNum = m.monto.toNumber()
+      if (m.tipo === "APERTURA_CAJA") totalApertura += montoNum
+      else if (m.tipo === "ENTREGA") totalEntregas += montoNum
+      else if (m.tipo === "DEVOLUCION") totalDevoluciones += montoNum
+      else if (m.tipo === "EGRESO_GENERAL") totalEgresosGenerales += montoNum
+      else if (m.tipo === "GASTO") totalGastosCobradores += montoNum
+    })
+
+    const totalesGlobales = {
+      totalApertura,
+      totalEntregas,
+      totalDevoluciones,
+      totalEgresosGenerales,
+      totalGastosCobradores
+    }
+
+    // Obtener movimientos para el historial (filtrado por fecha o ultimos 50)
+    let dateFilter = {}
+    let limit = 50
+    if (fechaParam) {
+      const startOfDay = new Date(fechaParam + 'T00:00:00.000Z')
+      const endOfDay = new Date(fechaParam + 'T23:59:59.999Z')
+      
+      // Ajuste para zona horaria de Ecuador (-5 horas)
+      startOfDay.setHours(startOfDay.getHours() + 5)
+      endOfDay.setHours(endOfDay.getHours() + 5)
+      
+      dateFilter = {
+        fecha: {
+          gte: startOfDay,
+          lte: endOfDay,
+        }
+      }
+      limit = 500 // Más límite si se busca un día específico
+    }
+
     const todosMovimientos = await prisma.movimientoCajaChica.findMany({
+      where: dateFilter,
       orderBy: {
         fecha: "desc",
       },
-      take: 50,
+      take: limit,
       include: {
         cobrador: {
           select: {
@@ -101,6 +152,7 @@ export async function GET(request: NextRequest) {
       success: true,
       cobradores: cobradoresConSaldo,
       movimientosRecientes: movimientosFormateados,
+      totalesGlobales,
     })
   } catch (error) {
     console.error("Error al obtener todos los movimientos:", error)

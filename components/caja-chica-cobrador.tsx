@@ -4,12 +4,14 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, Wallet, TrendingUp, TrendingDown, History } from "lucide-react"
+import { RefreshCw, Wallet, TrendingUp, TrendingDown, History, Calendar as CalendarIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { useCurrency } from "@/hooks/use-currency"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface Movimiento {
   id: string
@@ -27,11 +29,13 @@ export function CajaChicaCobrador() {
   const [loading, setLoading] = useState(true)
   const [saldoActual, setSaldoActual] = useState(0)
   const [movimientos, setMovimientos] = useState<Movimiento[]>([])
+  const [fechaSeleccionada, setFechaSeleccionada] = useState("")
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/caja-chica")
+      const url = fechaSeleccionada ? `/api/caja-chica?fecha=${fechaSeleccionada}` : "/api/caja-chica"
+      const response = await fetch(url)
       const data = await response.json()
 
       if (data.success) {
@@ -47,7 +51,7 @@ export function CajaChicaCobrador() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fechaSeleccionada])
 
   const getTipoLabel = (tipo: string) => {
     const labels: Record<string, string> = {
@@ -82,14 +86,39 @@ export function CajaChicaCobrador() {
               Gestiona tu saldo en efectivo diario
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchData}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2 mt-4 sm:mt-0">
+            <div className="flex items-center gap-2 mr-2">
+              <Label htmlFor="fecha-cobrador" className="text-sm text-gray-500 hidden sm:inline-block">Fecha:</Label>
+              <div className="relative">
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  id="fecha-cobrador"
+                  type="date"
+                  value={fechaSeleccionada}
+                  onChange={(e) => setFechaSeleccionada(e.target.value)}
+                  className="pl-9 h-9 w-[140px] sm:w-[160px]"
+                />
+              </div>
+              {fechaSeleccionada && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFechaSeleccionada("")}
+                  className="text-xs text-muted-foreground px-2 h-9"
+                >
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

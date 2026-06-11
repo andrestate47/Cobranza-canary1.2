@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RefreshCw, Plus, DollarSign, Users, History, TrendingUp, TrendingDown, Wallet, Trash2, Banknote, ArrowLeft } from "lucide-react"
+import { RefreshCw, Plus, DollarSign, Users, History, TrendingUp, TrendingDown, Wallet, Trash2, Banknote, ArrowLeft, Calendar as CalendarIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
@@ -59,15 +59,31 @@ export function ViaticosAdmin() {
   const [monto, setMonto] = useState("")
   const [observaciones, setObservaciones] = useState("")
 
+  // Totales Globales
+  const [totalesGlobales, setTotalesGlobales] = useState({
+    totalApertura: 0,
+    totalEntregas: 0,
+    totalDevoluciones: 0,
+    totalEgresosGenerales: 0,
+    totalGastosCobradores: 0
+  })
+
+  // Date Filter
+  const [fechaSeleccionada, setFechaSeleccionada] = useState("")
+
   const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/caja-chica/todos")
+      const url = fechaSeleccionada ? `/api/caja-chica/todos?fecha=${fechaSeleccionada}` : "/api/caja-chica/todos"
+      const response = await fetch(url)
       const data = await response.json()
 
       if (data.success) {
         setCobradores(data.cobradores)
         setMovimientos(data.movimientosRecientes)
+        if (data.totalesGlobales) {
+          setTotalesGlobales(data.totalesGlobales)
+        }
       }
     } catch (error) {
       console.error("Error al cargar datos de caja:", error)
@@ -78,7 +94,7 @@ export function ViaticosAdmin() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fechaSeleccionada])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -239,26 +255,8 @@ export function ViaticosAdmin() {
 
   const totalViaticos = cobradores.reduce((sum, c) => sum + c.saldoActual, 0)
   
-  // Desglosar los tipos de movimientos para cálculos exactos
-  const totalApertura = movimientos
-    .filter(m => m.tipo === "APERTURA_CAJA")
-    .reduce((sum, m) => sum + m.monto, 0)
-  
-  const totalEntregas = movimientos
-    .filter(m => m.tipo === "ENTREGA")
-    .reduce((sum, m) => sum + m.monto, 0)
-  
-  const totalDevoluciones = movimientos
-    .filter(m => m.tipo === "DEVOLUCION")
-    .reduce((sum, m) => sum + m.monto, 0)
-  
-  const totalEgresosGenerales = movimientos
-    .filter(m => m.tipo === "EGRESO_GENERAL")
-    .reduce((sum, m) => sum + m.monto, 0)
-  
-  const totalGastosCobradores = movimientos
-    .filter(m => m.tipo === "GASTO")
-    .reduce((sum, m) => sum + m.monto, 0)
+  // Usar los totales globales del servidor para los cálculos (no los movimientos filtrados)
+  const { totalApertura, totalEntregas, totalDevoluciones, totalEgresosGenerales, totalGastosCobradores } = totalesGlobales
 
   // 1. Caja Central (Admin): Dinero físico en poder de la administración.
   const saldoCajaAdmin = totalApertura - totalEntregas - totalEgresosGenerales + totalDevoluciones
@@ -291,15 +289,40 @@ export function ViaticosAdmin() {
             <p className="text-sm text-muted-foreground">Control de montos iniciales, ingresos y egresos</p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchData}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mr-2">
+            <Label htmlFor="fecha" className="text-sm text-gray-500 hidden sm:inline-block">Fecha:</Label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                id="fecha"
+                type="date"
+                value={fechaSeleccionada}
+                onChange={(e) => setFechaSeleccionada(e.target.value)}
+                className="pl-9 h-9 w-[140px] sm:w-[160px]"
+              />
+            </div>
+            {fechaSeleccionada && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setFechaSeleccionada("")}
+                className="text-xs text-muted-foreground px-2 h-9"
+              >
+                Limpiar
+              </Button>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       {/* Tarjetas de Resumen */}
