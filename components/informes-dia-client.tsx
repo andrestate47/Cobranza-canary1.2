@@ -47,6 +47,7 @@ interface InformeDelDia {
   totalGastos: number
   gastosOperativos?: number
   gastosCajaChica?: number
+  gastosSueldos?: number
   ingresosExtraCaja?: number
   egresosExtraCaja?: number
   saldoInicial: number
@@ -126,6 +127,7 @@ interface InformeDelDia {
     saldoPendiente: number
     diasMora: number
   }>
+  informesIndividuales?: InformeDelDia[]
 }
 
 interface Cobrador {
@@ -519,8 +521,14 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                       )}
                       <div className="flex justify-between items-center text-red-500 font-medium">
                         <span>(-) Gastos Registrados</span>
-                        <span>{formatCurrency(informe.totalGastos)}</span>
+                        <span>{formatCurrency(informe.totalGastos - (informe.gastosSueldos || 0))}</span>
                       </div>
+                      {informe.gastosSueldos !== undefined && informe.gastosSueldos > 0 && (
+                        <div className="flex justify-between items-center text-red-500 font-medium">
+                          <span>(-) Sueldos Pagados</span>
+                          <span>{formatCurrency(informe.gastosSueldos)}</span>
+                        </div>
+                      )}
                       <div className={`flex justify-between items-center border-t pt-2 font-bold ${informe.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         <span>Balance General</span>
                         <span>{formatCurrency(informe.saldoEfectivo)}</span>

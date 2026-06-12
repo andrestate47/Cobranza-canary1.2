@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Decimal } from "@prisma/client/runtime/library"
 
 export async function GET(request: NextRequest) {
   try {
@@ -154,44 +155,60 @@ export async function POST(request: NextRequest) {
       where: { userId: cobradorId }
     })
 
-    const pago = await prisma.pagoSueldo.create({
-      data: {
-        cobradorId,
-        pagadorId: currentUser.id,
-        configuracionId: configuracion?.id,
-        tipo,
-        periodo,
-        montoBase:       parsedMontoBase,
-        montoComisiones: parsedMontoComisiones,
-        montoTotal:      parsedMontoTotal,
-        montoAvances:    parsedMontoAvances,
-        montoFinal:      parsedMontoFinal,
-        observaciones,
-        metodoPago,
-        estado: 'PENDIENTE'
-      },
-      include: {
-        cobrador: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true
-          }
-        },
-        pagador: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true
-          }
-        },
-        configuracion: true
-      }
+    // Obtener saldo actual del cobrador para la Caja Chica
+    const ultimoMovimiento = await prisma.movimientoCajaChica.findFirst({
+      where: { cobradorId },
+      orderBy: { fecha: "desc" },
     })
+    const saldoAnterior = ultimoMovimiento?.saldoNuevo || new Decimal(0)
+    const saldoNuevo = saldoAnterior.minus(parsedMontoFinal)
+
+    // Crear el PagoSueldo y el MovimientoCajaChica en una transacción
+    const pago = await prisma.$transaction(async (tx) => {
+      const nuevoPago = await tx.pagoSueldo.create({
+        data: {
+          cobradorId,
+          pagadorId: currentUser.id,
+          configuracionId: configuracion?.id,
+          tipo,
+          periodo,
+          montoBase:       parsedMontoBase,
+          montoComisiones: parsedMontoComisiones,
+          montoTotal:      parsedMontoTotal,
+          montoAvances:    parsedMontoAvances,
+          montoFinal:      parsedMontoFinal,
+          observaciones,
+          metodoPago,
+          estado: 'PAGADO',
+          fechaPago: new Date()
+        },
+        include: {
+          cobrador: {
+            select: { id: true, firstName: true, lastName: true, email: true, role: true }
+          },
+          pagador: {
+            select: { id: true, firstName: true, lastName: true, email: true, role: true }
+          },
+          configuracion: true
+        }
+      });
+
+      await tx.movimientoCajaChica.create({
+        data: {
+          cobradorId,
+          asignadoPorId: currentUser.id,
+          tipo: "PAGO_SUELDO",
+          monto: new Decimal(parsedMontoFinal),
+          saldoAnterior,
+          saldoNuevo,
+          descripcion: `Sueldo/Avance (${tipo}) - Período: ${periodo || 'N/A'}`,
+          observaciones,
+          estado: "APROBADO"
+        }
+      });
+
+      return nuevoPago;
+    });
 
     return NextResponse.json(pago, { status: 201 })
   } catch (error) {

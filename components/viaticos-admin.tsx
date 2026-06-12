@@ -341,12 +341,6 @@ export function ViaticosAdmin() {
             </div>
             <div className="text-xs text-muted-foreground mt-2 space-y-1">
               <p>Dinero físico del administrador.</p>
-              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
-                <div>Inicial: {formatCurrency(totalApertura)}</div>
-                <div>Entregas: -{formatCurrency(totalEntregas)}</div>
-                <div>Egresos Grales: -{formatCurrency(totalEgresosGenerales)}</div>
-                <div>Devoluciones: +{formatCurrency(totalDevoluciones)}</div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -365,12 +359,6 @@ export function ViaticosAdmin() {
             </div>
             <div className="text-xs text-muted-foreground mt-2 space-y-1">
               <p>Efectivo activo en manos de los cobradores para gastos de ruta.</p>
-              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
-                <div>Cobradores activos: {cobradores.length}</div>
-                <div>Entregado: {formatCurrency(totalEntregas)}</div>
-                <div>Gastado: -{formatCurrency(totalGastosCobradores)}</div>
-                <div>Devuelto: -{formatCurrency(totalDevoluciones)}</div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -389,13 +377,6 @@ export function ViaticosAdmin() {
             </div>
             <div className="text-xs text-muted-foreground mt-2 space-y-1">
               <p>Dinero total disponible en el sistema (Caja + Cobradores).</p>
-              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
-                <div>Caja Central: {formatCurrency(saldoCajaAdmin)}</div>
-                <div>En Cobradores: +{formatCurrency(totalViaticos)}</div>
-                <div className="border-t border-gray-200 mt-1 pt-1 font-semibold text-gray-700">
-                  Total: {formatCurrency(saldoConsolidado)}
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -414,13 +395,6 @@ export function ViaticosAdmin() {
             </div>
             <div className="text-xs text-muted-foreground mt-2 space-y-1">
               <p>Salidas reales de efectivo de la empresa (gastos definitivos).</p>
-              <div className="bg-slate-50 p-1.5 rounded text-[10px] text-gray-500 font-mono leading-tight">
-                <div>Gastos de Cobradores: {formatCurrency(totalGastosCobradores)}</div>
-                <div>Egresos Generales: +{formatCurrency(totalEgresosGenerales)}</div>
-                <div className="border-t border-gray-200 mt-1 pt-1 font-semibold text-gray-700">
-                  Total: {formatCurrency(totalEgresos)}
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>

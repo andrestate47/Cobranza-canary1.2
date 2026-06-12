@@ -306,7 +306,11 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     .filter(m => m.tipo === "GASTO" || m.tipo === "GASTADO")
     .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
 
-  const totalGastosReal = totalGastos + gastosCajaChica
+  const gastosSueldos = movimientosCajaChica
+    .filter(m => m.tipo === "PAGO_SUELDO")
+    .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+
+  const totalGastosReal = totalGastos + gastosCajaChica + gastosSueldos
 
   // Obtener saldo inicial y días sin cerrar de forma centralizada
   const { saldoInicial, diasSinCerrar } = await obtenerSaldoInicialParaDia(userId, fechaInicio)
@@ -389,6 +393,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     totalGastos: totalGastosReal,
     gastosOperativos: totalGastos,
     gastosCajaChica,
+    gastosSueldos,
     ingresosExtraCaja,
     egresosExtraCaja,
     saldoInicial,
@@ -509,6 +514,7 @@ export async function GET(request: NextRequest) {
       const totalGastos = informes.reduce((sum, i) => sum + i.totalGastos, 0)
       const gastosOperativos = informes.reduce((sum, i) => sum + (i.gastosOperativos || 0), 0)
       const gastosCajaChica = informes.reduce((sum, i) => sum + (i.gastosCajaChica || 0), 0)
+      const gastosSueldos = informes.reduce((sum, i) => sum + (i.gastosSueldos || 0), 0)
       const ingresosExtraCaja = informes.reduce((sum, i) => sum + (i.ingresosExtraCaja || 0), 0)
       const egresosExtraCaja = informes.reduce((sum, i) => sum + (i.egresosExtraCaja || 0), 0)
       const saldoInicial = informes.reduce((sum, i) => sum + i.saldoInicial, 0)
@@ -590,6 +596,7 @@ export async function GET(request: NextRequest) {
         totalGastos,
         gastosOperativos,
         gastosCajaChica,
+        gastosSueldos,
         ingresosExtraCaja,
         egresosExtraCaja,
         saldoInicial,
@@ -609,7 +616,8 @@ export async function GET(request: NextRequest) {
         detallePrestamos,
         detalleGastos,
         detalleClientesNuevos,
-        detalleClientesMora
+        detalleClientesMora,
+        informesIndividuales: informes
       }
 
       return NextResponse.json(informeTodos)

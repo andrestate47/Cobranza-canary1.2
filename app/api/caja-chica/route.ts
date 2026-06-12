@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     allMovimientos.forEach((mov) => {
       if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA" || mov.tipo === "INGRESO" || mov.tipo === "APERTURA_CAJA") {
         totalEntregado = totalEntregado.plus(mov.monto)
-      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL") {
+      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL" || mov.tipo === "PAGO_SUELDO") {
         totalGastado = totalGastado.plus(mov.monto)
       } else if (mov.tipo === "DEVUELTO" || mov.tipo === "DEVOLUCION") {
         totalDevuelto = totalDevuelto.plus(mov.monto)
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
     let saldoNuevo = saldoAnterior
     if (tipo === "ENTREGA" || tipo === "ENTREGADO") {
       saldoNuevo = saldoAnterior.plus(montoDecimal)
-    } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO") {
+    } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") {
       saldoNuevo = saldoAnterior.minus(montoDecimal)
     } else if (tipo === "AJUSTE") {
       // Para ajustes, el monto puede ser positivo o negativo

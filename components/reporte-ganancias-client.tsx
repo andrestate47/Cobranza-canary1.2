@@ -34,6 +34,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 
 interface ReporteGanancias {
@@ -165,6 +172,20 @@ interface ReporteGanancias {
       cobradores: number
     }
   }
+  rutas: Array<{
+    cobradorId: string
+    nombreCobrador: string
+    numeroRuta: string
+    totalCobradoEfectivo: number
+    totalPrestadoEfectivo: number
+    gastosOperativos: number
+    gastosSueldos: number
+    balancePeriodo: number
+    detallesPagos: Array<{ id: string, cliente: string, monto: number, fecha: string, observaciones?: string }>
+    detallesPrestamos: Array<{ id: string, cliente: string, monto: number, fecha: string }>
+    detallesGastos: Array<{ id: string, concepto: string, monto: number, fecha: string }>
+    detallesSueldos: Array<{ id: string, descripcion: string, monto: number, fecha: string }>
+  }>
   detalles: {
     prestamos: Array<{
       id: string
@@ -213,6 +234,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
     const hoy = new Date()
     return hoy.toISOString().split('T')[0]
   })
+  const [selectedRuta, setSelectedRuta] = useState<ReporteGanancias['rutas'][0] | null>(null)
   const { toast } = useToast()
 
   const fetchReporte = async (inicio: string, fin: string) => {
@@ -461,6 +483,58 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
             </div>
           </CardContent>
         </Card>
+
+        {/* Resumen por Rutas */}
+        {reporte.rutas && reporte.rutas.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Reporte de Ruta</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reporte.rutas.map((ruta) => (
+                <Card 
+                  key={ruta.cobradorId} 
+                  className="animate-fadeInScale border border-gray-200 cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => setSelectedRuta(ruta)}
+                >
+                  <CardHeader className="bg-gray-50/50 pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-base font-bold text-gray-900">
+                          {ruta.nombreCobrador}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Ruta {ruta.numeroRuta}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="h-7 text-[10px] px-2">Ver Detalles</Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Cobrado (Efectivo)</span>
+                      <span className="font-semibold text-green-600">+{formatCurrency(ruta.totalCobradoEfectivo)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Prestado (Efectivo)</span>
+                      <span className="font-semibold text-red-500">-{formatCurrency(ruta.totalPrestadoEfectivo)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Gastos y Sueldos</span>
+                      <span className="font-semibold text-red-500">-{formatCurrency((ruta.gastosOperativos || 0) + (ruta.gastosSueldos || 0))}</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-gray-900 text-sm">Flujo Efectivo del Período</span>
+                        <span className={`font-bold ${ruta.balancePeriodo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(ruta.balancePeriodo)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Métricas principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1411,6 +1485,159 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
           )}
         </div>
       </div>
+
+      {/* Modal de Detalles de Ruta */}
+      {selectedRuta && (
+        <Dialog open={!!selectedRuta} onOpenChange={(open) => !open && setSelectedRuta(null)}>
+          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-gray-50 rounded-xl">
+            <DialogHeader className="p-4 md:p-6 bg-white border-b shrink-0 relative pb-4 md:pb-6">
+              <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900 pr-8">
+                {selectedRuta.nombreCobrador}
+              </DialogTitle>
+              <div className="flex flex-col gap-1 mt-1">
+                <span className="text-sm font-medium text-gray-500">Ruta {selectedRuta.numeroRuta}</span>
+                <span className="text-xs text-gray-400">{formatDate(fechaInicio)} - {formatDate(fechaFin)}</span>
+              </div>
+            </DialogHeader>
+
+            <ScrollArea className="flex-1 px-4 md:px-6 py-4">
+              <div className="space-y-6">
+                
+                {/* Resumen en el modal */}
+                <div className="bg-white p-4 rounded-xl border shadow-sm">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Resumen</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Cobrado (Efectivo)</span>
+                      <span className="font-semibold text-green-600">+{formatCurrency(selectedRuta.totalCobradoEfectivo)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Prestado (Efectivo)</span>
+                      <span className="font-semibold text-red-500">-{formatCurrency(selectedRuta.totalPrestadoEfectivo)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Gastos y Sueldos</span>
+                      <span className="font-semibold text-red-500">-{formatCurrency((selectedRuta.gastosOperativos || 0) + (selectedRuta.gastosSueldos || 0))}</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                      <span className="font-bold text-gray-900 text-sm">Flujo Efectivo</span>
+                      <span className={`font-bold ${selectedRuta.balancePeriodo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(selectedRuta.balancePeriodo)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detalle de Cobros */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      Cobros Recibidos ({selectedRuta.detallesPagos.length})
+                    </h4>
+                    <span className="text-sm font-bold text-green-600">+{formatCurrency(selectedRuta.totalCobradoEfectivo)}</span>
+                  </div>
+                  {selectedRuta.detallesPagos.length > 0 ? (
+                    <div className="bg-white rounded-xl border shadow-sm divide-y">
+                      {selectedRuta.detallesPagos.map(pago => (
+                        <div key={pago.id} className="p-3 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{pago.cliente}</span>
+                            <span className="text-xs text-gray-500">{new Date(pago.fecha).toLocaleDateString('es-CO')}</span>
+                          </div>
+                          <span className="text-sm font-bold text-green-600">+{formatCurrency(pago.monto)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No hay cobros en efectivo.</p>
+                  )}
+                </div>
+
+                {/* Detalle de Préstamos */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <TrendingDown className="h-4 w-4 text-red-500" />
+                      Préstamos Entregados ({selectedRuta.detallesPrestamos.length})
+                    </h4>
+                    <span className="text-sm font-bold text-red-500">-{formatCurrency(selectedRuta.totalPrestadoEfectivo)}</span>
+                  </div>
+                  {selectedRuta.detallesPrestamos.length > 0 ? (
+                    <div className="bg-white rounded-xl border shadow-sm divide-y">
+                      {selectedRuta.detallesPrestamos.map(prestamo => (
+                        <div key={prestamo.id} className="p-3 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{prestamo.cliente}</span>
+                            <span className="text-xs text-gray-500">{new Date(prestamo.fecha).toLocaleDateString('es-CO')}</span>
+                          </div>
+                          <span className="text-sm font-bold text-red-500">-{formatCurrency(prestamo.monto)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No hay préstamos entregados.</p>
+                  )}
+                </div>
+
+                {/* Detalle de Gastos */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                      Gastos Registrados ({selectedRuta.detallesGastos.length})
+                    </h4>
+                    <span className="text-sm font-bold text-orange-500">-{formatCurrency(selectedRuta.gastosOperativos)}</span>
+                  </div>
+                  {selectedRuta.detallesGastos.length > 0 ? (
+                    <div className="bg-white rounded-xl border shadow-sm divide-y">
+                      {selectedRuta.detallesGastos.map(gasto => (
+                        <div key={gasto.id} className="p-3 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{gasto.concepto}</span>
+                            <span className="text-xs text-gray-500">{new Date(gasto.fecha).toLocaleDateString('es-CO')}</span>
+                          </div>
+                          <span className="text-sm font-bold text-orange-500">-{formatCurrency(gasto.monto)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No hay gastos operativos.</p>
+                  )}
+                </div>
+
+                {/* Detalle de Sueldos y Viáticos */}
+                <div className="space-y-3 pb-8">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-500" />
+                      Sueldos y Viáticos ({selectedRuta.detallesSueldos.length})
+                    </h4>
+                    <span className="text-sm font-bold text-purple-500">-{formatCurrency(selectedRuta.gastosSueldos)}</span>
+                  </div>
+                  {selectedRuta.detallesSueldos.length > 0 ? (
+                    <div className="bg-white rounded-xl border shadow-sm divide-y">
+                      {selectedRuta.detallesSueldos.map(sueldo => (
+                        <div key={sueldo.id} className="p-3 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{sueldo.descripcion}</span>
+                            <span className="text-xs text-gray-500">{new Date(sueldo.fecha).toLocaleDateString('es-CO')}</span>
+                          </div>
+                          <span className="text-sm font-bold text-purple-500">-{formatCurrency(sueldo.monto)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No hay registros de sueldos o viáticos.</p>
+                  )}
+                </div>
+
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   )
 }

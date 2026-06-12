@@ -257,6 +257,16 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Obtener movimientos de caja chica en el rango
+    const movimientosCajaChica = await prisma.movimientoCajaChica.findMany({
+      where: {
+        fecha: {
+          gte: fechaInicioDate,
+          lte: fechaFinDate
+        }
+      }
+    })
+
     // Obtener todos los préstamos para calcular saldos pendientes
     const prestamosConSaldo = await prisma.prestamo.findMany({
       where: {
@@ -778,6 +788,62 @@ export async function GET(request: NextRequest) {
           cobradores: totalSalarios > 0 ? (totalSalariosCobradores / totalSalarios) * 100 : 0
         }
       },
+      rutas: cobradores.map((cobrador) => {
+        // Filtrar pagos en efectivo del cobrador
+        const pagosRuta = todosPagos.filter(p => p.userId === cobrador.id && p.metodoPago === 'EFECTIVO')
+        const totalCobradoEfectivo = pagosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+        
+        // Filtrar préstamos en efectivo del cobrador
+        const prestamosRuta = prestamosNuevos.filter(p => p.userId === cobrador.id && (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null))
+        const totalPrestadoEfectivo = prestamosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+        
+        // Gastos operativos
+        const gastosRuta = gastos.filter(g => g.userId === cobrador.id)
+        const gastosOperativos = gastosRuta.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
+        
+        // Gastos sueldos y viaticos del cobrador
+        const movsRuta = movimientosCajaChica.filter(m => m.cobradorId === cobrador.id)
+        const gastosSueldos = movsRuta.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        const otrosGastos = movsRuta.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        
+        const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos
+
+        return {
+          cobradorId: cobrador.id,
+          nombreCobrador: cobrador.nombreCompleto,
+          numeroRuta: cobrador.numeroRuta,
+          totalCobradoEfectivo,
+          totalPrestadoEfectivo,
+          gastosOperativos: gastosOperativos + otrosGastos,
+          gastosSueldos,
+          balancePeriodo,
+          detallesPagos: pagosRuta.map(p => ({
+            id: p.id,
+            cliente: `${p.prestamo.cliente.nombre} ${p.prestamo.cliente.apellido}`,
+            monto: parseFloat(p.monto.toString()),
+            fecha: p.fecha.toISOString(),
+            observaciones: p.observaciones
+          })),
+          detallesPrestamos: prestamosRuta.map(p => ({
+            id: p.id,
+            cliente: `${p.cliente.nombre} ${p.cliente.apellido}`,
+            monto: parseFloat(p.monto.toString()),
+            fecha: p.createdAt.toISOString()
+          })),
+          detallesGastos: gastosRuta.map(g => ({
+            id: g.id,
+            concepto: g.concepto,
+            monto: parseFloat(g.monto.toString()),
+            fecha: g.fecha.toISOString()
+          })),
+          detallesSueldos: movsRuta.filter(m => m.tipo === 'PAGO_SUELDO' || m.tipo === 'GASTO' || m.tipo === 'GASTADO').map(m => ({
+            id: m.id,
+            descripcion: m.descripcion || m.tipo,
+            monto: parseFloat(m.monto.toString()),
+            fecha: m.fecha.toISOString()
+          }))
+        }
+      }),
       detalles: {
         prestamos: (prestamos as PrestamoConCliente[]).map((p) => {
           const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
