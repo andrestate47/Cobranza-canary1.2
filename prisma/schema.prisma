@@ -667,6 +667,7 @@ enum TipoMovimientoCaja {
   EGRESO_GENERAL
   INGRESO
   EGRESO
+  PAGO_SUELDO
 }
 
 enum PlanSuscripcion {
