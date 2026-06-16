@@ -197,6 +197,49 @@ export async function GET(request: NextRequest) {
       fechaFinDate = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0, 4, 59, 59, 999))
     }
 
+    const hoy = new Date()
+    const semanaInicio = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const mesInicio = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const semestreInicio = new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
+    const anualInicio = new Date(hoy.getTime() - 365 * 24 * 60 * 60 * 1000)
+
+    // Consultar datos históricos para el breakdown por periodos (últimos 365 días)
+    const pagosAnio = await prisma.pago.findMany({
+      where: {
+        fecha: {
+          gte: anualInicio
+        }
+      }
+    })
+
+    const gastosAnio = await prisma.gasto.findMany({
+      where: {
+        fecha: {
+          gte: anualInicio
+        }
+      }
+    })
+
+    const movsAnio = await prisma.movimientoCajaChica.findMany({
+      where: {
+        fecha: {
+          gte: anualInicio
+        }
+      }
+    })
+
+    const prestamosAnio = await prisma.prestamo.findMany({
+      where: {
+        OR: [
+          { createdAt: { gte: anualInicio } },
+          { fechaFin: { gte: anualInicio } }
+        ]
+      },
+      include: {
+        pagos: true
+      }
+    })
+
     // Obtener todos los préstamos en el rango de fechas
     const prestamos = await prisma.prestamo.findMany({
       where: {
@@ -381,7 +424,6 @@ export async function GET(request: NextRequest) {
     )
 
     // 4. Capital No Recuperado (préstamos vencidos sin pagar)
-    const hoy = new Date()
     let capitalNoRecuperado = 0
     ;(prestamosConSaldo as PrestamoConCliente[])
       .filter((prestamo) => new Date(prestamo.fechaFin) < hoy)
@@ -808,6 +850,95 @@ export async function GET(request: NextRequest) {
         
         const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos
 
+        // === NUEVAS MÉTRICAS SOLICITADAS POR EL CLIENTE ===
+        // 1. Capital invertido en el período (efectivo y transferencia)
+        const prestamosRutaTodos = prestamos.filter(p => p.userId === cobrador.id)
+        const capitalInvertidoRuta = prestamosRutaTodos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+        // 2. Cobrador regado en la calle (saldo pendiente actual)
+        let regadoCalleRuta = 0
+        prestamosConSaldo
+          .filter(p => p.userId === cobrador.id)
+          .forEach((p) => {
+            const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+            const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+            const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+            regadoCalleRuta += saldoPendiente
+          })
+
+        // 3. Interés ganado de esa ruta (Proyectado y Cobrado del período seleccionado)
+        const interesProyectadoRuta = prestamosRutaTodos.reduce((sum, p) => 
+          sum + parseFloat(p.monto.toString()) * (parseFloat(p.interes.toString()) / 100), 0
+        )
+
+        let interesCobradoRuta = 0
+        const pagosRutaPeriodo = todosPagos.filter(p => p.userId === cobrador.id)
+        pagosRutaPeriodo.forEach((pago) => {
+          const prestamo = pago.prestamo
+          const montoOriginal = parseFloat(prestamo.monto.toString())
+          const tasaInteres = parseFloat(prestamo.interes.toString()) / 100
+          const montoConInteres = montoOriginal * (1 + tasaInteres)
+          if (montoConInteres > 0) {
+            const porcentajeInteres = (montoConInteres - montoOriginal) / montoConInteres
+            const interesEnPago = parseFloat(pago.monto.toString()) * porcentajeInteres
+            interesCobradoRuta += interesEnPago
+          }
+        })
+
+        // 4. Pérdidas del período (préstamos que vencieron en el período con saldo pendiente)
+        let perdidasRutaPeriodo = 0
+        const prestamosExpiradosPeriodo = prestamosAnio.filter(p => 
+          p.userId === cobrador.id && 
+          p.fechaFin >= fechaInicioDate && 
+          p.fechaFin <= fechaFinDate
+        )
+        prestamosExpiradosPeriodo.forEach((p) => {
+          const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+          const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+          const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+          perdidasRutaPeriodo += saldoPendiente
+        })
+
+        // Helper para calcular métricas históricas de esta ruta
+        const calcularPeriodoHistorico = (inicio: Date) => {
+          // Cobrado
+          const pagos = pagosAnio.filter(p => p.userId === cobrador.id && p.fecha >= inicio)
+          const cobrado = pagos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+          // Gastos
+          const gst = gastosAnio.filter(g => g.userId === cobrador.id && g.fecha >= inicio)
+          const gastosOperativosHist = gst.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
+          
+          const movs = movsAnio.filter(m => m.cobradorId === cobrador.id && m.fecha >= inicio)
+          const gastosSueldosHist = movs.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+          const otrosGastosHist = movs.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+          
+          const gastosTotal = gastosOperativosHist + gastosSueldosHist + otrosGastosHist
+
+          // Capital Invertido
+          const prestamosCreados = prestamosAnio.filter(p => p.userId === cobrador.id && p.createdAt >= inicio)
+          const invertido = prestamosCreados.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+          // Pérdidas (expiraron en el período histórico y tienen saldo pendiente)
+          const prestamosExpirados = prestamosAnio.filter(p => p.userId === cobrador.id && p.fechaFin >= inicio && p.fechaFin <= hoy)
+          let perdidas = 0
+          prestamosExpirados.forEach((p) => {
+            const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+            const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+            const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+            perdidas += saldoPendiente
+          })
+
+          return { cobrado, gastos: gastosTotal, perdidas, invertido }
+        }
+
+        const historico = {
+          semanal: calcularPeriodoHistorico(semanaInicio),
+          mensual: calcularPeriodoHistorico(mesInicio),
+          semestral: calcularPeriodoHistorico(semestreInicio),
+          anual: calcularPeriodoHistorico(anualInicio),
+        }
+
         return {
           cobradorId: cobrador.id,
           nombreCobrador: cobrador.nombreCompleto,
@@ -817,6 +948,12 @@ export async function GET(request: NextRequest) {
           gastosOperativos: gastosOperativos + otrosGastos,
           gastosSueldos,
           balancePeriodo,
+          capitalInvertidoRuta,
+          regadoCalleRuta,
+          interesProyectadoRuta,
+          interesCobradoRuta,
+          perdidasRutaPeriodo,
+          historico,
           detallesPagos: pagosRuta.map(p => ({
             id: p.id,
             cliente: `${p.prestamo.cliente.nombre} ${p.prestamo.cliente.apellido}`,

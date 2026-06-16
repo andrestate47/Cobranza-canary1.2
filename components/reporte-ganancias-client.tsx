@@ -43,6 +43,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 
+interface PeriodoHistRuta {
+  cobrado: number
+  gastos: number
+  perdidas: number
+  invertido: number
+}
+
 interface ReporteGanancias {
   periodo: {
     fechaInicio: string
@@ -181,6 +188,17 @@ interface ReporteGanancias {
     gastosOperativos: number
     gastosSueldos: number
     balancePeriodo: number
+    capitalInvertidoRuta: number
+    regadoCalleRuta: number
+    interesProyectadoRuta: number
+    interesCobradoRuta: number
+    perdidasRutaPeriodo: number
+    historico: {
+      semanal: PeriodoHistRuta
+      mensual: PeriodoHistRuta
+      semestral: PeriodoHistRuta
+      anual: PeriodoHistRuta
+    }
     detallesPagos: Array<{ id: string, cliente: string, monto: number, fecha: string, observaciones?: string }>
     detallesPrestamos: Array<{ id: string, cliente: string, monto: number, fecha: string }>
     detallesGastos: Array<{ id: string, concepto: string, monto: number, fecha: string }>
@@ -520,6 +538,14 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Gastos y Sueldos</span>
                       <span className="font-semibold text-red-500">-{formatCurrency((ruta.gastosOperativos || 0) + (ruta.gastosSueldos || 0))}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm border-t pt-1.5 border-dashed border-gray-200">
+                      <span className="text-gray-500">Capital Invertido (Período)</span>
+                      <span className="font-semibold text-blue-600">{formatCurrency(ruta.capitalInvertidoRuta)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Regado en Calle (Cartera)</span>
+                      <span className="font-semibold text-amber-600">{formatCurrency(ruta.regadoCalleRuta)}</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between items-center">
@@ -1489,7 +1515,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
       {/* Modal de Detalles de Ruta */}
       {selectedRuta && (
         <Dialog open={!!selectedRuta} onOpenChange={(open) => !open && setSelectedRuta(null)}>
-          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-gray-50 rounded-xl">
+          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col bg-gray-50 rounded-xl">
             <DialogHeader className="p-4 md:p-6 bg-white border-b shrink-0 relative pb-4 md:pb-6">
               <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900 pr-8">
                 {selectedRuta.nombreCobrador}
@@ -1499,20 +1525,20 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                 <span className="text-xs text-gray-400">{formatDate(fechaInicio)} - {formatDate(fechaFin)}</span>
               </div>
             </DialogHeader>
-
-            <ScrollArea className="flex-1 px-4 md:px-6 py-4">
+ 
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
               <div className="space-y-6">
                 
                 {/* Resumen en el modal */}
                 <div className="bg-white p-4 rounded-xl border shadow-sm">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Resumen</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 border-b pb-2">Resumen de Caja</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Cobrado (Efectivo)</span>
+                      <span className="text-gray-600">Cobrado</span>
                       <span className="font-semibold text-green-600">+{formatCurrency(selectedRuta.totalCobradoEfectivo)}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Prestado (Efectivo)</span>
+                      <span className="text-gray-600">Prestado</span>
                       <span className="font-semibold text-red-500">-{formatCurrency(selectedRuta.totalPrestadoEfectivo)}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
@@ -1520,7 +1546,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                       <span className="font-semibold text-red-500">-{formatCurrency((selectedRuta.gastosOperativos || 0) + (selectedRuta.gastosSueldos || 0))}</span>
                     </div>
                     <div className="border-t pt-2 mt-2 flex justify-between items-center">
-                      <span className="font-bold text-gray-900 text-sm">Flujo Efectivo</span>
+                      <span className="font-bold text-gray-900 text-sm">Flujo Efectivo Neto</span>
                       <span className={`font-bold ${selectedRuta.balancePeriodo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(selectedRuta.balancePeriodo)}
                       </span>
@@ -1528,12 +1554,88 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                   </div>
                 </div>
 
+                {/* Métricas Detalladas de la Ruta */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-blue-50/60 border border-blue-100 p-3.5 rounded-xl">
+                    <p className="text-xs text-blue-800 font-semibold uppercase tracking-wider">Capital Invertido</p>
+                    <p className="text-xl font-bold text-blue-700 mt-1">{formatCurrency(selectedRuta.capitalInvertidoRuta)}</p>
+                    <p className="text-[10px] text-blue-600 mt-0.5">Total prestado</p>
+                  </div>
+                  <div className="bg-amber-50/60 border border-amber-100 p-3.5 rounded-xl">
+                    <p className="text-xs text-amber-800 font-semibold uppercase tracking-wider">Regado en Calle</p>
+                    <p className="text-xl font-bold text-amber-700 mt-1">{formatCurrency(selectedRuta.regadoCalleRuta)}</p>
+                    <p className="text-[10px] text-amber-600 mt-0.5">Saldo pendiente total por cobrar</p>
+                  </div>
+                  <div className="bg-emerald-50/60 border border-emerald-100 p-3.5 rounded-xl">
+                    <p className="text-xs text-emerald-800 font-semibold uppercase tracking-wider">Intereses</p>
+                    <p className="text-xl font-bold text-emerald-700 mt-1">
+                      {formatCurrency(selectedRuta.interesProyectadoRuta)}
+                      <span className="text-xs font-normal text-emerald-600 ml-1">/ {formatCurrency(selectedRuta.interesCobradoRuta)}</span>
+                    </p>
+                    <p className="text-[10px] text-emerald-600 mt-0.5">Interés esperado vs recuperado en período</p>
+                  </div>
+                  <div className="bg-rose-50/60 border border-rose-100 p-3.5 rounded-xl">
+                    <p className="text-xs text-rose-800 font-semibold uppercase tracking-wider">Pérdidas del Período</p>
+                    <p className="text-xl font-bold text-rose-700 mt-1">{formatCurrency(selectedRuta.perdidasRutaPeriodo)}</p>
+                    <p className="text-[10px] text-rose-600 mt-0.5">Saldo pendiente de préstamos vencidos en período</p>
+                  </div>
+                </div>
+
+                {/* Historial por Períodos */}
+                <div className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-purple-600" />
+                    Historial Desglosado por Períodos
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b text-gray-400 font-semibold">                          <th className="py-2.5 text-right">Invertido</th>
+                          <th className="py-2.5 text-right">Cobrado</th>
+                          <th className="py-2.5 text-right">Gastos</th>
+                          <th className="py-2.5 text-right">Pérdidas</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y text-gray-700">
+                        <tr className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2.5 font-medium text-gray-900">Semanal</td>
+                          <td className="py-2.5 text-right text-blue-600 font-medium">{formatCurrency(selectedRuta.historico.semanal.invertido)}</td>
+                          <td className="py-2.5 text-right text-green-600 font-medium">+{formatCurrency(selectedRuta.historico.semanal.cobrado)}</td>
+                          <td className="py-2.5 text-right text-red-500">-{formatCurrency(selectedRuta.historico.semanal.gastos)}</td>
+                          <td className="py-2.5 text-right text-rose-600">{formatCurrency(selectedRuta.historico.semanal.perdidas)}</td>
+                        </tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2.5 font-medium text-gray-900">Mensual</td>
+                          <td className="py-2.5 text-right text-blue-600 font-medium">{formatCurrency(selectedRuta.historico.mensual.invertido)}</td>
+                          <td className="py-2.5 text-right text-green-600 font-medium">+{formatCurrency(selectedRuta.historico.mensual.cobrado)}</td>
+                          <td className="py-2.5 text-right text-red-500">-{formatCurrency(selectedRuta.historico.mensual.gastos)}</td>
+                          <td className="py-2.5 text-right text-rose-600">{formatCurrency(selectedRuta.historico.mensual.perdidas)}</td>
+                        </tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2.5 font-medium text-gray-900">Semestral</td>
+                          <td className="py-2.5 text-right text-blue-600 font-medium">{formatCurrency(selectedRuta.historico.semestral.invertido)}</td>
+                          <td className="py-2.5 text-right text-green-600 font-medium">+{formatCurrency(selectedRuta.historico.semestral.cobrado)}</td>
+                          <td className="py-2.5 text-right text-red-500">-{formatCurrency(selectedRuta.historico.semestral.gastos)}</td>
+                          <td className="py-2.5 text-right text-rose-600">{formatCurrency(selectedRuta.historico.semestral.perdidas)}</td>
+                        </tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-2.5 font-medium text-gray-900">Anual</td>
+                          <td className="py-2.5 text-right text-blue-600 font-medium">{formatCurrency(selectedRuta.historico.anual.invertido)}</td>
+                          <td className="py-2.5 text-right text-green-600 font-medium">+{formatCurrency(selectedRuta.historico.anual.cobrado)}</td>
+                          <td className="py-2.5 text-right text-red-500">-{formatCurrency(selectedRuta.historico.anual.gastos)}</td>
+                          <td className="py-2.5 text-right text-rose-600">{formatCurrency(selectedRuta.historico.anual.perdidas)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+ 
                 {/* Detalle de Cobros */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-green-600" />
-                      Cobros Recibidos ({selectedRuta.detallesPagos.length})
+                      Cobros Recibidos
                     </h4>
                     <span className="text-sm font-bold text-green-600">+{formatCurrency(selectedRuta.totalCobradoEfectivo)}</span>
                   </div>
@@ -1553,13 +1655,13 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <p className="text-xs text-gray-500 italic">No hay cobros en efectivo.</p>
                   )}
                 </div>
-
+ 
                 {/* Detalle de Préstamos */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <TrendingDown className="h-4 w-4 text-red-500" />
-                      Préstamos Entregados ({selectedRuta.detallesPrestamos.length})
+                      Préstamos Entregados
                     </h4>
                     <span className="text-sm font-bold text-red-500">-{formatCurrency(selectedRuta.totalPrestadoEfectivo)}</span>
                   </div>
@@ -1579,13 +1681,13 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <p className="text-xs text-gray-500 italic">No hay préstamos entregados.</p>
                   )}
                 </div>
-
+ 
                 {/* Detalle de Gastos */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
-                      Gastos Registrados ({selectedRuta.detallesGastos.length})
+                      Gastos Registrados
                     </h4>
                     <span className="text-sm font-bold text-orange-500">-{formatCurrency(selectedRuta.gastosOperativos)}</span>
                   </div>
@@ -1605,13 +1707,13 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <p className="text-xs text-gray-500 italic">No hay gastos operativos.</p>
                   )}
                 </div>
-
+ 
                 {/* Detalle de Sueldos y Viáticos */}
                 <div className="space-y-3 pb-8">
                   <div className="flex justify-between items-center">
                     <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <Users className="h-4 w-4 text-purple-500" />
-                      Sueldos y Viáticos ({selectedRuta.detallesSueldos.length})
+                      Sueldos y Viáticos
                     </h4>
                     <span className="text-sm font-bold text-purple-500">-{formatCurrency(selectedRuta.gastosSueldos)}</span>
                   </div>
@@ -1631,9 +1733,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <p className="text-xs text-gray-500 italic">No hay registros de sueldos o viáticos.</p>
                   )}
                 </div>
-
               </div>
-            </ScrollArea>
+            </div>
           </DialogContent>
         </Dialog>
       )}
