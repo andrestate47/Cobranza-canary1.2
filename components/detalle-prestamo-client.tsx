@@ -355,8 +355,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Días vencidos
     let diasVencidos = 0
+    let fechaReferenciaMora: Date | null = null
+
     if (hoyMidnight > fechaFinMidnight) {
-      diasVencidos = Math.floor((hoyMidnight.getTime() - fechaFinMidnight.getTime()) / oneDay)
+      fechaReferenciaMora = fechaFinMidnight
     } else if (cuotasAtrasadas > 0) {
       // El atraso se cuenta desde el día que venció la primera cuota no pagada
       // Para simplificar y ser consistentes con el reporte del usuario:
@@ -379,31 +381,30 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             count++
           }
         }
-        // current ahora es la fecha de vencimiento de la cuota pendiente
-        // Contar días hábiles desde current hasta hoy
-        let diasHabilesVencidos = 0;
-        let tempDate = new Date(current);
-        while (tempDate < hoyMidnight) {
-          tempDate.setUTCDate(tempDate.getUTCDate() + 1);
-          const d = tempDate.getUTCDay();
-          let esDiaValido = true;
-          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) esDiaValido = false;
-          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) esDiaValido = false;
-          if (prestamo.tipoPago === 'DIARIO' && d === 0) esDiaValido = false;
-          if (esDiaValido) diasHabilesVencidos++;
-        }
-        diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
+        fechaReferenciaMora = current
       } else {
         const diasPorTipo = {
           'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
           'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
         }
         const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-        const fechaVencimientoCuota = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
-        
-        let diffDias = Math.floor((hoyMidnight.getTime() - fechaVencimientoCuota.getTime()) / oneDay);
-        diasVencidos = Math.max(0, diffDias - diasGracia)
+        fechaReferenciaMora = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
       }
+    }
+
+    if (fechaReferenciaMora) {
+      let diasHabilesVencidos = 0;
+      let tempDate = new Date(fechaReferenciaMora);
+      while (tempDate < hoyMidnight) {
+        tempDate.setUTCDate(tempDate.getUTCDate() + 1);
+        const d = tempDate.getUTCDay();
+        let esDiaValido = true;
+        if (d === 0) esDiaValido = false; // Domingo nunca es válido
+        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false; // Sábado tampoco si es Lunes a Viernes
+        
+        if (esDiaValido) diasHabilesVencidos++;
+      }
+      diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
     }
 
     // Valor en atrasos

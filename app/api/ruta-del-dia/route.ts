@@ -2,49 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { getEcuadorDayRange } from "@/lib/date-utils"
+import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
-function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): boolean {
-  const inicio = new Date(fechaInicio)
-  const evaluar = new Date(fechaEvaluar)
-  
-  // Normalizar a fechas sin hora (12:00:00 UTC) para evitar desfases de zona horaria
-  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
-  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
-  
-  if (evaluarUTC < inicioUTC) return false
-  
-  const diffTime = evaluarUTC - inicioUTC
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
-  
-  const diaSemana = evaluar.getUTCDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-  
-  if (tipoPago === 'DIARIO') {
-    return diaSemana !== 0 // Domingo no se cobra
-  }
-  if (tipoPago === 'LUNES_A_SABADO') {
-    return diaSemana !== 0 // Domingo no se cobra
-  }
-  if (tipoPago === 'LUNES_A_VIERNES') {
-    return diaSemana !== 0 && diaSemana !== 6 // Sábado y Domingo no se cobra
-  }
-  if (tipoPago === 'SEMANAL') {
-    return diffDays % 7 === 0
-  }
-  if (tipoPago === 'CATORCENAL') {
-    return diffDays % 14 === 0
-  }
-  if (tipoPago === 'QUINCENAL') {
-    return diffDays % 15 === 0
-  }
-  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
-    return inicio.getUTCDate() === evaluar.getUTCDate()
-  }
-  
-  return false
-}
 
 function getCuotasEsperadas(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): number {
   const inicio = new Date(fechaInicio)
@@ -171,16 +132,25 @@ export async function GET(request: NextRequest) {
         const cuotasEsperadas = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, inicio)
         const estaAlDiaOAdelantado = cuotasPagadasRaw >= cuotasEsperadas
 
-        // Si está adelantado (ya cubrió sus cuotas hasta hoy inclusive), no lo ponemos en la ruta
-        const enRutaHoy = !estaAlDiaOAdelantado && (esHoy || esMora)
+        // Si el préstamo inicia hoy o en el futuro (en el día lógico evaluado), no se debe cobrar hoy (empieza mañana o en su próximo día de cobro)
+        const esDiaDeInicio = new Date(prestamo.fechaInicio).getTime() >= inicio.getTime() && new Date(prestamo.fechaInicio).getTime() <= fin.getTime()
 
-        // Dias de mora: Cuotas esperadas - Cuotas pagadas (solo si debe algo y ya pasó la fecha de inicio)
+        // Si está adelantado (ya cubrió sus cuotas hasta hoy inclusive) o es el día de inicio, no lo ponemos en la ruta
+        const enRutaHoy = !estaAlDiaOAdelantado && (esHoy || esMora) && !esDiaDeInicio
+
+        // Dias de mora:
         let diasMora = 0
         if (!estaAlDiaOAdelantado) {
-          // Diferencia entre lo que debió pagar y lo que ha pagado
-          diasMora = Math.floor(cuotasEsperadas - cuotasPagadasRaw)
+          if (esMora) {
+            // Si el préstamo ya venció (fechaFin < inicio), contamos los días hábiles (sin domingos) desde fechaFin hasta inicio (hoy)
+            diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, inicio, prestamo.tipoPago)
+          } else {
+            // Si está activo, es la diferencia de cuotas esperadas hasta ayer (ya vencidas) menos las pagadas
+            const fechaAyer = new Date(inicio.getTime() - 24 * 60 * 60 * 1000)
+            const cuotasEsperadasAyer = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, fechaAyer)
+            diasMora = Math.max(0, Math.floor(cuotasEsperadasAyer - cuotasPagadasRaw))
+          }
         }
-        if (diasMora < 0) diasMora = 0
 
         return {
           id: prestamo.id,

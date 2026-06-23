@@ -4,50 +4,11 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
-import { getEcuadorDayRange } from "@/lib/date-utils"
+import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
 import { obtenerSaldoInicialParaDia } from "@/lib/cierre-utils"
 
 export const dynamic = "force-dynamic"
 
-function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): boolean {
-  const inicio = new Date(fechaInicio)
-  const evaluar = new Date(fechaEvaluar)
-  
-  // Normalizar a fechas sin hora (12:00:00 UTC) para evitar desfases de zona horaria
-  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
-  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
-  
-  if (evaluarUTC < inicioUTC) return false
-  
-  const diffTime = evaluarUTC - inicioUTC
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
-  
-  const diaSemana = evaluar.getUTCDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-  
-  if (tipoPago === 'DIARIO') {
-    return diaSemana !== 0 // Domingo no se cobra
-  }
-  if (tipoPago === 'LUNES_A_SABADO') {
-    return diaSemana !== 0 // Domingo no se cobra
-  }
-  if (tipoPago === 'LUNES_A_VIERNES') {
-    return diaSemana !== 0 && diaSemana !== 6 // Sábado y Domingo no se cobra
-  }
-  if (tipoPago === 'SEMANAL') {
-    return diffDays % 7 === 0
-  }
-  if (tipoPago === 'CATORCENAL') {
-    return diffDays % 14 === 0
-  }
-  if (tipoPago === 'QUINCENAL') {
-    return diffDays % 15 === 0
-  }
-  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
-    return inicio.getUTCDate() === evaluar.getUTCDate()
-  }
-  
-  return false
-}
 
 async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Date, fecha: Date) {
   // Obtener información del cobrador/usuario (puede ser diferente al usuario logueado si es admin)
@@ -244,9 +205,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       where: { id: pago.prestamoId }
     })
     if (prestamo && prestamo.fechaFin < pago.fecha) {
-      const diasMora = Math.floor(
-        (pago.fecha.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24)
-      )
+      const diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, pago.fecha, prestamo.tipoPago)
       const moraPorDia = parseFloat(prestamo.moraCredito.toString())
       moraCobrada += moraPorDia * diasMora
     }
@@ -349,7 +308,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       
-      const diasMora = Math.floor((fecha.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24))
+      const diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, fecha, prestamo.tipoPago)
 
       detalleClientesMora.push({
         id: prestamo.cliente.id,

@@ -235,7 +235,20 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       ultimaCuotaEsperada.setUTCDate(ultimaCuotaEsperada.getUTCDate() + (cuotasPagadas * diasEntrePagos))
 
       if (referenciaNormalized > ultimaCuotaEsperada) {
-        return Math.floor((referenciaNormalized.getTime() - ultimaCuotaEsperada.getTime()) / (1000 * 60 * 60 * 24))
+        let current = new Date(ultimaCuotaEsperada)
+        let diasVencidosCount = 0
+        while (current < referenciaNormalized) {
+          current.setUTCDate(current.getUTCDate() + 1)
+          const day = current.getUTCDay()
+          let valid = true
+          if (day === 0) valid = false // Excluir domingos siempre
+          if (tipoPago === 'LUNES_A_VIERNES' && day === 6) valid = false // Excluir sábados si es lunes a viernes
+
+          if (valid) {
+            diasVencidosCount++
+          }
+        }
+        return diasVencidosCount
       }
 
       return 0

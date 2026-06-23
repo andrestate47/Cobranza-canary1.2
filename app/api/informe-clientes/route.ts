@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { getDiasMoraSinDomingos } from "@/lib/date-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -514,7 +515,7 @@ export async function GET(request: NextRequest) {
             prestamosVencidos: prestamosVencidos.length,
             diasMora: prestamosVencidos.length > 0 ?
               Math.max(...prestamosVencidos.map(p =>
-                Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
+                getDiasMoraSinDomingos(p.fechaFin, new Date(), p.tipoPago)
               )) : 0
           }
         }),
@@ -546,7 +547,7 @@ export async function GET(request: NextRequest) {
             diasSinVisita,
             diasMora: prestamosVencidos.length > 0 ?
               Math.max(...prestamosVencidos.map(p =>
-                Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
+                getDiasMoraSinDomingos(p.fechaFin, new Date(), p.tipoPago)
               )) : 0
           }
         }),
@@ -657,7 +658,7 @@ export async function GET(request: NextRequest) {
           )
           const saldoPendiente = totalPrestado - totalPagado
           const diasMora = Math.max(...cliente.prestamos.map(p =>
-            Math.ceil((new Date().getTime() - new Date(p.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
+            getDiasMoraSinDomingos(p.fechaFin, new Date(), p.tipoPago)
           ))
           const ultimaVisita = cliente.visitas[0]?.fecha || null
           const diasSinGestion = ultimaVisita ?
@@ -693,7 +694,7 @@ export async function GET(request: NextRequest) {
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
           const estaVencido = new Date(prestamo.fechaFin) < new Date()
           const diasVencido = estaVencido ?
-            Math.ceil((new Date().getTime() - new Date(prestamo.fechaFin).getTime()) / (1000 * 60 * 60 * 24)) : 0
+            getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago) : 0
 
           return {
             id: prestamo.id,
@@ -749,7 +750,7 @@ export async function GET(request: NextRequest) {
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
           const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
-          const diasVencido = Math.ceil((new Date().getTime() - new Date(prestamo.fechaFin).getTime()) / (1000 * 60 * 60 * 24))
+          const diasVencido = getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago)
 
           return {
             id: prestamo.id,

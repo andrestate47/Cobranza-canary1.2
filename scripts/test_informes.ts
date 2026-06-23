@@ -1,38 +1,10 @@
 import { PrismaClient } from "@prisma/client"
 import dotenv from "dotenv"
-import { getEcuadorDayRange } from "../lib/date-utils"
+import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "../lib/date-utils"
 
 dotenv.config()
 const prisma = new PrismaClient()
 
-function esDiaDePago(tipoPago: string, fechaInicio: Date, fechaEvaluar: Date): boolean {
-  const inicio = new Date(fechaInicio)
-  const evaluar = new Date(fechaEvaluar)
-  
-  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
-  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
-  
-  if (evaluarUTC < inicioUTC) return false
-  
-  const diffTime = evaluarUTC - inicioUTC
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
-  
-  const diaSemana = evaluar.getUTCDay()
-  
-  if (tipoPago === 'DIARIO' || tipoPago === 'LUNES_A_SABADO') {
-    return diaSemana !== 0
-  }
-  if (tipoPago === 'LUNES_A_VIERNES') {
-    return diaSemana !== 0 && diaSemana !== 6
-  }
-  if (tipoPago === 'SEMANAL') return diffDays % 7 === 0
-  if (tipoPago === 'CATORCENAL') return diffDays % 14 === 0
-  if (tipoPago === 'QUINCENAL') return diffDays % 15 === 0
-  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
-    return inicio.getUTCDate() === evaluar.getUTCDate()
-  }
-  return false
-}
 
 async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Date, fecha: Date) {
   const usuario = await prisma.user.findUnique({
@@ -208,9 +180,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       where: { id: pago.prestamoId }
     })
     if (prestamo && prestamo.fechaFin < pago.fecha) {
-      const diasMora = Math.floor(
-        (pago.fecha.getTime() - prestamo.fechaFin.getTime()) / (1000 * 60 * 60 * 24)
-      )
+      const diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, pago.fecha, prestamo.tipoPago)
       const moraPorDia = parseFloat(prestamo.moraCredito.toString())
       moraCobrada += moraPorDia * diasMora
     }
