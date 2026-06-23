@@ -291,7 +291,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                   )}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {porCobrar.map((item, index) => {
                     const esMora = item.diasMora > 0
                     return (
@@ -302,25 +302,25 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, index)}
                         className={`bg-white rounded-xl shadow-sm border transition-all duration-200 hover:shadow-md overflow-hidden ${
-                          esMora ? "border-l-[3px] border-l-red-500" : "border-l-[3px] border-l-teal-500"
+                          esMora ? "border-l-[3.5px] border-l-red-500" : "border-l-[3.5px] border-l-teal-500"
                         }`}
                       >
                         {/* Zona drag + contenido */}
                         <div className="flex">
                           {/* Handle drag - columna izquierda */}
-                          <div className="flex flex-col items-center justify-center px-2 text-gray-300 hover:text-gray-500 border-r border-gray-100 cursor-grab active:cursor-grabbing">
-                            <GripVertical className="h-4 w-4" />
+                          <div className="flex flex-col items-center justify-center px-2.5 text-gray-300 hover:text-gray-500 border-r border-gray-100 cursor-grab active:cursor-grabbing flex-shrink-0">
+                            <GripVertical className="h-4.5 w-4.5" />
                           </div>
 
                           {/* Contenido */}
-                          <div className="flex-1 p-3">
+                          <div className="flex-1 p-4 sm:p-4.5">
                             {/* Cabecera: nombre + flechas */}
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
-                                <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">
+                                <h3 className="font-bold text-gray-950 text-sm sm:text-base leading-tight truncate">
                                   {item.cliente.nombre} {item.cliente.apellido}
                                 </h3>
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
                                   {esMora ? (
                                     <Badge className="bg-red-100 text-red-700 text-[10px] py-0 px-1.5 font-semibold hover:bg-red-100 border-none">
                                       Mora {item.diasMora}d
@@ -359,66 +359,66 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                               </div>
                             </div>
 
-                            {/* Montos */}
-                            <div className="grid grid-cols-2 gap-2 mt-2 bg-gray-50 rounded-lg p-2 text-xs border border-gray-100">
-                              <div>
-                                <span className="text-gray-400 block text-[10px]">Cuota</span>
-                                <span className="font-bold text-gray-900">{formatCurrency(item.valorCuota)}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400 block text-[10px]">Saldo</span>
-                                <span className="font-bold text-red-600">{formatCurrency(item.saldoPendiente)}</span>
-                              </div>
-                            </div>
+                             {/* Montos */}
+                             <div className="grid grid-cols-2 gap-3 mt-3 bg-gray-50 rounded-xl p-3 text-xs border border-gray-100">
+                               <div>
+                                 <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Cuota</span>
+                                 <span className="font-bold text-gray-900 sm:text-sm">{formatCurrency(item.valorCuota)}</span>
+                               </div>
+                               <div>
+                                 <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Saldo</span>
+                                 <span className="font-bold text-red-600 sm:text-sm">{formatCurrency(item.saldoPendiente)}</span>
+                               </div>
+                             </div>
 
-                            {/* Dirección */}
-                            {(item.cliente.direccionCobro || item.cliente.direccionCliente) && (
-                              <div className="flex items-start gap-1 mt-2 text-[11px] text-gray-400">
-                                <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-300" />
-                                <span className="line-clamp-1">{item.cliente.direccionCobro || item.cliente.direccionCliente}</span>
-                              </div>
-                            )}
+                             {/* Dirección */}
+                             {(item.cliente.direccionCobro || item.cliente.direccionCliente) && (
+                               <div className="flex items-start gap-1.5 mt-3 text-xs text-gray-500">
+                                 <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                                 <span className="line-clamp-2">{item.cliente.direccionCobro || item.cliente.direccionCliente}</span>
+                               </div>
+                             )}
 
-                            {/* Acciones */}
-                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 gap-2">
-                              {/* Botones de contacto */}
-                              <div className="flex gap-1.5 flex-wrap">
-                                {item.cliente.telefono && (
-                                  <a href={`tel:${item.cliente.telefono}`}>
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] border-gray-200 gap-1">
-                                      <Phone className="h-3 w-3 text-blue-600" />
-                                      <span className="hidden sm:inline">Llamar</span>
-                                    </Button>
-                                  </a>
-                                )}
-                                {item.cliente.telefono && (
-                                  <a href={`https://wa.me/${item.cliente.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] border-gray-200 gap-1">
-                                      <MessageCircle className="h-3 w-3 text-green-600" />
-                                      <span className="hidden sm:inline">WhatsApp</span>
-                                    </Button>
-                                  </a>
-                                )}
-                                {item.cliente.mapLink && (
-                                  <a href={item.cliente.mapLink} target="_blank" rel="noopener noreferrer">
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] border-gray-200 gap-1">
-                                      <Navigation className="h-3 w-3 text-red-500" />
-                                      <span className="hidden sm:inline">Mapa</span>
-                                    </Button>
-                                  </a>
-                                )}
-                              </div>
+                             {/* Acciones */}
+                             <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 gap-3">
+                               {/* Botones de contacto */}
+                               <div className="flex gap-2 flex-wrap">
+                                 {item.cliente.telefono && (
+                                   <a href={`tel:${item.cliente.telefono}`}>
+                                     <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs border-gray-200 gap-1.5 rounded-lg shadow-sm">
+                                       <Phone className="h-3.5 w-3.5 text-blue-600" />
+                                       <span className="hidden sm:inline">Llamar</span>
+                                     </Button>
+                                   </a>
+                                 )}
+                                 {item.cliente.telefono && (
+                                   <a href={`https://wa.me/${item.cliente.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                                     <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs border-gray-200 gap-1.5 rounded-lg shadow-sm">
+                                       <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+                                       <span className="hidden sm:inline">WhatsApp</span>
+                                     </Button>
+                                   </a>
+                                 )}
+                                 {item.cliente.mapLink && (
+                                   <a href={item.cliente.mapLink} target="_blank" rel="noopener noreferrer">
+                                     <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs border-gray-200 gap-1.5 rounded-lg shadow-sm">
+                                       <Navigation className="h-3.5 w-3.5 text-red-500" />
+                                       <span className="hidden sm:inline">Mapa</span>
+                                     </Button>
+                                   </a>
+                                 )}
+                               </div>
 
-                              {/* Botón pagar */}
-                              <Button
-                                size="sm"
-                                className="h-7 px-3 text-xs bg-teal-600 hover:bg-teal-700 text-white font-semibold flex-shrink-0"
-                                onClick={() => handleRegistrarPago(item)}
-                              >
-                                <DollarSign className="h-3.5 w-3.5 mr-1" />
-                                Pagar
-                              </Button>
-                            </div>
+                               {/* Botón pagar */}
+                               <Button
+                                 size="sm"
+                                 className="h-8 px-4 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-sm flex-shrink-0"
+                                 onClick={() => handleRegistrarPago(item)}
+                               >
+                                 <DollarSign className="h-4 w-4 mr-0.5" />
+                                 Pagar
+                               </Button>
+                             </div>
                           </div>
                         </div>
                       </div>
@@ -454,34 +454,34 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                   )}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {cobrados.map((item) => (
-                    <Card key={item.id} className="border-l-[3px] border-l-green-500 shadow-sm bg-green-50/40">
-                      <CardContent className="p-3">
+                    <Card key={item.id} className="border-l-[3.5px] border-l-green-500 shadow-sm bg-green-50/40 overflow-hidden">
+                      <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">
+                            <h3 className="font-bold text-gray-950 text-sm sm:text-base leading-tight truncate">
                               {item.cliente.nombre} {item.cliente.apellido}
                             </h3>
-                            <span className="text-[10px] text-gray-400 block mt-0.5">
+                            <span className="text-xs text-gray-500 block mt-1">
                               {item.cliente.telefono || `Doc: ${item.cliente.documento}`}
                             </span>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
-                            <span className="text-[10px] text-gray-400 block">Abonado hoy</span>
-                            <span className="font-extrabold text-green-700 text-base">
+                            <span className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider block">Abonado hoy</span>
+                            <span className="font-extrabold text-green-700 text-base sm:text-lg">
                               {formatCurrency(item.pagadoHoyMonto)}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-1 text-[11px] text-green-700 bg-green-100/80 py-1 px-2 rounded-md border border-green-200/60">
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center gap-1.5 text-xs text-green-800 bg-green-100/90 py-1.5 px-2.5 rounded-lg border border-green-200/60 shadow-sm">
                             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
-                            <span className="font-medium">Pago registrado</span>
+                            <span className="font-semibold">Pago registrado</span>
                           </div>
                           {item.saldoPendiente > 0 && (
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-xs text-gray-500 font-medium">
                               Saldo: {formatCurrency(item.saldoPendiente)}
                             </span>
                           )}
