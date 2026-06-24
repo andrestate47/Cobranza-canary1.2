@@ -63,6 +63,8 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
       moraCredito: parseFloat(prestamo.moraCredito.toString()),
       fechaInicio: prestamo.fechaInicio.toISOString(),
       fechaFin: prestamo.fechaFin.toISOString(),
+      fechaFinManual: prestamo.fechaFinManual ? prestamo.fechaFinManual.toISOString() : null,
+      fechaProximoPagoManual: prestamo.fechaProximoPagoManual ? prestamo.fechaProximoPagoManual.toISOString() : null,
       createdAt: prestamo.createdAt.toISOString(),
       updatedAt: prestamo.updatedAt.toISOString(),
       cuotasPagadasManual: prestamo.cuotasPagadasManual ? parseFloat(prestamo.cuotasPagadasManual.toString()) : null,
