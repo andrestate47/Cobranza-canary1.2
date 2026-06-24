@@ -316,8 +316,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
         if (valid) {
           diasHabilesTotales++
-          // Solo contamos como "esperada" si el día ya pasó (es anterior a hoy)
-          if (current < hoyMidnight) {
+          if (current <= hoyMidnight) {
             cuotasEsperadas++
           }
         }
@@ -336,8 +335,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
       // Para pagos periódicos, una cuota se espera cada X días.
       // Si han pasado 7 días y el pago es semanal, se espera 1 cuota (la del día 7)
-      // Solo contamos cuotas cuyo vencimiento ya pasó (antes de hoy)
-      cuotasEsperadas = Math.floor(Math.max(0, totalDiasCalendario - 1) / diasPorCuota)
+      cuotasEsperadas = Math.floor(totalDiasCalendario / diasPorCuota)
     }
 
     // Usar el manual si existe, si no calcular
@@ -395,14 +393,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     if (fechaReferenciaMora) {
       let diasHabilesVencidos = 0;
       let tempDate = new Date(fechaReferenciaMora);
-      while (tempDate < hoyMidnight) {
-        tempDate.setUTCDate(tempDate.getUTCDate() + 1);
+      while (tempDate <= hoyMidnight) {
         const d = tempDate.getUTCDay();
         let esDiaValido = true;
         if (d === 0) esDiaValido = false; // Domingo nunca es válido
         if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false; // Sábado tampoco si es Lunes a Viernes
         
         if (esDiaValido) diasHabilesVencidos++;
+        tempDate.setUTCDate(tempDate.getUTCDate() + 1);
       }
       diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
     }

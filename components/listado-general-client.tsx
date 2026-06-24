@@ -252,11 +252,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           current.setDate(current.getDate() + 1)
         }
       } else {
-        pagosEsperados = Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+        const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
+        pagosEsperados = Math.floor((ayerMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
       }
 
-      // Excluimos la cuota que vence hoy para no marcarla como atrasada inmediatamente
-      const cuotasVencidasEfectivas = Math.max(0, pagosEsperados - 1)
+      const cuotasVencidasEfectivas = Math.max(0, pagosEsperados)
       return prestamo.cuotasPagadas < cuotasVencidasEfectivas
     })
 

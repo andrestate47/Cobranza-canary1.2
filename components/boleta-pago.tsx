@@ -175,7 +175,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         const current = new Date(inicioNormalized)
         current.setUTCDate(current.getUTCDate() + 1)
 
-        while (current < referenciaNormalized) {
+        while (current <= referenciaNormalized) {
           const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_VIERNES' && day !== 0 && day !== 6) valid = true
@@ -209,12 +209,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
         let current = new Date(inicioNormalized)
+        current.setUTCDate(current.getUTCDate() + 1)
         
-        // Adelantamos a la fecha de vencimiento de la cuota atrasada
-        // Para simplificar, usamos diasLaboralesTranscurridos como cuotas esperadas
         let cuotasEsperadasTotales = 0;
-        while (current < referenciaNormalized) {
-          current.setUTCDate(current.getUTCDate() + 1);
+        while (current <= referenciaNormalized) {
           const day = current.getUTCDay()
           let valid = false
           if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
@@ -222,10 +220,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (tipoPago === 'DIARIO' && day !== 0) valid = true
 
           if (valid) cuotasEsperadasTotales++;
+          current.setUTCDate(current.getUTCDate() + 1);
         }
         
         let cuotasAtrasadasCount = Math.max(0, cuotasEsperadasTotales - cuotasPagadas);
-        // Si atrasadas es > 0, devolvemos las mismas cuotas atrasadas como "días hábiles vencidos"
         return Math.floor(cuotasAtrasadasCount);
       }
 
@@ -237,8 +235,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       if (referenciaNormalized > ultimaCuotaEsperada) {
         let current = new Date(ultimaCuotaEsperada)
         let diasVencidosCount = 0
-        while (current < referenciaNormalized) {
-          current.setUTCDate(current.getUTCDate() + 1)
+        while (current <= referenciaNormalized) {
           const day = current.getUTCDay()
           let valid = true
           if (day === 0) valid = false // Excluir domingos siempre
@@ -247,6 +244,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           if (valid) {
             diasVencidosCount++
           }
+          current.setUTCDate(current.getUTCDate() + 1)
         }
         return diasVencidosCount
       }
