@@ -518,6 +518,56 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       fechaProximoPago = new Date(prestamoFlex2.fechaProximoPagoManual)
     }
 
+    // Calcular valores puramente automáticos (sin overrides manuales) para placeholders
+    const cuotasPagadasAuto = valorCuota > 0 ? totalPagado / valorCuota : 0
+    const cuotasAtrasadasAuto = Math.max(0, cuotasEsperadas - cuotasPagadasAuto)
+    const cuotasPendientesAuto = Math.max(0, prestamo.cuotas - cuotasPagadasAuto)
+    
+    let diasVencidosAuto = 0
+    let fechaReferenciaMoraAuto: Date | null = null
+    if (hoyMidnight > fechaFinMidnight) {
+      fechaReferenciaMoraAuto = fechaFinMidnight
+    } else if (cuotasAtrasadasAuto > 0) {
+      const proximaCuotaIdxAuto = Math.floor(cuotasPagadasAuto) + 1
+      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
+        let current = new Date(fechaInicioMidnight)
+        let count = 0
+        while (count < proximaCuotaIdxAuto) {
+          current.setUTCDate(current.getUTCDate() + 1)
+          const d = current.getUTCDay()
+          let valid = true
+          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
+          if (valid) count++
+        }
+        fechaReferenciaMoraAuto = current
+      } else {
+        const diasPorTipo = {
+          'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+          'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+        }
+        const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+        fechaReferenciaMoraAuto = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdxAuto * diasPorCuota * oneDay))
+      }
+    }
+
+    if (fechaReferenciaMoraAuto) {
+      let diasHabilesVencidosAuto = 0
+      let tempDate = new Date(fechaReferenciaMoraAuto)
+      while (tempDate <= hoyMidnight) {
+        const d = tempDate.getUTCDay()
+        let esDiaValido = true
+        if (d === 0) esDiaValido = false
+        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false
+        if (esDiaValido) diasHabilesVencidosAuto++
+        tempDate.setUTCDate(tempDate.getUTCDate() + 1)
+      }
+      diasVencidosAuto = Math.max(0, diasHabilesVencidosAuto - (prestamo.diasGracia || 0))
+    }
+
+    const valorEnAtrasoAuto = Math.max(0, Math.round((cuotasAtrasadasAuto * valorCuota) * 100) / 100)
+
     return {
       diasTranscurridos,
       cuotasPendientes,
@@ -526,7 +576,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       valorEnAtrasos,
       ultimoPago,
       fechaProximoPago,
-      diasGracia: prestamo.diasGracia || 0
+      diasGracia: prestamo.diasGracia || 0,
+      cuotasPagadasAuto,
+      cuotasAtrasadasAuto,
+      cuotasPendientesAuto,
+      diasVencidosAuto,
+      valorEnAtrasoAuto
     }
   }
 
@@ -2711,9 +2766,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       step="0.01"
                       value={cuotasPagadasManualEditar}
                       onChange={(e) => setCuotasPagadasManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
-                      placeholder="Calculado"
+                      placeholder={infoExtendida.cuotasPagadasAuto.toFixed(2)}
                     />
                   </div>
                   <div>
@@ -2724,9 +2779,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       step="0.01"
                       value={cuotasAtrasadasManualEditar}
                       onChange={(e) => setCuotasAtrasadasManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
-                      placeholder="Calculado"
+                      placeholder={infoExtendida.cuotasAtrasadasAuto.toFixed(2)}
                     />
                   </div>
                   <div>
@@ -2737,9 +2792,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       step="0.01"
                       value={cuotasPendientesManualEditar}
                       onChange={(e) => setCuotasPendientesManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
-                      placeholder="Calculado"
+                      placeholder={infoExtendida.cuotasPendientesAuto.toFixed(2)}
                     />
                   </div>
                 </div>
@@ -2752,9 +2807,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       type="number"
                       value={diasVencidosManualEditar}
                       onChange={(e) => setDiasVencidosManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
-                      placeholder="Calculado"
+                      placeholder={infoExtendida.diasVencidosAuto.toString()}
                     />
                   </div>
                   <div>
@@ -2765,9 +2820,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       step="0.01"
                       value={valorEnAtrasoManualEditar}
                       onChange={(e) => setValorEnAtrasoManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
-                      placeholder="Calculado"
+                      placeholder={infoExtendida.valorEnAtrasoAuto.toFixed(2)}
                     />
                   </div>
                 </div>
