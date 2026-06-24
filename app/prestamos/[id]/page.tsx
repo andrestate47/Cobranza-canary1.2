@@ -65,6 +65,11 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
       fechaFin: prestamo.fechaFin.toISOString(),
       createdAt: prestamo.createdAt.toISOString(),
       updatedAt: prestamo.updatedAt.toISOString(),
+      cuotasPagadasManual: prestamo.cuotasPagadasManual ? parseFloat(prestamo.cuotasPagadasManual.toString()) : null,
+      cuotasAtrasadasManual: prestamo.cuotasAtrasadasManual ? parseFloat(prestamo.cuotasAtrasadasManual.toString()) : null,
+      cuotasPendientesManual: prestamo.cuotasPendientesManual ? parseFloat(prestamo.cuotasPendientesManual.toString()) : null,
+      diasVencidosManual: prestamo.diasVencidosManual,
+      valorEnAtrasoManual: prestamo.valorEnAtrasoManual ? parseFloat(prestamo.valorEnAtrasoManual.toString()) : null,
       pagos: prestamo.pagos.map((pago) => ({
         id: pago.id,
         prestamoId: pago.prestamoId,

@@ -32,7 +32,14 @@ export async function PUT(
       observaciones,
       microseguroTipo,
       microseguroValor,
-      microseguroTotal
+      microseguroTotal,
+      tipoCredito,
+      diasGracia,
+      cuotasPagadasManual,
+      cuotasAtrasadasManual,
+      cuotasPendientesManual,
+      diasVencidosManual,
+      valorEnAtrasoManual
     } = body
 
     // Validaciones básicas
@@ -150,7 +157,14 @@ export async function PUT(
         observaciones: observaciones || null,
         microseguroTipo: microseguroTipo || undefined,
         microseguroValor: microseguroValorNum,
-        microseguroTotal: microseguroTotalNum
+        microseguroTotal: microseguroTotalNum,
+        tipoCredito: tipoCredito || undefined,
+        diasGracia: diasGracia !== undefined && diasGracia !== null && diasGracia !== "" ? parseInt(diasGracia) : 0,
+        cuotasPagadasManual: cuotasPagadasManual !== undefined && cuotasPagadasManual !== null && cuotasPagadasManual !== "" ? parseFloat(cuotasPagadasManual) : null,
+        cuotasAtrasadasManual: cuotasAtrasadasManual !== undefined && cuotasAtrasadasManual !== null && cuotasAtrasadasManual !== "" ? parseFloat(cuotasAtrasadasManual) : null,
+        cuotasPendientesManual: cuotasPendientesManual !== undefined && cuotasPendientesManual !== null && cuotasPendientesManual !== "" ? parseFloat(cuotasPendientesManual) : null,
+        diasVencidosManual: diasVencidosManual !== undefined && diasVencidosManual !== null && diasVencidosManual !== "" ? parseInt(diasVencidosManual) : null,
+        valorEnAtrasoManual: valorEnAtrasoManual !== undefined && valorEnAtrasoManual !== null && valorEnAtrasoManual !== "" ? parseFloat(valorEnAtrasoManual) : null
         // No cambiar la fecha de creación ni el usuario
       },
       include: {

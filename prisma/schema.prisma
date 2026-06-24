@@ -177,6 +177,11 @@ model Prestamo {
   fechaFinManual          DateTime?       @map("fecha_fin_manual")
   diasTranscurridosManual Int?            @map("dias_transcurridos_manual")
   fechaProximoPagoManual  DateTime?       @map("fecha_proximo_pago_manual")
+  cuotasPagadasManual     Decimal?        @map("cuotas_pagadas_manual") @db.Decimal(10, 2)
+  cuotasAtrasadasManual   Decimal?        @map("cuotas_atrasadas_manual") @db.Decimal(10, 2)
+  cuotasPendientesManual  Decimal?        @map("cuotas_pendientes_manual") @db.Decimal(10, 2)
+  diasVencidosManual      Int?            @map("dias_vencidos_manual")
+  valorEnAtrasoManual     Decimal?        @map("valor_en_atraso_manual") @db.Decimal(10, 2)
   pagos                   Pago[]
   cliente          Cliente         @relation(fields: [clienteId], references: [id])
   usuario          User            @relation(fields: [userId], references: [id])

@@ -198,6 +198,15 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [cuotasEditar, setCuotasEditar] = useState("")
   const [tipoMicroseguroEditar, setTipoMicroseguroEditar] = useState(prestamo.microseguroTipo)
   const [valorMicroseguroEditar, setValorMicroseguroEditar] = useState(prestamo.microseguroValor?.toString() || "0")
+  
+  // Nuevos campos manuales
+  const [tipoCreditoEditar, setTipoCreditoEditar] = useState<string>("EFECTIVO")
+  const [diasGraciaEditar, setDiasGraciaEditar] = useState<string>("0")
+  const [cuotasPagadasManualEditar, setCuotasPagadasManualEditar] = useState<string>("")
+  const [cuotasAtrasadasManualEditar, setCuotasAtrasadasManualEditar] = useState<string>("")
+  const [cuotasPendientesManualEditar, setCuotasPendientesManualEditar] = useState<string>("")
+  const [diasVencidosManualEditar, setDiasVencidosManualEditar] = useState<string>("")
+  const [valorEnAtrasoManualEditar, setValorEnAtrasoManualEditar] = useState<string>("")
 
   // Efecto para calcular el total y cuota en el modal de edición
   useEffect(() => {
@@ -278,7 +287,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   )
   const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
   const valorCuota = prestamo.valorCuota
-  const cuotasPagadas = valorCuota > 0 ? totalPagado / valorCuota : 0
+  const prestamoFlex = prestamo as any
+  const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
+    ? Number(prestamoFlex.cuotasPagadasManual)
+    : (valorCuota > 0 ? totalPagado / valorCuota : 0)
 
   const progressPercentage = Math.min((totalPagado / montoTotal) * 100, 100)
 
@@ -344,12 +356,18 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       ? prestamoFlex.diasTranscurridosManual 
       : diasHabilesTotales
 
-    const cuotasPendientes = Math.max(0, prestamo.cuotas - cuotasPagadas)
+    const cuotasPendientes = (prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
+      ? Number(prestamoFlex.cuotasPendientesManual)
+      : Math.max(0, prestamo.cuotas - cuotasPagadas)
 
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
-    const cuotasPagadasFinancial = valorCuota > 0 ? totalPagado / valorCuota : 0
-    const cuotasAtrasadas = Math.max(0, cuotasEsperadas - cuotasPagadasFinancial)
+    const cuotasPagadasFinancial = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
+      ? Number(prestamoFlex.cuotasPagadasManual)
+      : (valorCuota > 0 ? totalPagado / valorCuota : 0)
+    const cuotasAtrasadas = (prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
+      ? Number(prestamoFlex.cuotasAtrasadasManual)
+      : Math.max(0, cuotasEsperadas - cuotasPagadasFinancial)
 
     // Días vencidos
     let diasVencidos = 0
@@ -390,7 +408,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       }
     }
 
-    if (fechaReferenciaMora) {
+    if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
+      diasVencidos = Number(prestamoFlex.diasVencidosManual)
+    } else if (fechaReferenciaMora) {
       let diasHabilesVencidos = 0;
       let tempDate = new Date(fechaReferenciaMora);
       while (tempDate <= hoyMidnight) {
@@ -406,7 +426,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
 
     // Valor en atrasos
-    const valorEnAtrasos = Math.max(0, Math.round((cuotasAtrasadas * valorCuota) * 100) / 100)
+    const valorEnAtrasos = (prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
+      ? Number(prestamoFlex.valorEnAtrasoManual)
+      : Math.max(0, Math.round((cuotasAtrasadas * valorCuota) * 100) / 100)
 
     // Último pago
     const ultimoPago = prestamo.pagos.length > 0
@@ -1193,12 +1215,28 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
       setDiasTranscurridosEditar(prestamoFlex3.diasTranscurridosManual?.toString() || "")
       setFechaProximoPagoEditar(prestamoFlex3.fechaProximoPagoManual ? new Date(prestamoFlex3.fechaProximoPagoManual).toISOString().split('T')[0] : "")
+      
+      // Inicializar nuevos campos
+      setTipoCreditoEditar(prestamo.tipoCredito)
+      setDiasGraciaEditar(prestamo.diasGracia?.toString() || "0")
+      setCuotasPagadasManualEditar(prestamoFlex3.cuotasPagadasManual?.toString() || "")
+      setCuotasAtrasadasManualEditar(prestamoFlex3.cuotasAtrasadasManual?.toString() || "")
+      setCuotasPendientesManualEditar(prestamoFlex3.cuotasPendientesManual?.toString() || "")
+      setDiasVencidosManualEditar(prestamoFlex3.diasVencidosManual?.toString() || "")
+      setValorEnAtrasoManualEditar(prestamoFlex3.valorEnAtrasoManual?.toString() || "")
 
     } catch (e) {
       setFechaInicioEditar("");
       setFechaFinEditar("");
       setDiasTranscurridosEditar("");
       setFechaProximoPagoEditar("");
+      setTipoCreditoEditar("EFECTIVO");
+      setDiasGraciaEditar("0");
+      setCuotasPagadasManualEditar("");
+      setCuotasAtrasadasManualEditar("");
+      setCuotasPendientesManualEditar("");
+      setDiasVencidosManualEditar("");
+      setValorEnAtrasoManualEditar("");
     }
     
     setShowEditarBoletaModal(true)
@@ -1267,7 +1305,15 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           observaciones: prestamo.observaciones,
           microseguroTipo: tipoMicroseguroEditar,
           microseguroValor: microseguroValorNum,
-          microseguroTotal: microseguroTotal
+          microseguroTotal: microseguroTotal,
+          // Nuevos campos
+          tipoCredito: tipoCreditoEditar,
+          diasGracia: diasGraciaEditar,
+          cuotasPagadasManual: cuotasPagadasManualEditar || null,
+          cuotasAtrasadasManual: cuotasAtrasadasManualEditar || null,
+          cuotasPendientesManual: cuotasPendientesManualEditar || null,
+          diasVencidosManual: diasVencidosManualEditar || null,
+          valorEnAtrasoManual: valorEnAtrasoManualEditar || null
         }),
       })
 
@@ -1313,6 +1359,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setFechaFinEditar("")
     setDiasTranscurridosEditar("")
     setFechaProximoPagoEditar("")
+    setTipoCreditoEditar("EFECTIVO")
+    setDiasGraciaEditar("0")
+    setCuotasPagadasManualEditar("")
+    setCuotasAtrasadasManualEditar("")
+    setCuotasPendientesManualEditar("")
+    setDiasVencidosManualEditar("")
+    setValorEnAtrasoManualEditar("")
   }
 
   return (
@@ -2606,6 +2659,116 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <div className="bg-emerald-100 p-2 rounded border border-emerald-200 shadow-sm">
                     <p className="text-[10px] text-emerald-700 font-bold uppercase">Nueva Cuota</p>
                     <p className="text-sm font-bold text-emerald-900">{formatCurrency(cuotaEditar)}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Ajustes Manuales de Cobro / Morosidad */}
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-3">
+                <div className="flex items-center space-x-2 text-amber-900 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4" />
+                  <Label>Ajustes de Cobro (Morosidad y Crédito)</Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="tipoCreditoEditar" className="text-xs text-amber-800">Tipo de Crédito</Label>
+                    <Select
+                      value={tipoCreditoEditar}
+                      onValueChange={setTipoCreditoEditar}
+                      disabled={editando}
+                    >
+                      <SelectTrigger id="tipoCreditoEditar" className="mt-1 bg-white border-amber-300">
+                        <SelectValue placeholder="Tipo de Crédito" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EFECTIVO">Efectivo</SelectItem>
+                        <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="diasGraciaEditar" className="text-xs text-amber-800">Días de Gracia</Label>
+                    <Input
+                      id="diasGraciaEditar"
+                      type="number"
+                      value={diasGraciaEditar}
+                      onChange={(e) => setDiasGraciaEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300"
+                      disabled={editando}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-amber-200">
+                  <div>
+                    <Label htmlFor="cuotasPagadasManualEditar" className="text-[10px] text-amber-800">Cuotas Pagadas</Label>
+                    <Input
+                      id="cuotasPagadasManualEditar"
+                      type="number"
+                      step="0.01"
+                      value={cuotasPagadasManualEditar}
+                      onChange={(e) => setCuotasPagadasManualEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      disabled={editando}
+                      placeholder="Calculado"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cuotasAtrasadasManualEditar" className="text-[10px] text-amber-800">Cuotas Atrasadas</Label>
+                    <Input
+                      id="cuotasAtrasadasManualEditar"
+                      type="number"
+                      step="0.01"
+                      value={cuotasAtrasadasManualEditar}
+                      onChange={(e) => setCuotasAtrasadasManualEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      disabled={editando}
+                      placeholder="Calculado"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cuotasPendientesManualEditar" className="text-[10px] text-amber-800">Cuotas Pendientes</Label>
+                    <Input
+                      id="cuotasPendientesManualEditar"
+                      type="number"
+                      step="0.01"
+                      value={cuotasPendientesManualEditar}
+                      onChange={(e) => setCuotasPendientesManualEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      disabled={editando}
+                      placeholder="Calculado"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <Label htmlFor="diasVencidosManualEditar" className="text-xs text-amber-800">Días Vencidos (Manual)</Label>
+                    <Input
+                      id="diasVencidosManualEditar"
+                      type="number"
+                      value={diasVencidosManualEditar}
+                      onChange={(e) => setDiasVencidosManualEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      disabled={editando}
+                      placeholder="Calculado"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="valorEnAtrasoManualEditar" className="text-xs text-amber-800">Valor en Atraso ($)</Label>
+                    <Input
+                      id="valorEnAtrasoManualEditar"
+                      type="number"
+                      step="0.01"
+                      value={valorEnAtrasoManualEditar}
+                      onChange={(e) => setValorEnAtrasoManualEditar(e.target.value)}
+                      className="mt-1 bg-white border-amber-300 h-8 text-xs"
+                      disabled={editando}
+                      placeholder="Calculado"
+                    />
                   </div>
                 </div>
               </div>

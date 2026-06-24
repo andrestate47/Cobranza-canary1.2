@@ -86,7 +86,9 @@ export async function GET(request: NextRequest) {
       const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
         ? totalPagado / parseFloat(prestamo.valorCuota.toString())
         : 0
-      const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
+      const cuotasPagadas = prestamo.cuotasPagadasManual !== null && prestamo.cuotasPagadasManual !== undefined
+        ? parseFloat(prestamo.cuotasPagadasManual.toString())
+        : Math.round(cuotasPagadasRaw * 100) / 100
 
       // Determinar la fecha de actividad más reciente
       const fechaCreacion = prestamo.createdAt || prestamo.fechaInicio
@@ -116,7 +118,13 @@ export async function GET(request: NextRequest) {
         cliente: prestamo.cliente,
         saldoPendiente,
         cuotasPagadas,
-        montoTotal
+        montoTotal,
+        // Campos de anulación/sobrescritura manual
+        cuotasPagadasManual: prestamo.cuotasPagadasManual ? parseFloat(prestamo.cuotasPagadasManual.toString()) : null,
+        cuotasAtrasadasManual: prestamo.cuotasAtrasadasManual ? parseFloat(prestamo.cuotasAtrasadasManual.toString()) : null,
+        cuotasPendientesManual: prestamo.cuotasPendientesManual ? parseFloat(prestamo.cuotasPendientesManual.toString()) : null,
+        diasVencidosManual: prestamo.diasVencidosManual,
+        valorEnAtrasoManual: prestamo.valorEnAtrasoManual ? parseFloat(prestamo.valorEnAtrasoManual.toString()) : null
       }
     })
 
