@@ -2526,7 +2526,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           <form onSubmit={handleSubmitEditarBoleta} className="space-y-4">
             <div className="space-y-4">
               {/* Monto e Interés */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
                   <Label htmlFor="montoEditar" className="text-purple-900 font-semibold">Monto ($) *</Label>
                   <div className="relative mt-1">
@@ -2563,7 +2563,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
 
               {/* Frecuencia de pago y Cuotas */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="tipoPagoEditar">Frecuencia *</Label>
                   <Select value={tipoPagoEditar} onValueChange={setTipoPagoEditar} disabled={editando}>
@@ -2633,7 +2633,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-orange-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-orange-200">
                   <div>
                     <Label htmlFor="diasTranscurridosEditar" className="text-xs text-orange-800">Días Trans. (Manual)</Label>
                     <Input
@@ -2667,7 +2667,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <Label>Microseguro</Label>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="tipoMicroseguroEditar" className="text-xs text-blue-800">Tipo</Label>
                     <Select
@@ -2706,7 +2706,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
 
                 {/* Resumen de totales editados */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div className="bg-blue-100 p-2 rounded border border-blue-200 shadow-sm">
                     <p className="text-[10px] text-blue-700 font-bold uppercase">Nuevo Total</p>
                     <p className="text-sm font-bold text-blue-900">{formatCurrency(montoTotalEditar)}</p>
@@ -2725,7 +2725,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <Label>Ajustes de Cobro (Morosidad y Crédito)</Label>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="tipoCreditoEditar" className="text-xs text-amber-800">Tipo de Crédito</Label>
                     <Select
@@ -2757,7 +2757,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-amber-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-amber-200">
                   <div>
                     <Label htmlFor="cuotasPagadasManualEditar" className="text-[10px] text-amber-800">Cuotas Pagadas</Label>
                     <Input
@@ -2799,7 +2799,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div>
                     <Label htmlFor="diasVencidosManualEditar" className="text-xs text-amber-800">Días Vencidos (Manual)</Label>
                     <Input
