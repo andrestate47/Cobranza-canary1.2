@@ -109,21 +109,10 @@ export default function GestionSueldosClient() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'configuraciones' | 'pagos'>('configuraciones')
   
-  // Generar lista de meses para el filtro
-  const generateMeses = () => {
-    const meses = []
+  const [periodoFiltro, setPeriodoFiltro] = useState(() => {
     const now = new Date()
-    for (let i = -6; i <= 2; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      const label = d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
-      meses.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
-    }
-    return meses
-  }
-  const mesesOptions = generateMeses()
-  
-  const [periodoFiltro, setPeriodoFiltro] = useState(mesesOptions[6].value) // Mes actual
+    return now.toISOString().split('T')[0]
+  })
 
   // Estados para modales
   const [showConfigModal, setShowConfigModal] = useState(false)
@@ -183,7 +172,7 @@ export default function GestionSueldosClient() {
   const [comisionData, setComisionData] = useState<ComisionData | null>(null)
   const [mesComision, setMesComision] = useState(() => {
     const now = new Date()
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    return now.toISOString().split('T')[0]
   })
 
   useEffect(() => {
@@ -698,18 +687,12 @@ export default function GestionSueldosClient() {
                 <Label htmlFor="periodoFiltro" className="text-sm font-medium text-gray-600 whitespace-nowrap hidden sm:block">Mes:</Label>
                 <div className="relative flex-1 sm:flex-none sm:w-[180px]">
                   <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
-                  <Select value={periodoFiltro} onValueChange={setPeriodoFiltro}>
-                    <SelectTrigger className="pl-9 h-10 sm:h-9 w-full bg-white">
-                      <SelectValue placeholder="Seleccionar mes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mesesOptions.map((mes) => (
-                        <SelectItem key={mes.value} value={mes.value}>
-                          {mes.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    type="date"
+                    value={periodoFiltro}
+                    onChange={(e) => setPeriodoFiltro(e.target.value)}
+                    className="pl-9 h-10 sm:h-9 w-full bg-white"
+                  />
                 </div>
               </div>
               <Button onClick={() => setShowPagoModal(true)} className="w-full sm:w-auto shadow-sm h-10 sm:h-9">
@@ -1070,22 +1053,14 @@ export default function GestionSueldosClient() {
             </div>
 
             <div>
-              <Label htmlFor="periodo" className="text-xs font-semibold text-gray-700">Período (YYYY-MM)</Label>
-              <Select
+              <Label htmlFor="periodo" className="text-xs font-semibold text-gray-700">Fecha del Período</Label>
+              <Input
+                type="date"
+                id="periodo"
                 value={pagoForm.periodo}
-                onValueChange={(value) => setPagoForm(prev => ({ ...prev, periodo: value }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Seleccionar mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mesesOptions.map((mes) => (
-                    <SelectItem key={mes.value} value={mes.value}>
-                      {mes.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setPagoForm(prev => ({ ...prev, periodo: e.target.value }))}
+                className="mt-1"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1213,22 +1188,14 @@ export default function GestionSueldosClient() {
           <div className="space-y-6 pt-2">
             <div className="flex flex-col sm:flex-row gap-3 sm:items-end bg-gray-50 p-4 rounded-lg border border-gray-150">
               <div className="flex-1">
-                <Label htmlFor="mesComision" className="text-xs font-semibold text-gray-700">Período Mensual</Label>
-                <Select
+                <Label htmlFor="mesComision" className="text-xs font-semibold text-gray-700">Fecha de Liquidación</Label>
+                <Input
+                  type="date"
+                  id="mesComision"
                   value={mesComision}
-                  onValueChange={(value) => setMesComision(value)}
-                >
-                  <SelectTrigger className="mt-1 bg-white">
-                    <SelectValue placeholder="Seleccionar mes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mesesOptions.map((mes) => (
-                      <SelectItem key={mes.value} value={mes.value}>
-                        {mes.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => setMesComision(e.target.value)}
+                  className="mt-1 bg-white"
+                />
               </div>
               <Button 
                 onClick={() => cargarComisiones(selectedUser, mesComision)}
