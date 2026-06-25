@@ -167,6 +167,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
   const [showRefinanciamientoHistory, setShowRefinanciamientoHistory] = useState(false)
+  const [showSnapshotModal, setShowSnapshotModal] = useState(false)
 
   // Estado para visualización de boleta histórica
   const [showBoletaModal, setShowBoletaModal] = useState(false)
@@ -1914,10 +1915,14 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         <p className="font-bold text-blue-900">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
                       </div>
                       <div className="flex flex-col justify-center">
-                        <Link href={`/prestamos/${prestamo.renovadoDeId}`} className="text-blue-600 hover:text-blue-800 hover:underline text-xs font-medium flex items-center">
-                          <Eye className="h-3 w-3 mr-1" />
+                        <Button 
+                          variant="link" 
+                          onClick={() => setShowSnapshotModal(true)}
+                          className="text-blue-600 hover:text-blue-800 text-xs font-medium p-0 h-auto justify-start"
+                        >
+                          <Camera className="h-3 w-3 mr-1" />
                           Ver préstamo original
-                        </Link>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -2907,6 +2912,62 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Snapshot de Refinanciamiento */}
+      <Dialog open={showSnapshotModal} onOpenChange={setShowSnapshotModal}>
+        <DialogContent className="sm:max-w-md bg-slate-50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-slate-800">
+              <Camera className="h-5 w-5 mr-2 text-blue-600" />
+              Fotografía del Préstamo Anterior
+            </DialogTitle>
+            <DialogDescription>
+              Estado del préstamo en el momento exacto en que fue refinanciado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {prestamo.datosRefinanciamiento && (
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-dashed border-slate-200">
+                <span className="text-sm text-slate-500 font-medium">ID Original</span>
+                <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-600">
+                  {prestamo.renovadoDeId}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Monto Original</p>
+                  <p className="text-lg font-bold text-slate-800">{formatCurrency(prestamo.datosRefinanciamiento.montoOriginal || 0)}</p>
+                </div>
+                
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Total Pagado</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(prestamo.datosRefinanciamiento.totalPagado || 0)}</p>
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 col-span-2">
+                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">Saldo Absorbido al Refinanciar</p>
+                  <p className="text-xl font-black text-blue-800">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
+                </div>
+              </div>
+              
+              <div className="text-center pt-2">
+                <p className="text-xs text-slate-400">
+                  Refinanciado el {new Date(prestamo.datosRefinanciamiento.fechaRefinanciamiento).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowSnapshotModal(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Modal de imagen */}
       {selectedImage && (
