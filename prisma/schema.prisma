@@ -182,6 +182,8 @@ model Prestamo {
   cuotasPendientesManual  Decimal?        @map("cuotas_pendientes_manual") @db.Decimal(10, 2)
   diasVencidosManual      Int?            @map("dias_vencidos_manual")
   valorEnAtrasoManual     Decimal?        @map("valor_en_atraso_manual") @db.Decimal(10, 2)
+  renovadoDeId            String?         @map("renovado_de_id")
+  datosRefinanciamiento   Json?           @map("datos_refinanciamiento")
   pagos                   Pago[]
   cliente          Cliente         @relation(fields: [clienteId], references: [id])
   usuario          User            @relation(fields: [userId], references: [id])

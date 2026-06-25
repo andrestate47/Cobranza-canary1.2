@@ -134,6 +134,8 @@ interface Prestamo {
   cliente: Cliente
   pagos: Pago[]
   transferencias?: Transferencia[]
+  renovadoDeId?: string | null
+  datosRefinanciamiento?: any
   usuario?: {
     firstName: string | null
     lastName: string | null
@@ -164,6 +166,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [transferencias, setTransferencias] = useState<Transferencia[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+  const [showRefinanciamientoHistory, setShowRefinanciamientoHistory] = useState(false)
 
   // Estado para visualización de boleta histórica
   const [showBoletaModal, setShowBoletaModal] = useState(false)
@@ -1871,13 +1874,56 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
           {/* Historial de pagos y transferencias */}
           <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5 text-primary" />
                 <span>Historial de Movimientos</span>
               </CardTitle>
+              {prestamo.datosRefinanciamiento && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowRefinanciamientoHistory(!showRefinanciamientoHistory)}
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8"
+                >
+                  <RefreshCw className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Historial de Refinanciamiento</span>
+                </Button>
+              )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
+              {/* Tarjeta de Refinanciamiento Expansible */}
+              {prestamo.datosRefinanciamiento && showRefinanciamientoHistory && (
+                <div className="mb-4 animate-fadeInDown">
+                  <div className="bg-blue-50/80 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center text-blue-800 font-medium mb-3 pb-2 border-b border-blue-100">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Detalles del Préstamo Anterior
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-blue-600/80 text-[10px] sm:text-xs font-medium uppercase">Monto Anterior</p>
+                        <p className="font-semibold text-blue-900">{formatCurrency(prestamo.datosRefinanciamiento.montoOriginal || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-blue-600/80 text-[10px] sm:text-xs font-medium uppercase">Total Pagado</p>
+                        <p className="font-semibold text-blue-900">{formatCurrency(prestamo.datosRefinanciamiento.totalPagado || 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-blue-600/80 text-[10px] sm:text-xs font-medium uppercase">Saldo Absorbido</p>
+                        <p className="font-bold text-blue-900">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <Link href={`/prestamos/${prestamo.renovadoDeId}`} className="text-blue-600 hover:text-blue-800 hover:underline text-xs font-medium flex items-center">
+                          <Eye className="h-3 w-3 mr-1" />
+                          Ver préstamo original
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {(prestamo.pagos.length > 0 || transferencias.length > 0) ? (
                 <div className="space-y-3">
                   {/* Mostrar pagos */}

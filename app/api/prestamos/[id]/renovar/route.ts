@@ -161,7 +161,16 @@ export async function POST(
             : `REFINANCIAMIENTO de ${prestamoAnterior.id}`,
           microseguroTipo: microseguroTipo || 'NINGUNO',
           microseguroValor: parseFloat(microseguroValor?.toString() || "0"),
-          microseguroTotal: microseguroTotalNuevo
+          microseguroTotal: microseguroTotalNuevo,
+          renovadoDeId: prestamoAnterior.id,
+          datosRefinanciamiento: {
+            montoOriginal: Number(prestamoAnterior.monto),
+            interesOriginal: Number(prestamoAnterior.interes),
+            cuotasOriginales: prestamoAnterior.cuotas,
+            totalPagado: totalPagado,
+            saldoPendiente: saldoPendiente,
+            fechaRefinanciamiento: new Date().toISOString()
+          }
         },
         include: {
           cliente: true
