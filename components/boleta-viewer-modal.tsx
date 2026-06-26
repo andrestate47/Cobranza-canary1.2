@@ -19,7 +19,7 @@ import { Receipt, Share2, ChevronDown, MessageCircle } from "lucide-react"
 import BoletaPago from "@/components/boleta-pago" // Adjust path if needed
 import BoletaScaler from "@/components/boleta-scaler"
 import { useToast } from "@/hooks/use-toast"
-import html2canvas from "html2canvas"
+import { captureBoletaAsCanvas } from "@/lib/capture-boleta"
 
 // Reusing interfaces from BoletaPago (or close to it)
 // In a real app, these should be shared in a types file.
@@ -83,12 +83,7 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
                 description: "Por favor espera un momento",
             })
 
-            const canvas = await html2canvas(boletaRef.current, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                logging: false,
-                useCORS: true
-            })
+            const canvas = await captureBoletaAsCanvas(boletaRef.current)
 
             const telefono = data.cliente.telefono?.replace(/\D/g, '') || ''
             const mensaje = `Hola ${data.cliente.nombre}, adjunto tu boleta N° ${data.numeroBoleta}.`
@@ -142,7 +137,7 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
     const handleDescargarBoleta = async () => {
         if (!boletaRef.current) return
         try {
-            const canvas = await html2canvas(boletaRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+            const canvas = await captureBoletaAsCanvas(boletaRef.current)
             const link = document.createElement('a')
             link.download = `boleta-${data.numeroBoleta}.png`
             link.href = canvas.toDataURL()

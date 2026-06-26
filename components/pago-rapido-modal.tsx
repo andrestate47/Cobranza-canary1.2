@@ -35,7 +35,7 @@ import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import BoletaPago from "@/components/boleta-pago"
 import BoletaScaler from "@/components/boleta-scaler"
-import html2canvas from "html2canvas"
+import { captureBoletaAsCanvas } from "@/lib/capture-boleta"
 import { useCurrency } from "@/hooks/use-currency"
 
 interface PrestamoConCliente {
@@ -503,12 +503,7 @@ export default function PagoRapidoModal({
         variant: "default",
       })
 
-      const canvas = await html2canvas(boletaRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true
-      })
+      const canvas = await captureBoletaAsCanvas(boletaRef.current)
 
       // Preparar mensaje para WhatsApp
       const telefono = pagoRegistrado.cliente.telefono?.replace(/\D/g, '') || ''
@@ -592,12 +587,7 @@ export default function PagoRapidoModal({
     if (!boletaRef.current || !pagoRegistrado) return
 
     try {
-      const canvas = await html2canvas(boletaRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true
-      })
+      const canvas = await captureBoletaAsCanvas(boletaRef.current)
 
       const link = document.createElement('a')
       link.download = `boleta-${pagoRegistrado.numeroBoleta}.png`
