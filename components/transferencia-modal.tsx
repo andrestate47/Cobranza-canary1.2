@@ -481,7 +481,7 @@ export default function TransferenciaModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={step === 'boleta' ? "sm:max-w-2xl max-h-[90vh] overflow-y-auto" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
+      <DialogContent className={step === 'boleta' ? "max-w-[850px] w-[95vw] max-h-[95vh] overflow-y-auto overflow-x-hidden" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
         {step === 'form' ? (
           <>
             <DialogHeader>

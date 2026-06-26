@@ -154,7 +154,7 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[850px] w-[95vw] max-h-[95vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader>
                     <DialogTitle className="flex items-center space-x-2 text-green-600">
                         <Receipt className="h-5 w-5" />

@@ -614,7 +614,7 @@ export default function PagoRapidoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={cn("max-h-[90vh] overflow-y-auto transition-all duration-300", step === 'boleta' ? "sm:max-w-2xl" : "sm:max-w-md sm:max-w-xl")}>
+      <DialogContent className={cn("max-h-[95vh] overflow-y-auto transition-all duration-300", step === 'boleta' ? "max-w-[850px] w-[95vw] overflow-x-hidden" : "sm:max-w-md sm:max-w-xl")}>
         {step === 'form' && (
           <>
             <DialogHeader>
