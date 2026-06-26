@@ -426,19 +426,19 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       <div ref={ref} className={`bg-white p-6 ${className}`} style={{ width: '800px', margin: '0 auto' }}>
         <div className="w-full space-y-4">
           {/* Header con Logo */}
-          <div className="flex justify-between items-start pb-4 border-b border-gray-100">
-            <div>
+          <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+            <div className="flex-shrink-0 bg-white rounded-lg p-2 border border-gray-100 shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Logo" className="h-20 w-auto object-contain" />
+            </div>
+            <div className="flex-1 min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center">
-                <Receipt className="h-6 w-6 mr-2 text-blue-600" />
+                <Receipt className="h-6 w-6 mr-2 text-blue-600 flex-shrink-0" />
                 Comprobante de Pago
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 N° {data.numeroBoleta} • {formatDate(data.fecha)}
               </p>
-            </div>
-            <div className="flex-shrink-0 bg-white rounded-lg p-1 border border-gray-100 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
             </div>
           </div>
 
