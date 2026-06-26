@@ -13,10 +13,12 @@ export async function captureBoletaAsCanvas(
   
   let current: HTMLElement | null = element
   while (current) {
-    const computedZoom = current.style.zoom
+    // @ts-ignore - zoom is non-standard but works in most browsers
+    const computedZoom = (current.style as any).zoom
     if (computedZoom && computedZoom !== '1' && computedZoom !== '' && computedZoom !== 'normal') {
       zoomedElements.push({ el: current, originalZoom: computedZoom })
-      current.style.zoom = '1'
+      // @ts-ignore
+      ;(current.style as any).zoom = '1'
     }
     current = current.parentElement
   }
@@ -35,7 +37,8 @@ export async function captureBoletaAsCanvas(
   } finally {
     // Restore zoom values
     for (const { el, originalZoom } of zoomedElements) {
-      el.style.zoom = originalZoom
+      // @ts-ignore
+      ;(el.style as any).zoom = originalZoom
     }
   }
 }
