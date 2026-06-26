@@ -423,8 +423,8 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const diasTranscurridos = calcularDiasTranscurridosPro(data.prestamo.fechaInicio, data.fecha as string, data.prestamo.tipoPago)
 
     return (
-      <div ref={ref} className={`bg-white ${className}`}>
-        <div className="max-w-md mx-auto space-y-4">
+      <div ref={ref} className={`bg-white p-6 ${className}`} style={{ width: '800px', margin: '0 auto' }}>
+        <div className="w-full space-y-4">
           {/* Observaciones del Pago - Al principio */}
           {data.observaciones && (
             <Card className="shadow-sm border-l-4 border-l-amber-500">
@@ -440,116 +440,230 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
             </Card>
           )}
 
-          {/* Información del Cliente */}
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center mb-3">
-                <User className="h-5 w-5 text-blue-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
-              </div>
+          {/* Fila Superior: Cliente y Montos */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Información del Cliente */}
+            <Card className="shadow-sm">
+              <CardContent className="p-4 h-full">
+                <div className="flex items-center mb-3 pb-2 border-b border-gray-100">
+                  <User className="h-5 w-5 text-blue-600 mr-2" />
+                  <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
+                </div>
 
-              <div className="space-y-2">
-                <h4 className="text-xl font-bold text-gray-900">
-                  {data.cliente.nombre} {data.cliente.apellido}
-                </h4>
-                <div className="flex items-center text-gray-600">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  <span>Documento: {data.cliente.documento}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <User className="h-4 w-4 mr-2" />
-                  <span>{data.cliente.direccionCliente}</span>
-                </div>
-                {data.cliente.telefono && (
-                  <div className="flex items-center text-blue-600">
-                    <span className="text-sm font-medium">{data.cliente.telefono}</span>
+                <div className="space-y-2">
+                  <h4 className="text-xl font-bold text-gray-900">
+                    {data.cliente.nombre} {data.cliente.apellido}
+                  </h4>
+                  <div className="flex items-center text-gray-600">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    <span>Documento: {data.cliente.documento}</span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex items-center text-gray-600">
+                    <User className="h-4 w-4 mr-2" />
+                    <span>{data.cliente.direccionCliente}</span>
+                  </div>
+                  {data.cliente.telefono && (
+                    <div className="flex items-center text-blue-600">
+                      <span className="text-sm font-medium">{data.cliente.telefono}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Información del Préstamo */}
+            {/* Montos principales */}
+            <Card className="shadow-sm">
+              <CardContent className="p-4 h-full">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="text-lg font-semibold text-gray-900">Montos del Préstamo</h3>
+                  </div>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Activo
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(data.prestamo.monto)}
+                    </p>
+                    <p className="text-sm text-gray-500">Monto Prestado</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(totalPagado)}
+                    </p>
+                    <p className="text-sm text-gray-500">Total Pagado</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">
+                      {formatCurrency(data.prestamo.saldoPendiente)}
+                    </p>
+                    <p className="text-sm text-gray-500">Saldo Pendiente</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {formatCurrency(data.prestamo.valorCuota)}
+                    </p>
+                    <p className="text-sm text-gray-500">Valor Cuota</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Información del Préstamo y Pago Detallado */}
           <Card className="shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-blue-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">Información del Préstamo</h3>
-                </div>
-                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  Activo
-                </span>
-              </div>
-
-              {/* Montos principales */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(data.prestamo.monto)}
-                  </p>
-                  <p className="text-sm text-gray-500">Monto Prestado</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(totalPagado)}
-                  </p>
-                  <p className="text-sm text-gray-500">Total Pagado</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p className="text-2xl font-bold text-red-600">
-                    {formatCurrency(data.prestamo.saldoPendiente)}
-                  </p>
-                  <p className="text-sm text-gray-500">Saldo Pendiente</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {formatCurrency(data.prestamo.valorCuota)}
-                  </p>
-                  <p className="text-sm text-gray-500">Valor Cuota</p>
-                </div>
+              <div className="flex items-center mb-4 pb-2 border-b border-gray-100">
+                <Receipt className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Detalles del Préstamo y Pago Actual</h3>
               </div>
 
               <Separator className="my-3" />
 
-              {/* Detalles del préstamo */}
-              <div className="space-y-2 text-sm">
-                {/* Información básica */}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tipo de crédito:</span>
-                  <span className="font-medium capitalize">{data.tipoCredito || 'Efectivo'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tipo de pago:</span>
-                  <span className="font-medium">{formatTipoPago(data.prestamo.tipoPago)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Monto total:</span>
-                  <span className="font-medium">{formatCurrency(data.prestamo.montoTotal)}</span>
+              {/* Detalles del préstamo en dos columnas */}
+              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                
+                {/* Columna Izquierda */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tipo de crédito:</span>
+                    <span className="font-medium capitalize">{data.tipoCredito || 'Efectivo'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tipo de pago:</span>
+                    <span className="font-medium">{formatTipoPago(data.prestamo.tipoPago)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Monto total a pagar:</span>
+                    <span className="font-medium">{formatCurrency(data.prestamo.montoTotal)}</span>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total cuotas:</span>
+                    <span className="font-medium">{totalCuotas}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cuotas pagadas:</span>
+                    <span className="font-medium text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cuotas pendientes:</span>
+                    <span className="font-medium text-orange-600">{cuotasPendientes}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cuotas atrasadas:</span>
+                    <span className={`font-medium ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {Number(cuotasAtrasadas.toFixed(2))}
+                    </span>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Días vencidos:</span>
+                    <span className={`font-medium ${diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {diasVencidos} días
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Valor en atraso:</span>
+                    <span className={`font-medium ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(valorEnAtraso)}
+                    </span>
+                  </div>
+
+                  {data.prestamo.ultimoPago && (
+                    <>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Último pago anterior:</span>
+                        <span className="font-medium">
+                          {formatCurrency(data.prestamo.ultimoPago.monto)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Fecha del último pago:</span>
+                        <span className="font-medium">{formatDate(data.prestamo.ultimoPago.fecha)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Información del Microseguro */}
-                {data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'NINGUNO' && data.prestamo.microseguroTotal && data.prestamo.microseguroTotal > 0 && (
-                  <>
-                    <Separator className="my-2" />
-                    <div className="bg-purple-50 rounded-lg p-2 space-y-1">
+                {/* Columna Derecha */}
+                <div className="space-y-2 text-sm">
+                  {/* Destacado: El Abono Actual */}
+                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mb-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-blue-800 font-bold uppercase text-xs">Monto de este abono</span>
+                      <span className="font-black text-blue-900 text-xl">{formatCurrency(data.monto)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-blue-700">
+                      <span>Progreso total:</span>
+                      <span className="font-bold">{progresoPrecentaje}%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fecha de inicio:</span>
+                    <span className="font-medium">{formatDateOnly(data.prestamo.fechaInicio)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Días transcurridos (al pago):</span>
+                    <span className="font-medium">{diasTranscurridos} días</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fecha próximo pago:</span>
+                    <span className="font-medium text-blue-600">{formatDateOnly(fechaProximoPago)}</span>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fecha del abono:</span>
+                    <span className="font-medium text-blue-600">
+                      {(() => {
+                        try {
+                          const local = getLocalYYYYMMDD(data.fecha)
+                          const [y, m, d] = local.split('-')
+                          return `${d}/${m}/${y}`
+                        } catch {
+                          return formatDateOnly(data.fecha)
+                        }
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Hora de registro:</span>
+                    <span className="font-medium text-gray-700">
+                      {(data.fecha ? new Date(data.fecha) : new Date()).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Método de pago:</span>
+                    <span className="font-medium capitalize">{data.tipoPagoMetodo || 'Efectivo'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cobrador:</span>
+                    <span className="font-medium">{data.usuario.nombre}</span>
+                  </div>
+
+                  {data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'NINGUNO' && data.prestamo.microseguroTotal && data.prestamo.microseguroTotal > 0 && (
+                    <div className="mt-4 bg-purple-50 rounded-lg p-2 space-y-1">
                       <div className="flex items-center mb-1">
                         <Receipt className="h-3 w-3 text-purple-600 mr-1" />
                         <span className="text-xs font-semibold text-purple-900">Microseguro</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tipo:</span>
-                        <span className="font-medium text-purple-700">
-                          {data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : 'Porcentaje'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">
-                          {data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto:' : 'Porcentaje:'}
-                        </span>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Monto/Porcentaje:</span>
                         <span className="font-medium text-purple-700">
                           {data.prestamo.microseguroTipo === 'MONTO_FIJO'
                             ? formatCurrency(data.prestamo.microseguroValor || 0)
@@ -557,132 +671,21 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                           }
                         </span>
                       </div>
-                      <div className="flex justify-between border-t border-purple-200 pt-1">
+                      <div className="flex justify-between border-t border-purple-200 pt-1 text-xs">
                         <span className="text-gray-600 font-medium">Total microseguro:</span>
                         <span className="font-bold text-purple-900">
                           {formatCurrency(data.prestamo.microseguroTotal)}
                         </span>
                       </div>
                     </div>
-                  </>
-                )}
-
-                <Separator className="my-2" />
-
-                {/* Estado de cuotas */}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total cuotas:</span>
-                  <span className="font-medium">{totalCuotas}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Cuotas pagadas:</span>
-                  <span className="font-medium text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Cuotas pendientes:</span>
-                  <span className="font-medium text-orange-600">{cuotasPendientes}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Cuotas atrasadas:</span>
-                  <span className={`font-medium ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {Number(cuotasAtrasadas.toFixed(2))}
-                  </span>
-                </div>
-
-                <Separator className="my-2" />
-
-                {/* Estado de atraso */}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Días vencidos:</span>
-                  <span className={`font-medium ${diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {diasVencidos} días
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Valor en atraso:</span>
-                  <span className={`font-medium ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(valorEnAtraso)}
-                  </span>
-                </div>
-
-                <Separator className="my-2" />
-
-                {/* Información de fechas */}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Fecha inicio:</span>
-                  <span className="font-medium">{formatDateOnly(data.prestamo.fechaInicio)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Días transcurridos (al pago):</span>
-                  <span className="font-medium">{diasTranscurridos} días</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Fecha próximo pago:</span>
-                  <span className="font-medium text-blue-600">{formatDateOnly(fechaProximoPago)}</span>
-                </div>
-
-                {/* Información del último pago */}
-                {data.prestamo.ultimoPago && (
-                  <>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Último pago:</span>
-                      <span className="font-medium">
-                        {formatCurrency(data.prestamo.ultimoPago.monto)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Fecha último pago:</span>
-                      <span className="font-medium">{formatDate(data.prestamo.ultimoPago.fecha)}</span>
-                    </div>
-                  </>
-                )}
-
-                <Separator className="my-2" />
-
-                {/* Información del pago actual */}
-                <div className="flex justify-between bg-blue-50 p-2 rounded-md mb-2">
-                  <span className="text-blue-700 font-bold">Monto de este abono:</span>
-                  <span className="font-bold text-blue-800 text-lg">{formatCurrency(data.monto)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Fecha del pago:</span>
-                  <span className="font-medium text-blue-600">
-                    {(() => {
-                      try {
-                        const local = getLocalYYYYMMDD(data.fecha)
-                        const [y, m, d] = local.split('-')
-                        return `${d}/${m}/${y}`
-                      } catch {
-                        return formatDateOnly(data.fecha)
-                      }
-                    })()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Hora de registro:</span>
-                  <span className="font-medium text-gray-700">
-                    {(data.fecha ? new Date(data.fecha) : new Date()).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Método de pago actual:</span>
-                  <span className="font-medium capitalize">{data.tipoPagoMetodo || 'Efectivo'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Creado por:</span>
-                  <span className="font-medium">{data.usuario.nombre}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Progreso del préstamo:</span>
-                  <span className="font-medium text-purple-600">{progresoPrecentaje}%</span>
+                  )}
                 </div>
               </div>
 
               {/* Número de boleta destacado */}
-              <div className="mt-4 bg-blue-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-600 mb-1">Número de Boleta</p>
-                <p className="text-lg font-mono font-bold text-blue-600">
+              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Comprobante / Número de Boleta</p>
+                <p className="text-xl font-mono font-bold text-gray-800 tracking-widest">
                   {data.numeroBoleta}
                 </p>
               </div>
