@@ -86,6 +86,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   const [filteredClientes, setFilteredClientes] = useState<ClienteConPrestamos[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState<'activos' | 'morosos'>('activos')
   const [soloConSaldo, setSoloConSaldo] = useState(true)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
   const [selectedCliente, setSelectedCliente] = useState<ClienteConPrestamos | null>(null)
@@ -516,14 +517,46 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             </Button>
 
             <div className="text-sm text-gray-500">
-              {filteredClientes.length} cliente{filteredClientes.length !== 1 ? 's' : ''}
+              {filteredClientes.filter(c => {
+                const st = calcularEstadoCliente(c).estado;
+                if (activeTab === 'activos') return st !== 'MOROSO' && st !== 'VENCIDO';
+                return st === 'MOROSO' || st === 'VENCIDO';
+              }).length} cliente{filteredClientes.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
 
+        {/* Custom Tabs */}
+        <div className="flex bg-gray-200/50 p-1 rounded-lg mb-6 w-full max-w-md mx-auto">
+          <button
+            onClick={() => setActiveTab('activos')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'activos' 
+                ? 'bg-white text-green-700 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+            }`}
+          >
+            Activos / Al Día
+          </button>
+          <button
+            onClick={() => setActiveTab('morosos')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'morosos' 
+                ? 'bg-white text-red-700 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+            }`}
+          >
+            Morosos / Vencidos
+          </button>
+        </div>
+
         {/* Lista de préstamos */}
         <div className="space-y-3">
-          {filteredClientes.map((clienteData, index) => {
+          {filteredClientes.filter(c => {
+            const st = calcularEstadoCliente(c).estado;
+            if (activeTab === 'activos') return st !== 'MOROSO' && st !== 'VENCIDO';
+            return st === 'MOROSO' || st === 'VENCIDO';
+          }).map((clienteData, index) => {
             const isExpanded = expandedCards.has(clienteData.cliente.id)
             const estadoAlerta = calcularEstadoCliente(clienteData)
             const tipoPagoInfo = getTipoPagoBadge(clienteData)
