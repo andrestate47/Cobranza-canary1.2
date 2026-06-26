@@ -86,7 +86,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   const [filteredClientes, setFilteredClientes] = useState<ClienteConPrestamos[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState<'activos' | 'morosos'>('activos')
+  const [activeTab, setActiveTab] = useState<'OK' | 'PROXIMO_A_VENCER' | 'MOROSO' | 'VENCIDO'>('OK')
   const [soloConSaldo, setSoloConSaldo] = useState(true)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
   const [selectedCliente, setSelectedCliente] = useState<ClienteConPrestamos | null>(null)
@@ -518,44 +518,60 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
             <div className="text-sm text-gray-500">
               {filteredClientes.filter(c => {
-                const st = calcularEstadoCliente(c).estado;
-                if (activeTab === 'activos') return st !== 'MOROSO' && st !== 'VENCIDO';
-                return st === 'MOROSO' || st === 'VENCIDO';
+                return calcularEstadoCliente(c).estado === activeTab;
               }).length} cliente{filteredClientes.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
 
-        {/* Custom Tabs */}
-        <div className="flex bg-gray-200/50 p-1 rounded-lg mb-6 w-full max-w-md mx-auto">
+        {/* Custom Tabs - 4 Options */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-100 p-1 rounded-lg mb-6 w-full">
           <button
-            onClick={() => setActiveTab('activos')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              activeTab === 'activos' 
-                ? 'bg-white text-green-700 shadow-sm' 
+            onClick={() => setActiveTab('OK')}
+            className={`py-2 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'OK' 
+                ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5' 
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
             }`}
           >
-            Activos / Al Día
+            Al Día
           </button>
           <button
-            onClick={() => setActiveTab('morosos')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              activeTab === 'morosos' 
-                ? 'bg-white text-red-700 shadow-sm' 
+            onClick={() => setActiveTab('PROXIMO_A_VENCER')}
+            className={`py-2 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'PROXIMO_A_VENCER' 
+                ? 'bg-white text-yellow-600 shadow-sm ring-1 ring-black/5' 
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
             }`}
           >
-            Morosos / Vencidos
+            Próximo a Vencer
+          </button>
+          <button
+            onClick={() => setActiveTab('MOROSO')}
+            className={`py-2 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'MOROSO' 
+                ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+            }`}
+          >
+            Morosos
+          </button>
+          <button
+            onClick={() => setActiveTab('VENCIDO')}
+            className={`py-2 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'VENCIDO' 
+                ? 'bg-white text-red-700 shadow-sm ring-1 ring-black/5' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+            }`}
+          >
+            Vencidos
           </button>
         </div>
 
         {/* Lista de préstamos */}
         <div className="space-y-3">
           {filteredClientes.filter(c => {
-            const st = calcularEstadoCliente(c).estado;
-            if (activeTab === 'activos') return st !== 'MOROSO' && st !== 'VENCIDO';
-            return st === 'MOROSO' || st === 'VENCIDO';
+            return calcularEstadoCliente(c).estado === activeTab;
           }).map((clienteData, index) => {
             const isExpanded = expandedCards.has(clienteData.cliente.id)
             const estadoAlerta = calcularEstadoCliente(clienteData)
