@@ -166,8 +166,8 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="w-full flex justify-center overflow-hidden">
-                        <div className="transform origin-top scale-[0.40] sm:scale-[0.75] md:scale-100 mb-[-60%] sm:mb-[-25%] md:mb-0">
+                    <div className="w-full overflow-x-auto">
+                        <div className="transform origin-top-left scale-[0.40] xs:scale-[0.45] sm:scale-[0.75] md:scale-100 mb-[-60%] sm:mb-[-25%] md:mb-0 w-[800px]">
                             <BoletaPago ref={boletaRef} data={data as any} />
                         </div>
                     </div>
