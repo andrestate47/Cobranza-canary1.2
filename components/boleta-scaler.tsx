@@ -6,74 +6,64 @@ interface BoletaScalerProps {
   children: React.ReactNode
 }
 
+// Calculate a safe initial zoom based on window width (avoids flash of unstyled content)
+function getInitialZoom(): number {
+  if (typeof window === 'undefined') return 0.4
+  // Estimate: window width minus ~80px for modal padding/margins
+  const estimated = (window.innerWidth - 80) / 800
+  return Math.min(1, Math.max(0.25, estimated))
+}
+
 export default function BoletaScaler({ children }: BoletaScalerProps) {
   const outerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(0) // Start at 0 to hide until first measurement
-  const [wrapperHeight, setWrapperHeight] = useState<number | 'auto'>('auto')
+  const [zoomLevel, setZoomLevel] = useState(getInitialZoom)
 
   useEffect(() => {
-    const updateScale = () => {
-      if (outerRef.current && contentRef.current) {
-        // Measure the natural width of the container without forcing it to 800px
+    const updateZoom = () => {
+      if (outerRef.current) {
         const availableWidth = outerRef.current.clientWidth
-        const contentWidth = 800 
-        
-        if (availableWidth < contentWidth && availableWidth > 0) {
-          const newScale = availableWidth / contentWidth
-          setScale(newScale)
-          setWrapperHeight(contentRef.current.offsetHeight * newScale)
-        } else if (availableWidth >= contentWidth) {
-          setScale(1)
-          setWrapperHeight(contentRef.current.offsetHeight)
+        if (availableWidth > 0 && availableWidth < 800) {
+          setZoomLevel(availableWidth / 800)
+        } else if (availableWidth >= 800) {
+          setZoomLevel(1)
         }
       }
     }
 
-    updateScale()
-    
-    const timeout1 = setTimeout(updateScale, 100)
-    const timeout2 = setTimeout(updateScale, 500)
-    
-    window.addEventListener('resize', updateScale)
-    
+    // Double RAF ensures the modal has fully laid out before we measure
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updateZoom)
+    })
+
+    const t1 = setTimeout(updateZoom, 200)
+    const t2 = setTimeout(updateZoom, 600)
+
+    window.addEventListener('resize', updateZoom)
+
     let observer: ResizeObserver | null = null
-    if (contentRef.current && typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(updateScale)
-      observer.observe(contentRef.current)
+    if (outerRef.current && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateZoom)
+      observer.observe(outerRef.current)
     }
 
     return () => {
-      clearTimeout(timeout1)
-      clearTimeout(timeout2)
-      window.removeEventListener('resize', updateScale)
+      clearTimeout(t1)
+      clearTimeout(t2)
+      window.removeEventListener('resize', updateZoom)
       if (observer) observer.disconnect()
     }
-  }, [children])
+  }, [])
 
   return (
-    <div ref={outerRef} className="w-full flex justify-center my-4">
-      <div 
-        className="relative overflow-hidden"
-        style={{ 
-          width: '100%',
-          maxWidth: '800px',
-          height: wrapperHeight !== 'auto' ? `${wrapperHeight}px` : 'auto', 
-          minHeight: scale === 0 ? '400px' : '100px',
-          opacity: scale === 0 ? 0 : 1, // Hide until scaled to prevent layout jump
-          transition: 'opacity 0.2s ease-in-out'
+    <div ref={outerRef} className="w-full overflow-hidden my-2">
+      <div
+        style={{
+          zoom: zoomLevel,
+          width: '800px',
+          margin: '0 auto',
         }}
       >
-        <div 
-          ref={contentRef}
-          className="absolute top-0 left-0 w-[800px]"
-          style={{ 
-            transform: `scale(${scale === 0 ? 1 : scale})`,
-            transformOrigin: 'top left'
-          }}
-        >
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   )
