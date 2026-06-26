@@ -912,8 +912,8 @@ export default function PagoRapidoModal({
             <div className="space-y-4">
               {pagoRegistrado ? (
                 <>
-                  <div className="w-full max-w-full overflow-hidden flex justify-start">
-                    <div className="transform origin-top-left scale-[0.40] xs:scale-[0.45] sm:scale-[0.75] md:scale-100 mb-[-60%] sm:mb-[-25%] md:mb-0 w-[800px]">
+                  <div className="w-full flex justify-center overflow-x-auto py-2">
+                    <div className="[zoom:0.40] xs:[zoom:0.45] sm:[zoom:0.75] md:[zoom:1] w-[800px]">
                       <BoletaPago ref={boletaRef} data={pagoRegistrado} />
                     </div>
                   </div>
