@@ -912,7 +912,11 @@ export default function PagoRapidoModal({
             <div className="space-y-4">
               {pagoRegistrado ? (
                 <>
-                  <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                  <div className="w-full flex justify-center overflow-hidden">
+                    <div className="transform origin-top scale-[0.40] sm:scale-[0.75] md:scale-100 mb-[-60%] sm:mb-[-25%] md:mb-0">
+                      <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                    </div>
+                  </div>
 
                   {/* Mensaje de éxito */}
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200 text-center">

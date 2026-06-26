@@ -745,7 +745,11 @@ export default function TransferenciaModal({
             <div className="space-y-4">
               {pagoRegistrado && (
                 <>
-                  <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                  <div className="w-full flex justify-center overflow-hidden">
+                    <div className="transform origin-top scale-[0.40] sm:scale-[0.75] md:scale-100 mb-[-60%] sm:mb-[-25%] md:mb-0">
+                      <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                    </div>
+                  </div>
 
                   <div className="flex space-x-2">
                     <DropdownMenu>
