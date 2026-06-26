@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Receipt, Share2, ChevronDown, MessageCircle } from "lucide-react"
 import BoletaPago from "@/components/boleta-pago" // Adjust path if needed
+import BoletaScaler from "@/components/boleta-scaler"
 import { useToast } from "@/hooks/use-toast"
 import html2canvas from "html2canvas"
 
@@ -166,11 +167,9 @@ export default function BoletaViewerModal({ isOpen, onClose, data }: BoletaViewe
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="w-full flex justify-center overflow-x-auto py-2">
-                        <div className="[zoom:0.40] xs:[zoom:0.45] sm:[zoom:0.75] md:[zoom:1] w-[800px]">
-                            <BoletaPago ref={boletaRef} data={data as any} />
-                        </div>
-                    </div>
+                    <BoletaScaler>
+                        <BoletaPago ref={boletaRef} data={data as any} />
+                    </BoletaScaler>
 
                     <div className="flex space-x-2">
                         <DropdownMenu>

@@ -18,6 +18,7 @@ import {
   ChevronDown
 } from "lucide-react"
 import BoletaPago from "@/components/boleta-pago"
+import BoletaScaler from "@/components/boleta-scaler"
 import html2canvas from "html2canvas"
 import {
   DropdownMenu,
@@ -745,11 +746,9 @@ export default function TransferenciaModal({
             <div className="space-y-4">
               {pagoRegistrado && (
                 <>
-                  <div className="w-full flex justify-center overflow-x-auto py-2">
-                    <div className="[zoom:0.40] xs:[zoom:0.45] sm:[zoom:0.75] md:[zoom:1] w-[800px]">
-                      <BoletaPago ref={boletaRef} data={pagoRegistrado} />
-                    </div>
-                  </div>
+                  <BoletaScaler>
+                    <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                  </BoletaScaler>
 
                   <div className="flex space-x-2">
                     <DropdownMenu>

@@ -34,6 +34,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import BoletaPago from "@/components/boleta-pago"
+import BoletaScaler from "@/components/boleta-scaler"
 import html2canvas from "html2canvas"
 import { useCurrency } from "@/hooks/use-currency"
 
@@ -912,11 +913,9 @@ export default function PagoRapidoModal({
             <div className="space-y-4">
               {pagoRegistrado ? (
                 <>
-                  <div className="w-full flex justify-center overflow-x-auto py-2">
-                    <div className="[zoom:0.40] xs:[zoom:0.45] sm:[zoom:0.75] md:[zoom:1] w-[800px]">
-                      <BoletaPago ref={boletaRef} data={pagoRegistrado} />
-                    </div>
-                  </div>
+                  <BoletaScaler>
+                    <BoletaPago ref={boletaRef} data={pagoRegistrado} />
+                  </BoletaScaler>
 
                   {/* Mensaje de éxito */}
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200 text-center">
