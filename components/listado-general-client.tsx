@@ -86,7 +86,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   const [filteredClientes, setFilteredClientes] = useState<ClienteConPrestamos[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState<'OK' | 'PROXIMO_A_VENCER' | 'MOROSO' | 'VENCIDO'>('OK')
+  const [activeTab, setActiveTab] = useState<'OK' | 'PROXIMO_A_VENCER' | 'MOROSO' | 'VENCIDO' | 'INACTIVO'>('OK')
   const [soloConSaldo, setSoloConSaldo] = useState(true)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
   const [selectedCliente, setSelectedCliente] = useState<ClienteConPrestamos | null>(null)
@@ -193,6 +193,18 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
   // Función para calcular el estado de alerta del cliente
   const calcularEstadoCliente = (clienteData: ClienteConPrestamos) => {
+    // Si no tiene préstamos o todos están pagados, está Inactivo
+    const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(p => p.saldoPendiente <= 0)
+    if (inactivo) {
+      return {
+        estado: 'INACTIVO',
+        icono: User,
+        color: 'bg-gray-400',
+        texto: 'Inactivo',
+        colorTexto: 'text-white'
+      }
+    }
+
     // Verificar si algún préstamo está completamente vencido y no ha sido pagado
     const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
       prestamo.saldoPendiente > 0 && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date())
@@ -524,8 +536,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           </div>
         </div>
 
-        {/* Custom Tabs - 4 Options */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-100 p-1 rounded-lg mb-6 w-full">
+        {/* Custom Tabs - 5 Options */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-100 p-1 rounded-lg mb-6 w-full">
           <button
             onClick={() => setActiveTab('OK')}
             className={`py-2 text-xs font-medium rounded-md transition-all ${
@@ -565,6 +577,19 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             }`}
           >
             Vencidos
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('INACTIVO')
+              if (soloConSaldo) setSoloConSaldo(false) // Auto-fetch todos si vemos inactivos
+            }}
+            className={`col-span-2 sm:col-span-1 py-2 text-xs font-medium rounded-md transition-all ${
+              activeTab === 'INACTIVO' 
+                ? 'bg-white text-gray-700 shadow-sm ring-1 ring-black/5' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+            }`}
+          >
+            Inactivos
           </button>
         </div>
 
@@ -698,7 +723,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             return (
                               <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
                                 {/* Header del préstamo */}
-                                <div className="flex justify-between items-center">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
                                   <div className="flex items-center flex-wrap gap-2">
                                     <Badge variant="outline" className="text-xs font-semibold bg-white">
                                       Préstamo #{prestamoIndex + 1}
@@ -732,19 +757,19 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                                     <Button
                                       size="sm"
                                       onClick={() => handlePagoRapido(prestamo, clienteData)}
-                                      className="btn-primary text-xs"
+                                      className="btn-primary text-xs flex-1 sm:flex-none h-8"
                                       disabled={prestamo.saldoPendiente <= 0}
                                     >
                                       <Plus className="h-3 w-3 mr-1" />
-                                      <DollarSign className="h-3 w-3 mr-1" />
+                                      <DollarSign className="h-3 w-3 mr-1 hidden sm:inline" />
                                       Pago
                                     </Button>
-                                    <Link href={`/prestamos/${prestamo.id}`}>
-                                      <Button variant="outline" size="sm" className="text-xs">
+                                    <Link href={`/prestamos/${prestamo.id}`} className="flex-1 sm:flex-none">
+                                      <Button variant="outline" size="sm" className="text-xs w-full h-8">
                                         Ver
                                       </Button>
                                     </Link>
