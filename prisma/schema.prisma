@@ -149,6 +149,7 @@ model Cliente {
   prestamos             Prestamo[]
   visitas               VisitaCliente[]
 
+  @@index([rutaId])
   @@map("clientes")
 }
 
@@ -189,6 +190,8 @@ model Prestamo {
   usuario          User            @relation(fields: [userId], references: [id])
   transferencias   Transferencia[]
 
+  @@index([clienteId])
+  @@index([userId])
   @@map("prestamos")
 }
 
@@ -207,6 +210,8 @@ model Pago {
   prestamo        Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
   usuario       User       @relation(fields: [userId], references: [id])
 
+  @@index([prestamoId])
+  @@index([userId])
   @@map("pagos")
 }
 
