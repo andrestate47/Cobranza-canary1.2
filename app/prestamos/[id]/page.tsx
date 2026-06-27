@@ -51,6 +51,35 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
       notFound()
     }
 
+    let prestamoAnteriorRaw = null;
+    if (prestamo.renovadoDeId) {
+      prestamoAnteriorRaw = await prisma.prestamo.findUnique({
+        where: { id: prestamo.renovadoDeId },
+        include: {
+          pagos: {
+            orderBy: { fecha: "desc" }
+          }
+        }
+      });
+    }
+
+    const formatAnterior = (ant: any) => {
+      if (!ant) return null;
+      return {
+        ...ant,
+        monto: parseFloat(ant.monto.toString()),
+        interes: parseFloat(ant.interes.toString()),
+        valorCuota: parseFloat(ant.valorCuota.toString()),
+        fechaInicio: ant.fechaInicio.toISOString(),
+        fechaFin: ant.fechaFin.toISOString(),
+        pagos: ant.pagos.map((p: any) => ({
+          ...p,
+          monto: parseFloat(p.monto.toString()),
+          fecha: p.fecha.toISOString()
+        }))
+      }
+    }
+
     // Convertir Decimal a números para evitar errores de serialización
     const prestamoFormatted = {
       ...prestamo,
@@ -83,7 +112,8 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
         usuario: pago.usuario,
         createdAt: pago.createdAt.toISOString(),
         updatedAt: pago.updatedAt.toISOString(),
-      }))
+      })),
+      prestamoAnteriorInfo: formatAnterior(prestamoAnteriorRaw)
     }
 
     return <DetallePrestamoClient prestamo={prestamoFormatted as unknown as Parameters<typeof DetallePrestamoClient>[0]['prestamo']} session={session} />
