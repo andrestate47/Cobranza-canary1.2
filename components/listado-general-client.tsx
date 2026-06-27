@@ -283,54 +283,17 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       }
     }
 
-    // Verificar si está próximo a vencer (en los próximos 3 días)
+    // Verificar si el préstamo está próximo a vencer (su fechaFin es en los próximos 3 días)
     const proximoAVencer = clienteData.prestamos.some(prestamo => {
       if (prestamo.saldoPendiente <= 0) return false
 
-      const diasPorTipo = {
-        'DIARIO': 1,
-        'SEMANAL': 7,
-        'LUNES_A_VIERNES': 1,     // Pago diario de lunes a viernes
-        'LUNES_A_SABADO': 1,      // Pago diario de lunes a sábado
-        'QUINCENAL': 15,
-        'CATORCENAL': 14,         // Cada 14 días
-        'FIN_DE_MES': 30,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'CUATRIMESTRAL': 120,     // Cada 4 meses
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-      }
-
-      const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-      const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
-      const [year, month, day] = fechaInicioStr.split('-').map(Number)
-      const fechaInicioMidnight = new Date(year, month - 1, day)
-      const pagosRealizados = prestamo.cuotasPagadas
-
-      let fechaProximoPago: Date
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        const targetCuota = Math.floor(pagosRealizados) + 1
-        let current = new Date(fechaInicioMidnight)
-        let count = 0
-        while (count < targetCuota) {
-          current.setDate(current.getDate() + 1)
-          const d = current.getDay()
-          let valid = true
-          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
-          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
-          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
-          if (valid) {
-            count++
-          }
-        }
-        fechaProximoPago = current
-      } else {
-        fechaProximoPago = new Date(fechaInicioMidnight.getTime() + ((pagosRealizados + 1) * diasEsperados * 24 * 60 * 60 * 1000))
-      }
-
       const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-      const diferenciaDias = Math.ceil((fechaProximoPago.getTime() - hoyMidnight.getTime()) / (1000 * 60 * 60 * 24))
+      
+      const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
+      const [year, month, day] = fechaFinStr.split('-').map(Number)
+      const fechaFinMidnight = new Date(year, month - 1, day)
+
+      const diferenciaDias = Math.ceil((fechaFinMidnight.getTime() - hoyMidnight.getTime()) / (1000 * 60 * 60 * 24))
 
       return diferenciaDias <= 3 && diferenciaDias >= 0
     })
