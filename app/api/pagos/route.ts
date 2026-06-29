@@ -321,7 +321,8 @@ export async function POST(request: NextRequest) {
         },
         // Campos adicionales para la boleta mejorada
         tipoCredito: prestamo.tipoCredito.toLowerCase(),
-        tipoPagoMetodo: 'efectivo' // Por defecto, se puede personalizar más adelante
+        tipoPagoMetodo: pago.metodoPago.toLowerCase(),
+        fotoComprobante: pago.fotoComprobante
       }
     }
 
