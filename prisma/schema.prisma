@@ -150,6 +150,7 @@ model Cliente {
   visitas               VisitaCliente[]
 
   @@index([rutaId])
+  @@index([activo])
   @@map("clientes")
 }
 
@@ -192,6 +193,9 @@ model Prestamo {
 
   @@index([clienteId])
   @@index([userId])
+  @@index([estado])
+  @@index([fechaInicio])
+  @@index([fechaFin])
   @@map("prestamos")
 }
 
@@ -212,6 +216,8 @@ model Pago {
 
   @@index([prestamoId])
   @@index([userId])
+  @@index([fecha])
+  @@index([createdAt])
   @@map("pagos")
 }
 
@@ -227,6 +233,7 @@ model Gasto {
   fotoComprobante String?  @map("foto_comprobante")
   usuario         User     @relation(fields: [userId], references: [id])
 
+  @@index([fecha])
   @@map("gastos")
 }
 
@@ -244,6 +251,7 @@ model CierreDia {
   usuario       User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, fecha])
+  @@index([fecha])
   @@map("cierres_dia")
 }
 
@@ -449,6 +457,7 @@ model MovimientoCajaChica {
   asignadoPor   User?              @relation("AsignadorCajaChica", fields: [asignadoPorId], references: [id])
   cobrador      User?              @relation("CobradorCajaChica", fields: [cobradorId], references: [id])
 
+  @@index([fecha])
   @@map("movimientos_caja_chica")
 }
 

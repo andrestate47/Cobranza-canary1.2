@@ -17,6 +17,7 @@ import {
   Loader2,
   User,
   Navigation,
+  Search,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -83,6 +84,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
   const [loading, setLoading] = useState(true)
   const [savingOrder, setSavingOrder] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const [selectedPrestamo, setSelectedPrestamo] = useState<any | null>(null)
   const [isPagoModalOpen, setIsPagoModalOpen] = useState(false)
@@ -185,6 +187,27 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
     loadRuta()
   }
 
+  const normalizeText = (text: string) => {
+    if (!text) return ""
+    return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  }
+
+  const filteredPorCobrar = porCobrar.filter(item => {
+    if (!searchQuery) return true
+    const query = normalizeText(searchQuery)
+    const nombreCompleto = normalizeText(`${item.cliente.nombre} ${item.cliente.apellido}`)
+    const documento = normalizeText(item.cliente.documento || "")
+    return nombreCompleto.includes(query) || documento.includes(query)
+  })
+
+  const filteredCobrados = cobrados.filter(item => {
+    if (!searchQuery) return true
+    const query = normalizeText(searchQuery)
+    const nombreCompleto = normalizeText(`${item.cliente.nombre} ${item.cliente.apellido}`)
+    const documento = normalizeText(item.cliente.documento || "")
+    return nombreCompleto.includes(query) || documento.includes(query)
+  })
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
@@ -252,6 +275,20 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
               <span className="text-[11px] text-gray-400 animate-pulse ml-1">Guardando orden...</span>
             )}
           </div>
+
+          {/* Fila 3: Buscador */}
+          <div className="mt-3 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar cliente por nombre o documento..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
+            />
+          </div>
         </div>
       </div>
 
@@ -269,12 +306,12 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Badge className="bg-blue-600 text-white rounded-full h-6 min-w-[24px] px-2 text-xs font-bold flex items-center justify-center">
-                  {porCobrar.length}
+                  {filteredPorCobrar.length}
                 </Badge>
                 <h2 className="text-base font-bold text-gray-800">Por Cobrar</h2>
               </div>
 
-              {porCobrar.length === 0 ? (
+              {filteredPorCobrar.length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
                   {!selectedCobradorId && (user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") ? (
                     <>
@@ -285,14 +322,18 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                   ) : (
                     <>
                       <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
-                      <p className="text-gray-700 font-medium text-sm">¡Ruta limpia para hoy!</p>
-                      <p className="text-gray-400 text-xs mt-1">No quedan cobros pendientes.</p>
+                      <p className="text-gray-700 font-medium text-sm">
+                        {searchQuery ? "No se encontraron coincidencias." : "¡Ruta limpia para hoy!"}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        {searchQuery ? "Intenta buscar con otros términos." : "No quedan cobros pendientes."}
+                      </p>
                     </>
                   )}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {porCobrar.map((item, index) => {
+                  {filteredPorCobrar.map((item, index) => {
                     const esMora = item.diasMora > 0
                     return (
                       <div
@@ -432,12 +473,12 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
             <div id="seccion-cobrados">
               <div className="flex items-center gap-2 mb-3">
                 <Badge className="bg-green-600 text-white rounded-full h-6 min-w-[24px] px-2 text-xs font-bold flex items-center justify-center">
-                  {cobrados.length}
+                  {filteredCobrados.length}
                 </Badge>
                 <h2 className="text-base font-bold text-gray-800">Cobrados / Abonaron</h2>
               </div>
 
-              {cobrados.length === 0 ? (
+              {filteredCobrados.length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
                   {!selectedCobradorId && (user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") ? (
                     <>
@@ -448,14 +489,18 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                   ) : (
                     <>
                       <DollarSign className="h-10 w-10 mx-auto mb-2 text-gray-200" />
-                      <p className="text-gray-500 font-medium text-sm">Sin cobros aún</p>
-                      <p className="text-gray-400 text-xs mt-1">Aquí aparecerán los clientes que abonen hoy.</p>
+                      <p className="text-gray-500 font-medium text-sm">
+                        {searchQuery ? "No se encontraron coincidencias." : "Sin cobros aún"}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        {searchQuery ? "Intenta buscar con otros términos." : "Aquí aparecerán los clientes que abonen hoy."}
+                      </p>
                     </>
                   )}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cobrados.map((item) => (
+                  {filteredCobrados.map((item) => (
                     <Card key={item.id} className="border-l-[3.5px] border-l-green-500 shadow-sm bg-green-50/40 overflow-hidden">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">

@@ -119,6 +119,7 @@ export default function PagoRapidoModal({
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const lastSelectInteraction = useRef<number>(0)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -740,12 +741,15 @@ export default function PagoRapidoModal({
                 <Select
                   value={metodoPago}
                   onValueChange={(value: 'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO') => setMetodoPago(value)}
+                  onOpenChange={(open) => {
+                    if (!open) lastSelectInteraction.current = Date.now()
+                  }}
                   disabled={loading}
                 >
                   <SelectTrigger className="mt-1 h-10">
                     <SelectValue placeholder="Selecciona método de pago" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="EFECTIVO">💵 Efectivo</SelectItem>
                     <SelectItem value="TRANSFERENCIA">🏦 Transferencia</SelectItem>
                     <SelectItem value="DEPOSITO">🏧 Depósito</SelectItem>
@@ -764,7 +768,11 @@ export default function PagoRapidoModal({
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={iniciarCamara}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (Date.now() - lastSelectInteraction.current < 500) return;
+                              iniciarCamara();
+                            }}
                             disabled={loading}
                             className="flex-1"
                           >
