@@ -731,11 +731,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                       <DollarSign className="h-3 w-3 mr-1 hidden sm:inline" />
                                       Pago
                                     </Button>
-                                    <Link href={`/prestamos/${prestamo.id}`} className="flex-1 sm:flex-none">
-                                      <Button variant="outline" size="sm" className="text-xs w-full h-8">
+                                    <Button asChild variant="outline" size="sm" className="text-xs w-full h-8 flex-1 sm:flex-none">
+                                      <Link href={`/prestamos/${prestamo.id}`}>
                                         Ver
-                                      </Button>
-                                    </Link>
+                                      </Link>
+                                    </Button>
                                   </div>
                                 </div>
 
