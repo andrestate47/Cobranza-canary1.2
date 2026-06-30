@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useCurrency } from "@/hooks/use-currency"
 import {
   Users,
   Calendar,
@@ -44,6 +45,7 @@ interface DashboardClientProps {
 export default function DashboardClient({ session }: DashboardClientProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const user = session?.user
+  const { logoUrl } = useCurrency()
 
   const baseMenuItems = [
     {
@@ -212,13 +214,21 @@ export default function DashboardClient({ session }: DashboardClientProps) {
           <div className="flex items-center justify-between py-4">
             <div className="flex flex-col items-center gap-8">
               <div className="relative w-12 h-12">
-                <Image
-                  src="/logo.png"
-                  alt="B.&.D.S.C Logo"
-                  width={48}
-                  height={48}
-                  className="object-contain"
-                />
+                {logoUrl ? (
+                  <img
+                    src={`/api/files/system/${encodeURIComponent(logoUrl)}`}
+                    alt="B.&.D.S.C Logo"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/logo.png"
+                    alt="B.&.D.S.C Logo"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                  />
+                )}
               </div>
               <h1 className="text-xs font-semibold text-gray-900">B.&.D.S.C</h1>
             </div>
@@ -247,30 +257,11 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/perfil" className="flex items-center">
+                      <Link href="/configuracion" className="flex items-center">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Configuración</span>
                       </Link>
                     </DropdownMenuItem>
-                    {(user?.role === 'ADMINISTRADOR' || user?.role === 'SUPERVISOR') && (
-                      <>
-                        <DropdownMenuSeparator />
-                        {user?.role === 'ADMINISTRADOR' && (
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/usuarios" className="flex items-center">
-                              <Shield className="mr-2 h-4 w-4" />
-                              <span>Panel de Administración</span>
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem asChild>
-                          <Link href="/gestion-sueldos" className="flex items-center">
-                            <Crown className="mr-2 h-4 w-4" />
-                            <span>Gestión de Sueldos</span>
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
-                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleSignOut}
@@ -320,26 +311,11 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                   <User className="mr-3 h-4 w-4" />
                   Mi Perfil
                 </Link>
-                <Link href="/perfil" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <Link href="/configuracion" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
                   <Settings className="mr-3 h-4 w-4" />
                   Configuración
                 </Link>
 
-                {(user?.role === 'ADMINISTRADOR' || user?.role === 'SUPERVISOR') && (
-                  <>
-                    <div className="h-px bg-gray-200 my-1" />
-                    {user?.role === 'ADMINISTRADOR' && (
-                      <Link href="/admin/usuarios" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                        <Shield className="mr-3 h-4 w-4" />
-                        Panel Adm.
-                      </Link>
-                    )}
-                    <Link href="/gestion-sueldos" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                      <Crown className="mr-3 h-4 w-4" />
-                      Sueldos
-                    </Link>
-                  </>
-                )}
               </div>
               <div className="h-px bg-gray-200 my-1" />
 

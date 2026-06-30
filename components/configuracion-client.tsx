@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, DollarSign, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getAllCurrencies, type Moneda } from '@/lib/currency';
 
@@ -18,6 +18,9 @@ export default function ConfiguracionClient() {
   const [monedaSeleccionada, setMonedaSeleccionada] = useState<Moneda>('USD');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currencies = getAllCurrencies();
 
@@ -35,6 +38,7 @@ export default function ConfiguracionClient() {
         const config = await response.json();
         setMonedaActual(config.moneda);
         setMonedaSeleccionada(config.moneda);
+        setLogoUrl(config.logoUrl);
       }
     } catch (error) {
       console.error('Error al cargar configuración:', error);
@@ -76,6 +80,54 @@ export default function ConfiguracionClient() {
       toast.error('Error al guardar la configuración');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden cambiar el logo');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten archivos de imagen');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen no puede ser mayor a 5MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await fetch('/api/configuracion/logo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLogoUrl(data.logoUrl);
+        toast.success('Logo actualizado correctamente');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.details ? `${errorData.error}: ${errorData.details}` : (errorData.error || 'Error al subir el logo'));
+      }
+    } catch (error) {
+      console.error('Error al subir logo:', error);
+      toast.error('Error de conexión');
+    } finally {
+      setUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -177,35 +229,65 @@ export default function ConfiguracionClient() {
         </CardContent>
       </Card>
 
-      {/* Información adicional */}
+      {/* Logo de la Empresa */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Monedas disponibles</CardTitle>
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-primary" />
+            <div>
+              <CardTitle className="text-lg">Logo de la Empresa</CardTitle>
+              <CardDescription>Sube el logo que se mostrará en los recibos y en el panel</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currencies.map((currency) => (
-              <div
-                key={currency.code}
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl font-bold">{currency.symbol}</div>
-                  <div>
-                    <p className="font-medium">{currency.name}</p>
-                    <p className="text-sm text-muted-foreground">{currency.code}</p>
-                  </div>
+          <div className="flex flex-col md:flex-row items-center gap-6 p-4 border rounded-lg bg-gray-50/50">
+            <div className="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white overflow-hidden shadow-inner">
+              {logoUrl ? (
+                <img 
+                  src={`/api/files/system/${encodeURIComponent(logoUrl)}`}
+                  alt="Logo de la empresa"
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <div className="text-center text-gray-400">
+                  <ImageIcon className="h-8 w-8 mx-auto mb-1 opacity-50" />
+                  <span className="text-xs">Sin logo</span>
                 </div>
-                {currency.code === monedaActual && (
-                  <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
-                    Actual
-                  </div>
-                )}
+              )}
+            </div>
+            
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">Imagen del Logo</h4>
+                <p className="text-xs text-gray-500">
+                  Recomendamos imágenes PNG con fondo transparente o JPG. Tamaño máximo: 5MB.
+                </p>
               </div>
-            ))}
+              
+              <div className="flex justify-center md:justify-start">
+                <Button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={uploadingLogo || !isAdmin}
+                  className="w-full sm:w-auto"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploadingLogo ? 'Subiendo...' : (logoUrl ? 'Cambiar Logo' : 'Subir Logo')}
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
+      
+      {/* Input oculto para logo */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleLogoUpload}
+      />
     </div>
   );
 }

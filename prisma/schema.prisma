@@ -508,6 +508,7 @@ model PagoSuscripcion {
 model Configuracion {
   id        String   @id @default(cuid())
   moneda    Moneda   @default(USD)
+  logoUrl   String?  @map("logo_url")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

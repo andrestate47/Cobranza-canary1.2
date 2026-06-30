@@ -1,0 +1,29 @@
+CredentialsProviderError: Could not load credentials from any providers
+CredentialsProviderError: Could not load credentials from any providers
+    at C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@aws-sdk+credential-provider-node@3.972.43\node_modules\@aws-sdk\credential-provider-node\dist-cjs\index.js:144:15
+    at C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@aws-sdk+credential-provider-node@3.972.43\node_modules\@aws-sdk\credential-provider-node\dist-cjs\index.js:71:26
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async provider (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@aws-sdk+credential-provider-node@3.972.43\node_modules\@aws-sdk\credential-provider-node\dist-cjs\index.js:38:13)
+    at async C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@smithy+core@3.24.3\node_modules\@smithy\core\dist-cjs\index.js:60:23
+    at async C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@aws-sdk+middleware-sdk-s3@3.972.41\node_modules\@aws-sdk\middleware-sdk-s3\dist-cjs\index.js:91:20
+    at async C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\@aws-sdk+core@3.974.12\node_modules\@aws-sdk\core\dist-cjs\submodules\client\index.js:119:26
+    at async uploadFile (webpack-internal:///(rsc)/./app/api/configuracion/logo/route.ts:33:5)
+    at async POST (webpack-internal:///(rsc)/./app/api/configuracion/logo/route.ts:116:29)
+    at async C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
+    at async eT.execute (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
+    at async eT.handle (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
+    at async doRender (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:1366:42)
+    at async cacheEntry.responseCache.get.routeKind (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\base-server.js:818:17)
+    at async C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\lib\router-server.js:178:21)
+    at async handleRequest (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\lib\router-server.js:355:24)
+    at async requestHandlerImpl (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\lib\router-server.js:379:13)
+    at async Server.requestListener (C:\Users\Administrator\Desktop\proyectos\Cobranza-canary1.2\node_modules\.pnpm\next@14.2.28_react-dom@18.2.0_react@18.2.0__react@18.2.0\node_modules\next\dist\server\lib\start-server.js:141:13)

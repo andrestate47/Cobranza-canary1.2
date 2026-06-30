@@ -5,6 +5,7 @@ import { formatCurrency, getCurrencySymbol, type Moneda } from '@/lib/currency';
 
 export function useCurrency() {
   const [moneda, setMoneda] = useState<Moneda>('USD');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export function useCurrency() {
       if (response.ok) {
         const config = await response.json();
         setMoneda(config.moneda);
+        setLogoUrl(config.logoUrl || null);
       }
     } catch (error) {
       console.error('Error al cargar moneda:', error);
@@ -33,6 +35,7 @@ export function useCurrency() {
 
   return {
     moneda,
+    logoUrl,
     format,
     symbol,
     loading,

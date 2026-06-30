@@ -66,7 +66,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     console.log('📋 monto:', data?.monto)
     console.log('📋 === FIN BOLETA INFO ===')
 
-    const { format: formatCurrency } = useCurrency()
+    const { format: formatCurrency, logoUrl } = useCurrency()
 
     const formatDate = (dateString: string | Date | null | undefined) => {
       if (!dateString) return ''
@@ -429,9 +429,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         <div className="w-full space-y-4">
           {/* Header con Logo */}
           <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-            <div className="flex-shrink-0 bg-white rounded-lg p-2 border border-gray-100 shadow-sm">
+            <div className="flex-shrink-0 bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex items-center justify-center" style={{ width: '80px', height: '80px' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Logo" className="h-20 w-auto object-contain" />
+              {logoUrl ? (
+                <img src={`/api/files/system/${encodeURIComponent(logoUrl)}`} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center">
