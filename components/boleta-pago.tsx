@@ -442,12 +442,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               </p>
             </div>
             {data.fotoComprobante && (
-              <div className="flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm h-28 w-28 flex items-center justify-center bg-gray-50 ml-auto mr-6">
+              <div className="flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm h-28 w-28 flex items-center justify-center bg-gray-50 ml-auto mr-6 p-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={data.fotoComprobante} 
                   alt="Miniatura Comprobante" 
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               </div>
             )}
