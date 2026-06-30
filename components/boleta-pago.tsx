@@ -49,6 +49,7 @@ interface BoletaPagoData {
   tipoPagoMetodo?: string // 'efectivo' | 'transferencia'
   metodoPago?: string
   fotoComprobante?: string | null
+  fotoMiniatura?: string | null
 }
 
 interface BoletaPagoProps {
@@ -441,12 +442,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 N° {data.numeroBoleta} • {formatDate(data.fecha)}
               </p>
             </div>
-            {data.fotoComprobante && (
+            {data.fotoMiniatura && (
               <div className="flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 shadow-sm h-28 w-28 flex items-center justify-center bg-gray-50 ml-auto mr-6 p-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
-                  src={data.fotoComprobante} 
-                  alt="Miniatura Comprobante" 
+                  src={data.fotoMiniatura} 
+                  alt="Miniatura Boleta" 
                   className="h-full w-full object-contain"
                 />
               </div>

@@ -69,6 +69,7 @@ export default function TransferenciaModal({
   const [referencia, setReferencia] = useState("")
   const [observaciones, setObservaciones] = useState("")
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
+  const [fotoMiniatura, setFotoMiniatura] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
   const [fecha, setFecha] = useState<Date>(new Date())
@@ -91,6 +92,7 @@ export default function TransferenciaModal({
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputMiniaturaRef = useRef<HTMLInputElement>(null)
 
   const { toast } = useToast()
 
@@ -271,6 +273,59 @@ export default function TransferenciaModal({
     }
   }
 
+  const handleFileUploadMiniatura = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona una imagen válida",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height)
+            const dataURL = canvas.toDataURL('image/jpeg', 0.6)
+            setFotoMiniatura(dataURL)
+            toast({
+              title: "Imagen cargada",
+              description: "La miniatura de boleta se ha cargado exitosamente",
+            })
+          }
+        }
+        img.src = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleMontoChange = (value: string) => {
     // Reemplazar coma por punto para soporte de teclados latinos
     let formattedValue = value.replace(',', '.')
@@ -333,6 +388,7 @@ export default function TransferenciaModal({
           referencia: referencia.trim() || null,
           observaciones: observaciones.trim() || null,
           fotoComprobante,
+          fotoMiniatura: fotoMiniatura || undefined,
           metodoPago,
           fecha: fecha.toISOString()
         }),
@@ -391,6 +447,7 @@ export default function TransferenciaModal({
     setReferencia("")
     setObservaciones("")
     setFotoComprobante(null)
+    setFotoMiniatura(null)
     setStep('form')
     setPagoRegistrado(null)
     if (fileInputRef.current) {
@@ -673,6 +730,56 @@ export default function TransferenciaModal({
                           variant="outline"
                           size="sm"
                           onClick={() => setFotoComprobante(null)}
+                          className="absolute top-2 right-2 h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Foto miniatura */}
+              <div>
+                <Label>Foto Miniatura de Boleta (opcional)</Label>
+                <p className="text-xs text-gray-500 mb-2">Esta imagen se mostrará en el encabezado del recibo.</p>
+                <div className="mt-2 space-y-2">
+                  {!fotoMiniatura ? (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputMiniaturaRef.current?.click()}
+                          disabled={loading}
+                          className="w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir Miniatura
+                        </Button>
+                        <input
+                          ref={fileInputMiniaturaRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUploadMiniatura}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <img
+                          src={fotoMiniatura}
+                          alt="Miniatura de boleta"
+                          className="w-full max-h-64 object-contain rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFotoMiniatura(null)}
                           className="absolute top-2 right-2 h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4" />

@@ -211,6 +211,7 @@ model Pago {
   updatedAt       DateTime   @updatedAt
   metodoPago      MetodoPago @default(EFECTIVO) @map("metodo_pago")
   fotoComprobante String?    @map("foto_comprobante")
+  fotoMiniatura   String?    @map("foto_miniatura")
   prestamo        Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
   usuario       User       @relation(fields: [userId], references: [id])
 

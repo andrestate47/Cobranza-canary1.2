@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fecha, metodoPago } = body
+    const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fotoMiniatura, fecha, metodoPago } = body
 
     // 1. Validaciones básicas
     if (!prestamoId || !monto || !fotoComprobante) {
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
           monto: montoNum,
           fecha: fechaPago,
           metodoPago: metodoPago || "TRANSFERENCIA",
+          fotoMiniatura: fotoMiniatura || null,
           observaciones: `Transferencia ID: ${nuevaTransferencia.id}. Ref: ${referencia || 'S/N'}. ${observaciones || ''}`.trim().substring(0, 191) // Asegurar que cabe en DB
         }
       })
@@ -208,7 +209,8 @@ export async function POST(request: NextRequest) {
             : pagoAsociado.usuario.name || "Usuario"
         },
         tipoCredito: pagoAsociado.prestamo.tipoCredito?.toLowerCase() || 'efectivo',
-        tipoPagoMetodo: (metodoPago || 'transferencia').toLowerCase()
+        tipoPagoMetodo: (metodoPago || 'transferencia').toLowerCase(),
+        fotoMiniatura: pagoAsociado.fotoMiniatura
       }
     }
 

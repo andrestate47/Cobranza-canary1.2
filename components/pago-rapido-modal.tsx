@@ -110,6 +110,7 @@ export default function PagoRapidoModal({
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA' | 'DEPOSITO'>('EFECTIVO')
   const [fecha, setFecha] = useState<Date>(new Date())
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
+  const [fotoMiniatura, setFotoMiniatura] = useState<string | null>(null)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
@@ -119,6 +120,7 @@ export default function PagoRapidoModal({
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputMiniaturaRef = useRef<HTMLInputElement>(null)
   const lastSelectInteraction = useRef<number>(0)
   const { toast } = useToast()
 
@@ -264,6 +266,58 @@ export default function PagoRapidoModal({
     }
   }
 
+  const handleFileUploadMiniatura = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona una imagen válida",
+          variant: "destructive",
+        })
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height)
+            const dataURL = canvas.toDataURL('image/jpeg', 0.6)
+            setFotoMiniatura(dataURL)
+            toast({
+              title: "Imagen cargada",
+              description: "La miniatura de boleta se ha cargado exitosamente",
+            })
+          }
+        }
+        img.src = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   // Actualiza la fecha a la fecha y hora actual cada vez que se abre el modal
   useEffect(() => {
     if (isOpen) {
@@ -395,6 +449,7 @@ export default function PagoRapidoModal({
         observaciones: observaciones.trim() || undefined,
         metodoPago: metodoPago,
         fotoComprobante: fotoComprobante || undefined,
+        fotoMiniatura: fotoMiniatura || undefined,
         fecha: fecha ? fecha.toISOString() : undefined
       }
 
@@ -488,6 +543,7 @@ export default function PagoRapidoModal({
     setMetodoPago('EFECTIVO')
     setFecha(new Date())
     setFotoComprobante(null)
+    setFotoMiniatura(null)
     setPagoRegistrado(null)
     detenerCamara()
     onClose()
@@ -847,6 +903,55 @@ export default function PagoRapidoModal({
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Foto miniatura */}
+              <div className="sm:col-span-2">
+                <Label>Foto Miniatura de Boleta (opcional)</Label>
+                <p className="text-xs text-gray-500 mb-2">Esta imagen se mostrará en el encabezado del recibo.</p>
+                <div className="mt-2 space-y-2">
+                  {!fotoMiniatura ? (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputMiniaturaRef.current?.click()}
+                          disabled={loading}
+                          className="w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir Miniatura
+                        </Button>
+                        <input
+                          ref={fileInputMiniaturaRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUploadMiniatura}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={fotoMiniatura}
+                        alt="Miniatura cargada"
+                        className="w-full h-full object-contain"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 rounded-full shadow-md"
+                        onClick={() => setFotoMiniatura(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
                 </div>

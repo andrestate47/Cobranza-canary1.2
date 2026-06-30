@@ -26,9 +26,10 @@ export async function POST(request: NextRequest) {
     let body
     try {
       body = await request.json()
-      const { fotoComprobante, ...bodyToLog } = body || {}
+      const { fotoComprobante, fotoMiniatura, ...bodyToLog } = body || {}
       console.log('📦 Body recibido:', JSON.stringify(bodyToLog, null, 2))
       if (fotoComprobante) console.log('📦 Incluye fotoComprobante: Sí (base64 omitido en log)')
+      if (fotoMiniatura) console.log('📦 Incluye fotoMiniatura: Sí (base64 omitido en log)')
     } catch (parseError) {
       console.log('❌ Error parsing JSON body:', parseError)
       return NextResponse.json(
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { prestamoId, monto, observaciones, metodoPago, fecha, fotoComprobante } = body || {}
+    const { prestamoId, monto, observaciones, metodoPago, fecha, fotoComprobante, fotoMiniatura } = body || {}
 
     // Validaciones básicas
     if (!prestamoId || !monto) {
@@ -214,6 +215,7 @@ export async function POST(request: NextRequest) {
           observaciones: observaciones?.trim() || null,
           metodoPago: metodoFinal,
           fotoComprobante: fotoComprobante || null,
+          fotoMiniatura: fotoMiniatura || null,
           fecha: fecha ? new Date(fecha) : undefined
         },
         include: {
@@ -322,7 +324,8 @@ export async function POST(request: NextRequest) {
         // Campos adicionales para la boleta mejorada
         tipoCredito: prestamo.tipoCredito.toLowerCase(),
         tipoPagoMetodo: pago.metodoPago.toLowerCase(),
-        fotoComprobante: pago.fotoComprobante
+        fotoComprobante: pago.fotoComprobante,
+        fotoMiniatura: pago.fotoMiniatura
       }
     }
 

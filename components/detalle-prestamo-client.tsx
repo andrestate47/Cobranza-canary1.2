@@ -877,6 +877,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       observaciones: pago.observaciones,
       metodoPago: pago.metodoPago,
       fotoComprobante: (pago as any).fotoComprobante || null,
+      fotoMiniatura: (pago as any).fotoMiniatura || null,
       numeroBoleta: `BOL-${String(pago.id).padStart(6, '0')}`,
       prestamo: {
         id: prestamo.id,
