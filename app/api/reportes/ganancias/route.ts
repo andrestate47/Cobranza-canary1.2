@@ -367,6 +367,38 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Transferencias pendientes (préstamos de tipo TRANSFERENCIA con saldo pendiente)
+    const prestamosPorTransferencia = await prisma.prestamo.findMany({
+      where: {
+        tipoCredito: 'TRANSFERENCIA',
+        estado: 'ACTIVO'
+      },
+      include: {
+        transferencias: true
+      }
+    })
+
+    // === NUEVA LÓGICA DE AGREGACIÓN GLOBAL DE PAGOS ===
+    const allPrestamoIds = new Set([
+      ...prestamosAnio.map(p => p.id),
+      ...prestamosConSaldo.map(p => p.id),
+      ...prestamosPorTransferencia.map(p => p.id),
+      ...prestamos.map(p => p.id)
+    ])
+
+    const agregacionPagos = await prisma.pago.groupBy({
+      by: ["prestamoId"],
+      _sum: { monto: true, devolucionSeguro: true },
+      where: { prestamoId: { in: Array.from(allPrestamoIds) } }
+    })
+
+    const totalPagadoMap = new Map()
+    agregacionPagos.forEach(agg => {
+      totalPagadoMap.set(agg.prestamoId, Number(agg._sum.monto || 0) + Number(agg._sum.devolucionSeguro || 0))
+    })
+
+    const getTotalPagado = (prestamoId: string) => totalPagadoMap.get(prestamoId) || 0
+
     // 2. Balance Pendiente (suma de todos los saldos pendientes)
     let balancePendiente = 0
     ;(prestamosConSaldo as any[]).forEach((prestamo) => {
@@ -561,38 +593,6 @@ export async function GET(request: NextRequest) {
     const transferenciasRealizadas = transferencias.length
     const valorTotalTransferencias = (transferencias as TransferenciaConPrestamo[]).reduce((sum: number, t) => sum + parseFloat(t.monto.toString()), 0)
     const clientesTransferencia = new Set((transferencias as TransferenciaConPrestamo[]).map((t) => t.prestamo.clienteId)).size
-    
-    // Transferencias pendientes (préstamos de tipo TRANSFERENCIA con saldo pendiente)
-    const prestamosPorTransferencia = await prisma.prestamo.findMany({
-      where: {
-        tipoCredito: 'TRANSFERENCIA',
-        estado: 'ACTIVO'
-      },
-      include: {
-        transferencias: true
-      }
-    })
-
-    // === NUEVA LÓGICA DE AGREGACIÓN GLOBAL DE PAGOS ===
-    const allPrestamoIds = new Set([
-      ...prestamosAnio.map(p => p.id),
-      ...prestamosConSaldo.map(p => p.id),
-      ...prestamosPorTransferencia.map(p => p.id),
-      ...prestamos.map(p => p.id)
-    ])
-
-    const agregacionPagos = await prisma.pago.groupBy({
-      by: ["prestamoId"],
-      _sum: { monto: true, devolucionSeguro: true },
-      where: { prestamoId: { in: Array.from(allPrestamoIds) } }
-    })
-
-    const totalPagadoMap = new Map()
-    agregacionPagos.forEach(agg => {
-      totalPagadoMap.set(agg.prestamoId, Number(agg._sum.monto || 0) + Number(agg._sum.devolucionSeguro || 0))
-    })
-
-    const getTotalPagado = (prestamoId: string) => totalPagadoMap.get(prestamoId) || 0
     
     const transferenciasEstimadas = (prestamosPorTransferencia as any[]).filter((p) => {
       const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
