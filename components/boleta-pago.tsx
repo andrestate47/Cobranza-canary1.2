@@ -48,6 +48,7 @@ interface BoletaPagoData {
   tipoCredito?: string // 'efectivo' | 'transferencia'
   tipoPagoMetodo?: string // 'efectivo' | 'transferencia'
   metodoPago?: string
+  devolucionSeguro?: number
   fotoComprobante?: string | null
   fotoMiniatura?: string | null
 }
@@ -639,7 +640,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                       <span className="text-blue-800 font-bold uppercase text-xs">Monto de este abono</span>
                       <span className="font-black text-blue-900 text-xl">{formatCurrency(data.monto)}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-blue-700">
+                    {data.devolucionSeguro ? (
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
+                        <span className="text-blue-800 font-bold uppercase text-xs">Devolver seguro</span>
+                        <span className="font-black text-green-700 text-xl">{formatCurrency(data.devolucionSeguro)}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between text-xs text-blue-700 mt-2">
                       <span>Progreso total:</span>
                       <span className="font-bold">{progresoPrecentaje}%</span>
                     </div>

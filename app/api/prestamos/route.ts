@@ -63,11 +63,6 @@ export async function GET(request: NextRequest) {
             ciudad: true,
             referenciasPersonales: true
           }
-        },
-        pagos: {
-          orderBy: {
-            fecha: "desc"
-          }
         }
       },
       orderBy: [
@@ -75,11 +70,28 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    const prestamoIds = prestamos.map(p => p.id)
+
+    // Obtener agregaciones de pagos (suma y fecha del último pago)
+    const agregacionPagos = prestamoIds.length > 0 ? await prisma.pago.groupBy({
+      by: ["prestamoId"],
+      _sum: { monto: true, devolucionSeguro: true },
+      _max: { fecha: true },
+      where: { prestamoId: { in: prestamoIds } }
+    }) : []
+
+    const pagosAgrupadosMap = new Map()
+    agregacionPagos.forEach(agg => {
+      pagosAgrupadosMap.set(agg.prestamoId, {
+        totalPagado: Number(agg._sum.monto || 0) + Number(agg._sum.devolucionSeguro || 0),
+        fechaUltimoPago: agg._max.fecha
+      })
+    })
+
     // Procesar préstamos y calcular saldos
     const prestamosConSaldo = prestamos.map(prestamo => {
-      const totalPagado = prestamo.pagos.reduce((sum, pago) =>
-        sum + parseFloat(pago.monto.toString()), 0
-      )
+      const aggPago = pagosAgrupadosMap.get(prestamo.id) || { totalPagado: 0, fechaUltimoPago: null }
+      const totalPagado = aggPago.totalPagado
       const montoTotal = parseFloat(prestamo.monto.toString()) +
         (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
       const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
@@ -92,7 +104,7 @@ export async function GET(request: NextRequest) {
 
       // Determinar la fecha de actividad más reciente
       const fechaCreacion = prestamo.createdAt || prestamo.fechaInicio
-      const fechaUltimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
+      const fechaUltimoPago = aggPago.fechaUltimoPago
 
       const fechaActividadReciente = fechaUltimoPago && new Date(fechaUltimoPago) > new Date(fechaCreacion)
         ? fechaUltimoPago

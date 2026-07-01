@@ -90,21 +90,52 @@ export async function GET(request: NextRequest) {
               direccionCobro: true,
               mapLink: true
             }
-          },
-          pagos: {
-            orderBy: {
-              fecha: "desc"
-            }
           }
         }
       })
     }
 
+    const prestamoIds = prestamos.map(p => p.id)
+
+    // Agrupar los pagos para obtener el total pagado por préstamo
+    const sumasPagos = prestamoIds.length > 0 ? await prisma.pago.groupBy({
+      by: ["prestamoId"],
+      _sum: { monto: true, devolucionSeguro: true },
+      where: { prestamoId: { in: prestamoIds } }
+    }) : []
+
+    const pagoTotalesMap = new Map()
+    sumasPagos.forEach(s => {
+      pagoTotalesMap.set(s.prestamoId, Number(s._sum.monto || 0) + Number(s._sum.devolucionSeguro || 0))
+    })
+
+    // Obtener SOLO los pagos de "hoy" (entre inicio y fin) para saber si pagaron
+    const pagosHoyRaw = prestamoIds.length > 0 ? await prisma.pago.findMany({
+      where: {
+        prestamoId: { in: prestamoIds },
+        fecha: {
+          gte: inicio,
+          lte: fin
+        }
+      },
+      select: {
+        prestamoId: true,
+        monto: true
+      }
+    }) : []
+
+    const pagosHoyMap = new Map()
+    pagosHoyRaw.forEach(p => {
+      const arr = pagosHoyMap.get(p.prestamoId) || []
+      arr.push(p)
+      pagosHoyMap.set(p.prestamoId, arr)
+    })
+
     // Procesar TODOS los préstamos activos: calcular saldos y pagos de hoy
     const procesados = prestamos
       .filter(p => new Date(p.fechaInicio) <= fin) // solo los que ya iniciaron
       .map(prestamo => {
-        const totalPagado = prestamo.pagos.reduce((sum: number, pago: any) => sum + parseFloat(pago.monto.toString()), 0)
+        const totalPagado = pagoTotalesMap.get(prestamo.id) || 0
         const montoTotal = parseFloat(prestamo.monto.toString()) +
           (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
 
@@ -116,10 +147,7 @@ export async function GET(request: NextRequest) {
         const cuotasPagadas = Math.round(cuotasPagadasRaw * 100) / 100
 
         // Pagos de HOY (sin importar si era día de cobro o no)
-        const pagosHoy = prestamo.pagos.filter((pago: any) => {
-          const pFecha = new Date(pago.fecha)
-          return pFecha >= inicio && pFecha <= fin
-        })
+        const pagosHoy = pagosHoyMap.get(prestamo.id) || []
 
         const pagadoHoyMonto = pagosHoy.reduce((sum: number, p: any) => sum + parseFloat(p.monto.toString()), 0)
         const yaPagoHoy = pagosHoy.length > 0

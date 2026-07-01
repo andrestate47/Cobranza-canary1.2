@@ -23,7 +23,7 @@ interface PrestamoConCliente {
     apellido: string
     documento: string
   }
-  pagos: {
+  pagos?: {
     monto: Decimal | number
   }[]
 }
@@ -196,9 +196,6 @@ export async function GET(request: NextRequest) {
           { createdAt: { gte: anualInicio } },
           { fechaFin: { gte: anualInicio } }
         ]
-      },
-      include: {
-        pagos: true
       }
     })
 
@@ -278,7 +275,6 @@ export async function GET(request: NextRequest) {
         estado: 'ACTIVO'
       },
       include: {
-        pagos: true,
         cliente: {
           select: {
             id: true,
@@ -373,9 +369,9 @@ export async function GET(request: NextRequest) {
 
     // 2. Balance Pendiente (suma de todos los saldos pendientes)
     let balancePendiente = 0
-    ;(prestamosConSaldo as PrestamoConCliente[]).forEach((prestamo) => {
+    ;(prestamosConSaldo as any[]).forEach((prestamo) => {
       const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-      const totalPagado = prestamo.pagos.reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
+      const totalPagado = getTotalPagado(prestamo.id)
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       balancePendiente += saldoPendiente
     })
@@ -387,11 +383,11 @@ export async function GET(request: NextRequest) {
 
     // 4. Capital No Recuperado (préstamos vencidos sin pagar)
     let capitalNoRecuperado = 0
-    ;(prestamosConSaldo as PrestamoConCliente[])
+    ;(prestamosConSaldo as any[])
       .filter((prestamo) => new Date(prestamo.fechaFin) < hoy)
       .forEach((prestamo) => {
         const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-        const totalPagado = prestamo.pagos.reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
+        const totalPagado = getTotalPagado(prestamo.id)
         const saldoPendiente = Math.max(0, montoTotal - totalPagado)
         capitalNoRecuperado += saldoPendiente
       })
@@ -573,14 +569,34 @@ export async function GET(request: NextRequest) {
         estado: 'ACTIVO'
       },
       include: {
-        pagos: true,
         transferencias: true
       }
     })
+
+    // === NUEVA LÓGICA DE AGREGACIÓN GLOBAL DE PAGOS ===
+    const allPrestamoIds = new Set([
+      ...prestamosAnio.map(p => p.id),
+      ...prestamosConSaldo.map(p => p.id),
+      ...prestamosPorTransferencia.map(p => p.id),
+      ...prestamos.map(p => p.id)
+    ])
+
+    const agregacionPagos = await prisma.pago.groupBy({
+      by: ["prestamoId"],
+      _sum: { monto: true, devolucionSeguro: true },
+      where: { prestamoId: { in: Array.from(allPrestamoIds) } }
+    })
+
+    const totalPagadoMap = new Map()
+    agregacionPagos.forEach(agg => {
+      totalPagadoMap.set(agg.prestamoId, Number(agg._sum.monto || 0) + Number(agg._sum.devolucionSeguro || 0))
+    })
+
+    const getTotalPagado = (prestamoId: string) => totalPagadoMap.get(prestamoId) || 0
     
-    const transferenciasEstimadas = (prestamosPorTransferencia as PrestamoParaTransferencia[]).filter((p) => {
+    const transferenciasEstimadas = (prestamosPorTransferencia as any[]).filter((p) => {
       const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-      const totalPagado = p.pagos.reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
+      const totalPagado = getTotalPagado(p.id)
       return montoTotal > totalPagado && p.transferencias.length === 0
     }).length
 
@@ -820,10 +836,10 @@ export async function GET(request: NextRequest) {
         // 2. Cobrador regado en la calle (saldo pendiente actual)
         let regadoCalleRuta = 0
         prestamosConSaldo
-          .filter(p => p.userId === cobrador.id)
+          .filter(p => (p as any).userId === cobrador.id)
           .forEach((p) => {
             const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-            const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+            const totalPagado = getTotalPagado(p.id)
             const saldoPendiente = Math.max(0, montoTotal - totalPagado)
             regadoCalleRuta += saldoPendiente
           })
@@ -856,7 +872,7 @@ export async function GET(request: NextRequest) {
         )
         prestamosExpiradosPeriodo.forEach((p) => {
           const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-          const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+          const totalPagado = getTotalPagado(p.id)
           const saldoPendiente = Math.max(0, montoTotal - totalPagado)
           perdidasRutaPeriodo += saldoPendiente
         })
@@ -886,7 +902,7 @@ export async function GET(request: NextRequest) {
           let perdidas = 0
           prestamosExpirados.forEach((p) => {
             const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-            const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+            const totalPagado = getTotalPagado(p.id)
             const saldoPendiente = Math.max(0, montoTotal - totalPagado)
             perdidas += saldoPendiente
           })
@@ -946,8 +962,8 @@ export async function GET(request: NextRequest) {
       detalles: {
         prestamos: (prestamos as PrestamoConCliente[]).map((p) => {
           const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-          const totalPagado = p.pagos.reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
-          const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+          const totalPagado = (p.pagos || []).reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
+          const saldoPendiente = Math.max(0, montoTotal - getTotalPagado(p.id))
           
           return {
             id: p.id,
@@ -958,7 +974,7 @@ export async function GET(request: NextRequest) {
             saldoPendiente: saldoPendiente,
             fechaInicio: p.fechaFin,
             fechaVencimiento: p.fechaFin, // Usar fechaFin como fechaVencimiento
-            pagosEnPeriodo: p.pagos.length,
+            pagosEnPeriodo: (p.pagos || []).length,
             montoPagado: totalPagado
           }
         }),

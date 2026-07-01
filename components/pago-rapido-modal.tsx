@@ -53,6 +53,7 @@ interface PrestamoConCliente {
   }
   saldoPendiente: number
   cuotasPagadas: number
+  microseguroTotal?: number
 }
 
 interface PagoRegistrado {
@@ -112,6 +113,8 @@ export default function PagoRapidoModal({
   const [fotoComprobante, setFotoComprobante] = useState<string | null>(null)
   const [fotoMiniatura, setFotoMiniatura] = useState<string | null>(null)
   const [capturandoFoto, setCapturandoFoto] = useState(false)
+  const [devolverSeguro, setDevolverSeguro] = useState(false)
+  const [montoDevolucion, setMontoDevolucion] = useState("")
   const [loading, setLoading] = useState(false)
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -446,6 +449,7 @@ export default function PagoRapidoModal({
       const requestBody = {
         prestamoId: prestamo.id,
         monto: montoNumerico,
+        devolucionSeguro: devolverSeguro && montoDevolucion ? parseFloat(montoDevolucion.replace(/[^0-9.]/g, '')) : undefined,
         observaciones: observaciones.trim() || undefined,
         metodoPago: metodoPago,
         fotoComprobante: fotoComprobante || undefined,
@@ -544,6 +548,8 @@ export default function PagoRapidoModal({
     setFecha(new Date())
     setFotoComprobante(null)
     setFotoMiniatura(null)
+    setDevolverSeguro(false)
+    setMontoDevolucion("")
     setPagoRegistrado(null)
     detenerCamara()
     onClose()
@@ -955,6 +961,58 @@ export default function PagoRapidoModal({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Fila Completa: Devolución Seguro */}
+              <div className="sm:col-span-2 border-t border-gray-100 pt-4 mt-2">
+                <div className="flex items-center space-x-4 mb-2">
+                  <Label>¿Devolver seguro?</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={devolverSeguro ? "default" : "outline"}
+                      className={devolverSeguro ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                      onClick={() => {
+                        setDevolverSeguro(true)
+                        if (!montoDevolucion) {
+                          setMontoDevolucion(prestamo.microseguroTotal ? prestamo.microseguroTotal.toString() : "")
+                        }
+                      }}
+                    >
+                      Sí
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={!devolverSeguro ? "default" : "outline"}
+                      onClick={() => {
+                        setDevolverSeguro(false)
+                        setMontoDevolucion("")
+                      }}
+                    >
+                      No
+                    </Button>
+                  </div>
+                </div>
+
+                {devolverSeguro && (
+                  <div className="mt-3">
+                    <Label htmlFor="montoDevolucion">Monto a devolver de seguro *</Label>
+                    <div className="relative mt-1">
+                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="montoDevolucion"
+                        type="text"
+                        value={montoDevolucion}
+                        onChange={(e) => setMontoDevolucion(e.target.value.replace(/[^0-9.]/g, ''))}
+                        placeholder="0.00"
+                        className="pl-10 h-10"
+                        required={devolverSeguro}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Fila Completa Inferior: Observaciones */}

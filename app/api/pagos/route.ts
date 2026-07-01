@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { prestamoId, monto, observaciones, metodoPago, fecha, fotoComprobante, fotoMiniatura } = body || {}
+    const { prestamoId, monto, devolucionSeguro, observaciones, metodoPago, fecha, fotoComprobante, fotoMiniatura } = body || {}
 
     // Validaciones básicas
     if (!prestamoId || !monto) {
@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
       console.log('❌ Monto inválido:', monto)
       return NextResponse.json(
         { error: "El monto debe ser un número positivo mayor a cero" },
+        { status: 400 }
+      )
+    }
+
+    const devolucionSeguroNumerico = devolucionSeguro ? parseFloat(devolucionSeguro) : 0
+    if (isNaN(devolucionSeguroNumerico) || devolucionSeguroNumerico < 0) {
+      return NextResponse.json(
+        { error: "El monto de devolución de seguro debe ser un número positivo o cero" },
         { status: 400 }
       )
     }
@@ -151,28 +159,31 @@ export async function POST(request: NextRequest) {
     console.log('🔢 Calculando saldo pendiente actual...')
     const pagosExistentes = await prisma.pago.aggregate({
       where: { prestamoId },
-      _sum: { monto: true }
+      _sum: { monto: true, devolucionSeguro: true }
     })
 
     const montoOriginalPrestamo = Number(prestamo.monto)
     const tasaInteresPrestamo = Number(prestamo.interes) / 100
     const montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
-    const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0)
+    const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)
     // Redondear a 2 decimales para evitar precisiones de punto flotante
     const saldoActual = Math.max(0, Math.round((montoTotalPrestamo - totalPagosExistentes) * 100) / 100)
+
+    const pagoTotalVirtual = montoNumerico + devolucionSeguroNumerico;
 
     console.log('💰 Validación de saldo:')
     console.log('  - Monto total préstamo:', montoTotalPrestamo)
     console.log('  - Total pagos existentes:', totalPagosExistentes)
     console.log('  - Saldo actual:', saldoActual)
-    console.log('  - Monto a pagar:', montoNumerico)
+    console.log('  - Monto a pagar (efectivo):', montoNumerico)
+    console.log('  - Devolución seguro:', devolucionSeguroNumerico)
 
     // Validar que el pago no exceda el saldo pendiente
-    if (montoNumerico > saldoActual) {
+    if (pagoTotalVirtual > saldoActual) {
       console.log('❌ Pago excede saldo pendiente')
       return NextResponse.json(
         {
-          error: `El monto del pago ($${montoNumerico.toLocaleString('es-CO')}) no puede ser mayor al saldo pendiente ($${saldoActual.toLocaleString('es-CO')})`
+          error: `La suma del pago y seguro devuelto ($${pagoTotalVirtual.toLocaleString('es-CO')}) no puede ser mayor al saldo pendiente ($${saldoActual.toLocaleString('es-CO')})`
         },
         { status: 400 }
       )
@@ -212,6 +223,7 @@ export async function POST(request: NextRequest) {
           prestamoId,
           userId: session.user.id,
           monto: montoDecimal, // Pasar como objeto Decimal
+          devolucionSeguro: devolucionSeguroNumerico > 0 ? new Decimal(devolucionSeguroNumerico) : null,
           observaciones: observaciones?.trim() || null,
           metodoPago: metodoFinal,
           fotoComprobante: fotoComprobante || null,
@@ -267,11 +279,11 @@ export async function POST(request: NextRequest) {
 
     // Calcular nuevo saldo pendiente después de crear el pago
     console.log('🔢 Recalculando saldo pendiente después del pago...')
-    const nuevoSaldoPendiente = Math.max(0, saldoActual - montoNumerico)
+    const nuevoSaldoPendiente = Math.max(0, saldoActual - pagoTotalVirtual)
 
     console.log('🔢 Cálculos finales:')
     console.log('  - Saldo antes del pago:', saldoActual)
-    console.log('  - Monto del pago:', montoNumerico)
+    console.log('  - Reducción de deuda:', pagoTotalVirtual)
     console.log('  - Nuevo saldo pendiente:', nuevoSaldoPendiente)
 
     const numeroBoleta = `BOL-${String(pago.id).padStart(6, '0')}`
@@ -290,6 +302,7 @@ export async function POST(request: NextRequest) {
         fecha: pago.fecha,
         observaciones: pago.observaciones,
         metodoPago: pago.metodoPago,
+        devolucionSeguro: pago.devolucionSeguro ? Number(pago.devolucionSeguro) : 0,
         numeroBoleta: numeroBoleta,
         prestamo: {
           id: prestamo.id,
@@ -476,6 +489,7 @@ export async function GET(request: NextRequest) {
       fecha: pago.fecha,
       observaciones: pago.observaciones,
       metodoPago: pago.metodoPago,
+      devolucionSeguro: pago.devolucionSeguro ? Number(pago.devolucionSeguro) : 0,
       modificado: pago.modificado,
       prestamo: {
         id: pago.prestamo.id,

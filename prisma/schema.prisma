@@ -212,6 +212,7 @@ model Pago {
   metodoPago      MetodoPago @default(EFECTIVO) @map("metodo_pago")
   fotoComprobante String?    @map("foto_comprobante")
   fotoMiniatura   String?    @map("foto_miniatura")
+  devolucionSeguro Decimal?  @default(0) @map("devolucion_seguro")
   prestamo        Prestamo   @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
   usuario       User       @relation(fields: [userId], references: [id])
 
