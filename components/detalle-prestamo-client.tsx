@@ -800,7 +800,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const IconoAlerta = estadoAlerta.icono
 
   // Función para abrir Google Maps con la dirección
-  const abrirMapa = (direccion: string, tipo: string) => {
+  const abrirMapa = (direccion: string, tipo: string, mapLink?: string | null) => {
+    // Si hay un mapLink, abrirlo directamente
+    if (mapLink && mapLink.startsWith('http')) {
+      window.open(mapLink, '_blank')
+      return
+    }
+
     // Si la dirección ya es un enlace de Google Maps, abrirlo directamente
     if (direccion.startsWith('http')) {
       window.open(direccion, '_blank')
@@ -1538,7 +1544,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-700 mb-1">Dirección Cliente:</div>
                         <button
-                          onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente')}
+                          onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente', prestamo.cliente.mapLink)}
                           className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full"
                           title="Click para abrir en Google Maps"
                         >

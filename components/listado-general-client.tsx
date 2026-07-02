@@ -69,6 +69,7 @@ interface ClienteConPrestamos {
     pais?: string
     ciudad?: string
     referenciasPersonales?: string
+    mapLink?: string
   }
   prestamos: Prestamo[]
   fechaActividadReciente: string
@@ -358,8 +359,30 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
   }
 
-  const abrirMapa = (direccion: string, tipo: string) => {
+  const abrirMapa = (direccion: string, tipo: string, mapLink?: string | null) => {
     try {
+      // Si hay un mapLink o la dirección ya es un enlace, abrirlo directamente
+      if (mapLink && mapLink.startsWith('http')) {
+        const nuevaVentana = window.open(mapLink, '_blank', 'noopener,noreferrer')
+        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
+          toast({
+            title: "Ventana bloqueada",
+            description: "Tu navegador bloqueó la ventana emergente. Abriendo en la misma pestaña...",
+            variant: "default",
+          })
+          setTimeout(() => {
+            window.location.href = mapLink
+          }, 2000)
+        } else {
+          toast({
+            title: "Mapa abierto",
+            description: `Se abrió Google Maps con el link de ${tipo}`,
+            variant: "default",
+          })
+        }
+        return
+      }
+
       // Limpiar y formatear la dirección
       const direccionLimpia = direccion.trim()
       if (!direccionLimpia) {
@@ -368,6 +391,27 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           description: "La dirección está vacía",
           variant: "destructive",
         })
+        return
+      }
+
+      if (direccionLimpia.startsWith('http')) {
+        const nuevaVentana = window.open(direccionLimpia, '_blank', 'noopener,noreferrer')
+        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
+          toast({
+            title: "Ventana bloqueada",
+            description: "Tu navegador bloqueó la ventana emergente. Abriendo en la misma pestaña...",
+            variant: "default",
+          })
+          setTimeout(() => {
+            window.location.href = direccionLimpia
+          }, 2000)
+        } else {
+          toast({
+            title: "Mapa abierto",
+            description: `Se abrió Google Maps con el link de ${tipo}`,
+            variant: "default",
+          })
+        }
         return
       }
 
@@ -773,7 +817,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                       <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
                                       <div className="flex-1">
                                         <button
-                                          onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente')}
+                                          onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente', clienteData.cliente.mapLink)}
                                           className="text-blue-600 hover:underline text-left"
                                         >
                                           {clienteData.cliente.direccionCliente}
