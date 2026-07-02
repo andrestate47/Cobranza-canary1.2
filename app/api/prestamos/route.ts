@@ -92,8 +92,11 @@ export async function GET(request: NextRequest) {
     const prestamosConSaldo = prestamos.map(prestamo => {
       const aggPago = pagosAgrupadosMap.get(prestamo.id) || { totalPagado: 0, fechaUltimoPago: null }
       const totalPagado = aggPago.totalPagado
-      const montoTotal = parseFloat(prestamo.monto.toString()) +
-        (parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100)
+      const interesTotal = parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100;
+      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
+      const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION'
+        ? parseFloat(prestamo.monto.toString()) + interesTotal - microseguroTotal
+        : parseFloat(prestamo.monto.toString()) + interesTotal + microseguroTotal;
       const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
       const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
         ? totalPagado / parseFloat(prestamo.valorCuota.toString())
@@ -273,7 +276,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo de microseguro
-    if (!['NINGUNO', 'MONTO_FIJO', 'PORCENTAJE'].includes(microseguroTipo)) {
+    if (!['NINGUNO', 'MONTO_FIJO', 'PORCENTAJE', 'DEVOLUCION'].includes(microseguroTipo)) {
       console.log("Error: Tipo de microseguro inválido:", microseguroTipo)
       return NextResponse.json(
         { error: "Tipo de microseguro inválido" },
@@ -309,7 +312,9 @@ export async function POST(request: NextRequest) {
 
     // Calcular valores
     const interesTotal = montoNum * interesNum / 100
-    const montoTotal = montoNum + interesTotal + microseguroTotalNum
+    const montoTotal = microseguroTipo === 'DEVOLUCION'
+      ? montoNum + interesTotal - microseguroTotalNum
+      : montoNum + interesTotal + microseguroTotalNum
     const valorCuota = montoTotal / cuotasNum
 
     console.log("Cálculos - montoTotal:", montoTotal, "interesTotal:", interesTotal, "valorCuota:", valorCuota, "tipoCredito:", tipoCredito, "diasGracia:", diasGraciaNum, "moraCredito:", moraCreditoNum)

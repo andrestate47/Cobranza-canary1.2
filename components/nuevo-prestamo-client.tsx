@@ -221,14 +221,18 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
     // Calcular microseguro
     let microseguroTotalCalc = 0
-    if (microseguroTipo === 'MONTO_FIJO') {
+    if (microseguroTipo === 'MONTO_FIJO' || microseguroTipo === 'DEVOLUCION') {
       microseguroTotalCalc = parseSpanishNumber(microseguroValor) || 0
     } else if (microseguroTipo === 'PORCENTAJE') {
       const porcentaje = parseSpanishNumber(microseguroValor) || 0
       microseguroTotalCalc = montoNum * (porcentaje / 100)
     }
 
-    const cuota = (totalConInteres + microseguroTotalCalc) / cuotasNum
+    const totalConMicroseguro = microseguroTipo === 'DEVOLUCION'
+      ? totalConInteres - microseguroTotalCalc
+      : totalConInteres + microseguroTotalCalc
+
+    const cuota = totalConMicroseguro / cuotasNum
 
     setMontoTotal(totalConInteres)
     setMicroseguroTotal(microseguroTotalCalc)
@@ -1069,6 +1073,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           <SelectItem value="NINGUNO">Sin microseguro</SelectItem>
                           <SelectItem value="MONTO_FIJO">Monto fijo</SelectItem>
                           <SelectItem value="PORCENTAJE">Porcentaje del préstamo</SelectItem>
+                          <SelectItem value="DEVOLUCION">Devolución de micro seguro</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1076,7 +1081,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                     {microseguroTipo !== 'NINGUNO' && (
                       <div>
                         <Label htmlFor="microseguroValor">
-                          {microseguroTipo === 'MONTO_FIJO' ? 'Monto del microseguro' : 'Porcentaje (%)'}
+                          {microseguroTipo === 'PORCENTAJE' ? 'Porcentaje (%)' : 
+                           microseguroTipo === 'DEVOLUCION' ? 'Monto a devolver' : 'Monto del microseguro'}
                         </Label>
                         <div className="relative mt-1">
                           <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1085,7 +1091,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                             type="text"
                             value={microseguroValor}
                             onChange={(e) => handleMicroseguroValorChange(e.target.value)}
-                            placeholder={microseguroTipo === 'MONTO_FIJO' ? 'Ej: 5000' : 'Ej: 2.5'}
+                            placeholder={microseguroTipo === 'MONTO_FIJO' || microseguroTipo === 'DEVOLUCION' ? 'Ej: 5000' : 'Ej: 2.5'}
                             className="pl-10 bg-white"
                             disabled={loading}
                           />
@@ -1093,6 +1099,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                         <div className="text-xs text-purple-600 mt-1">
                           {microseguroTipo === 'MONTO_FIJO'
                             ? 'Monto fijo a cobrar por el microseguro'
+                            : microseguroTipo === 'DEVOLUCION'
+                            ? 'Monto a descontar del préstamo por devolución de seguro'
                             : 'Porcentaje del monto del préstamo'
                           }
                         </div>
@@ -1103,8 +1111,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                   {microseguroTipo !== 'NINGUNO' && microseguroTotal > 0 && (
                     <div className="mt-3 p-3 bg-purple-100 rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-purple-700 font-medium">Total del microseguro:</span>
-                        <span className="text-lg font-bold text-purple-900">{formatCurrency(microseguroTotal)}</span>
+                        <span className="text-sm text-purple-700 font-medium">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Total del microseguro:'}</span>
+                        <span className="text-lg font-bold text-purple-900">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
                       </div>
                     </div>
                   )}
@@ -1204,13 +1212,13 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       </div>
                       {microseguroTipo !== 'NINGUNO' && microseguroTotal > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-purple-700">Microseguro:</span>
-                          <span className="font-semibold">{formatCurrency(microseguroTotal)}</span>
+                          <span className="text-purple-700">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Microseguro:'}</span>
+                          <span className="font-semibold">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
                         </div>
                       )}
                       <div className="flex justify-between border-t border-blue-200 pt-2">
                         <span className="text-blue-700 font-medium">Total a pagar:</span>
-                        <span className="font-bold text-lg">{formatCurrency(montoTotal + microseguroTotal)}</span>
+                        <span className="font-bold text-lg">{formatCurrency(microseguroTipo === 'DEVOLUCION' ? montoTotal - microseguroTotal : montoTotal + microseguroTotal)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-blue-700 font-medium">Valor por cuota:</span>

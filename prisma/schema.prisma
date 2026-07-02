@@ -591,6 +591,7 @@ enum TipoMicroseguro {
   NINGUNO
   MONTO_FIJO
   PORCENTAJE
+  DEVOLUCION
 }
 
 enum TipoPagoSueldo {
