@@ -137,7 +137,10 @@ export async function PUT(
     }
 
     // Calcular nuevo valor de cuota
-    const montoTotal = montoNum * (1 + interesNum / 100) + microseguroTotalNum
+    const interesTotal = montoNum * (interesNum / 100)
+    const montoTotal = microseguroTipo === 'DEVOLUCION' 
+      ? montoNum + interesTotal - microseguroTotalNum 
+      : montoNum + interesTotal + microseguroTotalNum
     const valorCuota = montoTotal / cuotasNum
 
     // Actualizar préstamo

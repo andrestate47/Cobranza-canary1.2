@@ -228,9 +228,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         totalSeguro = valorSeguro
       } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
         totalSeguro = (montoNum * valorSeguro) / 100
+      } else if (tipoMicroseguroEditar === 'DEVOLUCION') {
+        totalSeguro = valorSeguro
       }
 
-      const totalCalculado = montoConInteres + totalSeguro
+      const totalCalculado = tipoMicroseguroEditar === 'DEVOLUCION' 
+        ? montoConInteres - totalSeguro 
+        : montoConInteres + totalSeguro
       setMontoTotalEditar(totalCalculado)
       setCuotaEditar(totalCalculado / cuotasNum)
     }
@@ -2756,6 +2760,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         <SelectItem value="NINGUNO">Ninguno</SelectItem>
                         <SelectItem value="MONTO_FIJO">Monto Fijo</SelectItem>
                         <SelectItem value="PORCENTAJE">Porcentaje</SelectItem>
+                        <SelectItem value="DEVOLUCION">Devolución</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2763,7 +2768,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   {tipoMicroseguroEditar !== 'NINGUNO' && (
                     <div className="animate-fadeInScale">
                       <Label htmlFor="valorMicroseguroEditar" className="text-xs text-blue-800">
-                        {tipoMicroseguroEditar === 'MONTO_FIJO' ? 'Valor ($)' : 'Porcentaje (%)'}
+                        {tipoMicroseguroEditar === 'PORCENTAJE' ? 'Porcentaje (%)' : tipoMicroseguroEditar === 'DEVOLUCION' ? 'Valor a devolver ($)' : 'Valor ($)'}
                       </Label>
                       <Input
                         id="valorMicroseguroEditar"
@@ -2773,7 +2778,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         onChange={(e) => setValorMicroseguroEditar(e.target.value)}
                         className="mt-1 bg-white border-blue-300"
                         disabled={editando}
-                        placeholder={tipoMicroseguroEditar === 'MONTO_FIJO' ? "0.00" : "0"}
+                        placeholder={tipoMicroseguroEditar === 'MONTO_FIJO' || tipoMicroseguroEditar === 'DEVOLUCION' ? "0.00" : "0"}
                       />
                     </div>
                   )}
