@@ -600,6 +600,50 @@ export async function GET(request: NextRequest) {
       return montoTotal > totalPagado && p.transferencias.length === 0
     }).length
 
+    // ===== MICROSEGUROS =====
+    let cantidadDevolucionesMicroseguro = 0;
+    let totalDevolucionesMicroseguro = 0;
+    let microseguroCobrado = 0;
+
+    ;(todosPagos as any[]).forEach((pago) => {
+      // Devoluciones
+      if (pago.devolucionSeguro && parseFloat(pago.devolucionSeguro.toString()) > 0) {
+        cantidadDevolucionesMicroseguro++;
+        totalDevolucionesMicroseguro += parseFloat(pago.devolucionSeguro.toString());
+      }
+
+      // Microseguro cobrado proporcionalmente
+      const prestamo = pago.prestamo;
+      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
+      const tipoMicroseguro = prestamo.microseguroTipo || 'NINGUNO';
+      
+      if (microseguroTotal > 0 && tipoMicroseguro !== 'DEVOLUCION') {
+        const montoOriginal = parseFloat(prestamo.monto.toString());
+        const tasaInteres = parseFloat(prestamo.interes.toString()) / 100;
+        const interesTotal = montoOriginal * tasaInteres;
+        const montoTotalConSeguro = montoOriginal + interesTotal + microseguroTotal;
+        
+        if (montoTotalConSeguro > 0) {
+          const porcentajeMicroseguro = microseguroTotal / montoTotalConSeguro;
+          const microseguroEnPago = parseFloat(pago.monto.toString()) * porcentajeMicroseguro;
+          microseguroCobrado += microseguroEnPago;
+        }
+      }
+    });
+    
+    // Total generado por préstamos en el periodo
+    let totalMicroseguroGenerado = 0;
+    ;(prestamos as any[]).forEach((prestamo) => {
+      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
+      const tipoMicroseguro = prestamo.microseguroTipo || 'NINGUNO';
+      if (microseguroTotal > 0 && tipoMicroseguro !== 'DEVOLUCION') {
+        totalMicroseguroGenerado += microseguroTotal;
+      }
+    });
+
+    const gananciaNetaMicroseguro = microseguroCobrado - totalDevolucionesMicroseguro;
+
+
     // ===== SALARIOS DE USUARIOS =====
     const usuarios = await prisma.user.findMany({
       where: {
@@ -784,6 +828,13 @@ export async function GET(request: NextRequest) {
           monto: parseFloat(t.monto.toString()),
           fecha: t.fecha.toISOString()
         }))
+      },
+      microseguros: {
+        cantidadDevoluciones: cantidadDevolucionesMicroseguro,
+        totalDevoluciones: totalDevolucionesMicroseguro,
+        cobrado: microseguroCobrado,
+        generado: totalMicroseguroGenerado,
+        gananciaNeta: gananciaNetaMicroseguro
       },
       salarios: {
         administradores,

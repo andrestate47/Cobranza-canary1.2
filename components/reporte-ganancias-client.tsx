@@ -105,6 +105,13 @@ interface ReporteGanancias {
       interesGanado: number
     }>
   }
+  microseguros: {
+    cantidadDevoluciones: number
+    totalDevoluciones: number
+    cobrado: number
+    generado: number
+    gananciaNeta: number
+  }
   transferencias: {
     realizadas: number
     pendientes: number
@@ -784,6 +791,44 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                   {formatCurrency(reporte.intereses?.totalGanado || 0)}
                 </p>
                 <p className="text-sm text-gray-600">Interés Total Ganado</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sección de Microseguros */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-blue-600" />
+              Microseguros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(reporte.microseguros?.cobrado || 0)}
+                </p>
+                <p className="text-sm text-gray-600">Microseguro Cobrado</p>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg border border-red-100">
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(reporte.microseguros?.totalDevoluciones || 0)}
+                </p>
+                <p className="text-sm text-gray-600">Devoluciones ({reporte.microseguros?.cantidadDevoluciones || 0})</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
+                <p className="text-2xl font-bold text-purple-600">
+                  {formatCurrency(reporte.microseguros?.generado || 0)}
+                </p>
+                <p className="text-sm text-gray-600">Proyectado (Nuevos)</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(reporte.microseguros?.gananciaNeta || 0)}
+                </p>
+                <p className="text-sm text-gray-600">Ganancia Neta</p>
               </div>
             </div>
           </CardContent>
