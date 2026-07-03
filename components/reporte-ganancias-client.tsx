@@ -194,6 +194,8 @@ interface ReporteGanancias {
     totalPrestadoEfectivo: number
     gastosOperativos: number
     gastosSueldos: number
+    ingresosExtra?: number
+    egresosExtra?: number
     balancePeriodo: number
     capitalInvertidoRuta: number
     regadoCalleRuta: number
