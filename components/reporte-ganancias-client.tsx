@@ -1582,10 +1582,22 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                       <span className="text-gray-600">Cobrado</span>
                       <span className="font-semibold text-green-600">+{formatCurrency(selectedRuta.totalCobradoEfectivo)}</span>
                     </div>
+                    {selectedRuta.ingresosExtra !== undefined && selectedRuta.ingresosExtra > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Ingresos Extra (Caja Chica)</span>
+                        <span className="font-semibold text-green-600">+{formatCurrency(selectedRuta.ingresosExtra)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Prestado</span>
                       <span className="font-semibold text-red-500">-{formatCurrency(selectedRuta.totalPrestadoEfectivo)}</span>
                     </div>
+                    {selectedRuta.egresosExtra !== undefined && selectedRuta.egresosExtra > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Egresos Extra (Caja Chica)</span>
+                        <span className="font-semibold text-red-500">-{formatCurrency(selectedRuta.egresosExtra)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Gastos y Sueldos</span>
                       <span className="font-semibold text-red-500">-{formatCurrency((selectedRuta.gastosOperativos || 0) + (selectedRuta.gastosSueldos || 0))}</span>

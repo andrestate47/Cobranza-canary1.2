@@ -861,11 +861,11 @@ export async function GET(request: NextRequest) {
       },
       rutas: cobradores.map((cobrador) => {
         // Filtrar pagos en efectivo del cobrador
-        const pagosRuta = todosPagos.filter(p => p.userId === cobrador.id && p.metodoPago === 'EFECTIVO')
+        const pagosRuta = todosPagos.filter(p => p.userId === cobrador.id && p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
         const totalCobradoEfectivo = pagosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Filtrar préstamos en efectivo del cobrador
-        const prestamosRuta = prestamosNuevos.filter(p => p.userId === cobrador.id && (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null))
+        const prestamosRuta = prestamosNuevos.filter(p => p.userId === cobrador.id && (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
         const totalPrestadoEfectivo = prestamosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Gastos operativos
@@ -877,7 +877,10 @@ export async function GET(request: NextRequest) {
         const gastosSueldos = movsRuta.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         const otrosGastos = movsRuta.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         
-        const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos
+        const ingresosExtra = movsRuta.filter(m => ['INGRESO', 'ENTREGADO', 'ENTREGA', 'APERTURA_CAJA'].includes(m.tipo)).reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        const egresosExtra = movsRuta.filter(m => ['EGRESO', 'EGRESO_GENERAL', 'DEVUELTO', 'DEVOLUCION'].includes(m.tipo) && !(m.observaciones && m.observaciones.includes("Refinanciamiento préstamo:"))).reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        
+        const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos + ingresosExtra - egresosExtra
 
         // === NUEVAS MÉTRICAS SOLICITADAS POR EL CLIENTE ===
         // 1. Capital invertido en el período (efectivo y transferencia)
@@ -976,6 +979,8 @@ export async function GET(request: NextRequest) {
           totalPrestadoEfectivo,
           gastosOperativos: gastosOperativos + otrosGastos,
           gastosSueldos,
+          ingresosExtra,
+          egresosExtra,
           balancePeriodo,
           capitalInvertidoRuta,
           regadoCalleRuta,
