@@ -696,29 +696,6 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     <span className="font-medium">{data.usuario.nombre}</span>
                   </div>
 
-                  {data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'NINGUNO' && data.prestamo.microseguroTotal && data.prestamo.microseguroTotal > 0 && (
-                    <div className="mt-4 bg-purple-50 rounded-lg p-2 space-y-1">
-                      <div className="flex items-center mb-1">
-                        <Receipt className="h-3 w-3 text-purple-600 mr-1" />
-                        <span className="text-xs font-semibold text-purple-900">Microseguro</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Monto/Porcentaje:</span>
-                        <span className="font-medium text-purple-700">
-                          {data.prestamo.microseguroTipo === 'MONTO_FIJO'
-                            ? formatCurrency(data.prestamo.microseguroValor || 0)
-                            : `${data.prestamo.microseguroValor}%`
-                          }
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-t border-purple-200 pt-1 text-xs">
-                        <span className="text-gray-600 font-medium">Total microseguro:</span>
-                        <span className="font-bold text-purple-900">
-                          {formatCurrency(data.prestamo.microseguroTotal)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
