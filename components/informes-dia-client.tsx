@@ -82,6 +82,11 @@ interface InformeDelDia {
     transferenciasRealizadas: number
     transferenciasPendientes: number
   }
+  resumenMicroseguros?: {
+    totalDevoluciones: number
+    cobrado: number
+    gananciaNeta: number
+  }
   detallePagos: Array<{
     id: string
     monto: number
@@ -393,6 +398,8 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                 </div>
               </div>
             </div>
+
+
 
             {/* Alerta de Cierres Atrasados */}
             {informe.diasSinCerrar && informe.diasSinCerrar > 0 && !informe.cerrado && (

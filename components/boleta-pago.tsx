@@ -378,6 +378,19 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const totalCuotas = data.prestamo.cuotas || Math.ceil(data.prestamo.montoTotal / data.prestamo.valorCuota)
     const progresoPrecentaje = ((totalPagado / data.prestamo.montoTotal) * 100).toFixed(1)
 
+    // Ocultar microseguro de la boleta visualmente a pedido del usuario
+    const microseguroPorCuota = (data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'DEVOLUCION' && data.prestamo.microseguroTotal && data.prestamo.cuotas) 
+      ? data.prestamo.microseguroTotal / data.prestamo.cuotas 
+      : 0;
+    
+    const valorCuotaMostrar = data.prestamo.valorCuota - microseguroPorCuota;
+    
+    let montoAbonoMostrar = data.monto;
+    if (microseguroPorCuota > 0 && data.prestamo.valorCuota > 0) {
+      const cuotasPagadasEnAbono = data.monto / data.prestamo.valorCuota;
+      montoAbonoMostrar = data.monto - (cuotasPagadasEnAbono * microseguroPorCuota);
+    }
+
     const prestamoFlex = data.prestamo as any
     const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
       ? Number(prestamoFlex.cuotasPagadasManual)
@@ -542,7 +555,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(data.prestamo.valorCuota)}
+                      {formatCurrency(valorCuotaMostrar)}
                     </p>
                     <p className="text-sm text-gray-500">Valor Cuota</p>
                   </div>
@@ -638,7 +651,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mb-3">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-blue-800 font-bold uppercase text-xs">Monto de este abono</span>
-                      <span className="font-black text-blue-900 text-xl">{formatCurrency(data.monto)}</span>
+                      <span className="font-black text-blue-900 text-xl">{formatCurrency(montoAbonoMostrar)}</span>
                     </div>
                     {data.devolucionSeguro ? (
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">

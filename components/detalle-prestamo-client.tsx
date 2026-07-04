@@ -1811,7 +1811,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     className="flex-1 border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-400"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Refinanciar Crédito
+                    Renovar Crédito
                   </Button>
                 )}
 
@@ -1900,7 +1900,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8"
                 >
                   <RefreshCw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Historial de Refinanciamiento</span>
+                  <span className="hidden sm:inline">Historial de Renovación</span>
                 </Button>
               )}
             </CardHeader>
@@ -2156,16 +2156,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         onTransferenciaSaved={onTransferenciaSaved}
       />
 
-      {/* Modal de refinanciamiento de crédito */}
+      {/* Modal de renovación de crédito */}
       <Dialog open={showRenovacionModal} onOpenChange={handleCancelRenovacion}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2 text-orange-600">
               <RefreshCw className="h-5 w-5" />
-              <span>Refinanciar Crédito</span>
+              <span>Renovar Crédito</span>
             </DialogTitle>
             <DialogDescription>
-              Refinancia el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
+              Renueva el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
             </DialogDescription>
           </DialogHeader>
 
@@ -2356,7 +2356,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               {/* Resumen de cálculos */}
               {montoRenovacion && interesRenovacion && cuotasRenovacion && (
                 <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <h4 className="font-semibold text-orange-900 mb-2">Resumen de Refinanciamiento:</h4>
+                  <h4 className="font-semibold text-orange-900 mb-2">Resumen de Renovación:</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-orange-700">Nuevo monto:</span>
@@ -2404,12 +2404,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 {renovando ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Refinanciando...
+                    Renovando...
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Refinanciar Crédito
+                    Renovar Crédito
                   </>
                 )}
               </Button>
@@ -2947,7 +2947,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Snapshot de Refinanciamiento */}
+      {/* Modal de Snapshot de Renovación */}
       <Dialog open={showSnapshotModal} onOpenChange={setShowSnapshotModal}>
         <DialogContent className="sm:max-w-md bg-slate-50">
           <DialogHeader>
@@ -2956,7 +2956,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               Fotografía del Préstamo Anterior
             </DialogTitle>
             <DialogDescription>
-              Estado del préstamo en el momento exacto en que fue refinanciado.
+              Estado del préstamo en el momento exacto en que fue renovado.
             </DialogDescription>
           </DialogHeader>
           
@@ -2981,7 +2981,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
                 
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 col-span-2">
-                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">Saldo Absorbido al Refinanciar</p>
+                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">Saldo Absorbido al Renovar</p>
                   <p className="text-xl font-black text-blue-800">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
                 </div>
               </div>

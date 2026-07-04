@@ -798,6 +798,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
           </CardContent>
         </Card>
 
+
         {/* Sección de Microseguros */}
         <Card>
           <CardHeader>

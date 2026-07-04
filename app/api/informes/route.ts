@@ -211,6 +211,35 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     }
   }
 
+  // Devoluciones y ganancias de microseguros
+  let totalDevolucionesMicroseguro = 0;
+  let microseguroCobrado = 0;
+
+  for (const pago of pagos) {
+    if (pago.devolucionSeguro && parseFloat(pago.devolucionSeguro.toString()) > 0) {
+      totalDevolucionesMicroseguro += parseFloat(pago.devolucionSeguro.toString());
+    }
+
+    const prestamo = pago.prestamo;
+    const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
+    const tipoMicroseguro = prestamo.microseguroTipo || 'NINGUNO';
+    
+    if (microseguroTotal > 0 && tipoMicroseguro !== 'DEVOLUCION') {
+      const montoOriginal = parseFloat(prestamo.monto.toString());
+      const tasaInteres = parseFloat(prestamo.interes.toString()) / 100;
+      const interesTotal = montoOriginal * tasaInteres;
+      const montoTotalConSeguro = montoOriginal + interesTotal + microseguroTotal;
+      
+      if (montoTotalConSeguro > 0) {
+        const porcentajeMicroseguro = microseguroTotal / montoTotalConSeguro;
+        const microseguroEnPago = parseFloat(pago.monto.toString()) * porcentajeMicroseguro;
+        microseguroCobrado += microseguroEnPago;
+      }
+    }
+  }
+
+  const gananciaNetaMicroseguro = microseguroCobrado - totalDevolucionesMicroseguro;
+
   // Calcular dinero en transferencia
   const dineroTransferencia = totalCobradoTransferencia + totalCobradoDeposito
   
@@ -387,6 +416,11 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       transferenciasRealizadas: transferenciasRealizadas,
       transferenciasPendientes: transferenciasPendientes
     },
+    resumenMicroseguros: {
+      totalDevoluciones: totalDevolucionesMicroseguro,
+      cobrado: microseguroCobrado,
+      gananciaNeta: gananciaNetaMicroseguro
+    },
     detallePagos: pagos.map(pago => ({
       id: pago.id,
       monto: parseFloat(pago.monto.toString()),
@@ -512,6 +546,12 @@ export async function GET(request: NextRequest) {
         transferenciasPendientes: 0
       }
 
+      const resumenMicroseguros = {
+        totalDevoluciones: informes.reduce((sum, i) => sum + (i.resumenMicroseguros?.totalDevoluciones || 0), 0),
+        cobrado: informes.reduce((sum, i) => sum + (i.resumenMicroseguros?.cobrado || 0), 0),
+        gananciaNeta: informes.reduce((sum, i) => sum + (i.resumenMicroseguros?.gananciaNeta || 0), 0)
+      }
+
       const detallePagos = informes.flatMap(i => i.detallePagos)
       const detallePrestamos = informes.flatMap(i => i.detallePrestamos)
       const detalleGastos = informes.flatMap(i => i.detalleGastos)
@@ -571,6 +611,7 @@ export async function GET(request: NextRequest) {
         resumenPrestamos,
         resumenRenovaciones,
         resumenTransferencias,
+        resumenMicroseguros,
         detallePagos,
         detallePrestamos,
         detalleGastos,
