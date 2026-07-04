@@ -65,11 +65,19 @@ export async function POST(
     const montoNuevo = Math.round(parseFloat(monto.toString()) * 100) / 100
     const interesNuevo = Math.round(parseFloat(interes.toString()) * 100) / 100
     const cuotasNuevas = parseInt(cuotas.toString())
-    const microseguroTotalNuevo = parseFloat(microseguroTotal?.toString() || "0")
+    const microseguroTotalNuevo = Math.round(parseFloat(microseguroTotal?.toString() || "0") * 100) / 100
+    const microseguroValorParsed = Math.round(parseFloat(microseguroValor?.toString() || "0") * 100) / 100
 
     if (isNaN(montoNuevo) || isNaN(interesNuevo) || isNaN(cuotasNuevas) || cuotasNuevas <= 0) {
       return NextResponse.json(
         { error: "Valores numéricos inválidos o cuotas en 0" },
+        { status: 400 }
+      )
+    }
+
+    if (montoNuevo >= 10000000 || microseguroTotalNuevo >= 10000000) {
+      return NextResponse.json(
+        { error: "El monto ingresado es demasiado grande y supera el límite del sistema." },
         { status: 400 }
       )
     }
@@ -144,6 +152,15 @@ export async function POST(
     
     valorCuota = Math.round(valorCuota * 100) / 100;
 
+    console.log("=== DEBUG RENOVAR ===", {
+      montoNuevo,
+      interesNuevo,
+      cuotasNuevas,
+      valorCuota,
+      microseguroValorParsed,
+      microseguroTotalNuevo
+    });
+
     // Usar transacción para marcar el préstamo anterior como renovado y crear el nuevo
     const resultado = await prisma.$transaction(async (tx) => {
       // Marcar préstamo anterior como RENOVADO
@@ -174,7 +191,7 @@ export async function POST(
             ? `${tipoOperacion} de ${prestamoAnterior.id} | ${observaciones}`
             : `${tipoOperacion} de ${prestamoAnterior.id}`,
           microseguroTipo: microseguroTipo || 'NINGUNO',
-          microseguroValor: parseFloat(microseguroValor?.toString() || "0"),
+          microseguroValor: microseguroValorParsed,
           microseguroTotal: microseguroTotalNuevo,
           renovadoDeId: prestamoAnterior.id,
           datosRefinanciamiento: {
