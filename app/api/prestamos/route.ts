@@ -312,6 +312,7 @@ export async function POST(request: NextRequest) {
 
     // Calcular valores
     const interesTotal = montoNum * interesNum / 100
+    // En DEVOLUCION, no se suma el microseguro al monto total
     const montoTotal = microseguroTipo === 'DEVOLUCION'
       ? montoNum + interesTotal
       : montoNum + interesTotal + microseguroTotalNum
