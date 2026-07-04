@@ -402,7 +402,9 @@ export async function GET(request: NextRequest) {
     // 2. Balance Pendiente (suma de todos los saldos pendientes)
     let balancePendiente = 0
     ;(prestamosConSaldo as any[]).forEach((prestamo) => {
-      const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
+      const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
+      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
+      const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
       const totalPagado = getTotalPagado(prestamo.id)
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       balancePendiente += saldoPendiente
@@ -418,7 +420,9 @@ export async function GET(request: NextRequest) {
     ;(prestamosConSaldo as any[])
       .filter((prestamo) => new Date(prestamo.fechaFin) < hoy)
       .forEach((prestamo) => {
-        const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
+        const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
+        const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
+        const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
         const totalPagado = getTotalPagado(prestamo.id)
         const saldoPendiente = Math.max(0, montoTotal - totalPagado)
         capitalNoRecuperado += saldoPendiente
@@ -595,7 +599,9 @@ export async function GET(request: NextRequest) {
     const clientesTransferencia = new Set((transferencias as TransferenciaConPrestamo[]).map((t) => t.prestamo.clienteId)).size
     
     const transferenciasEstimadas = (prestamosPorTransferencia as any[]).filter((p) => {
-      const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+      const baseTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+      const microseguroTotal = parseFloat(p.microseguroTotal?.toString() || '0')
+      const montoTotal = p.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
       const totalPagado = getTotalPagado(p.id)
       return montoTotal > totalPagado && p.transferencias.length === 0
     }).length

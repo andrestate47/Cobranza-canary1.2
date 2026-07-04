@@ -505,6 +505,7 @@ export async function GET(request: NextRequest) {
       const totalCobrado = informes.reduce((sum, i) => sum + i.totalCobrado, 0)
       const totalCobradoEfectivo = informes.reduce((sum, i) => sum + i.totalCobradoEfectivo, 0)
       const totalCobradoRefinanciamiento = informes.reduce((sum, i) => sum + (i.totalCobradoRefinanciamiento || 0), 0)
+      const totalCobradoRenovacion = informes.reduce((sum, i) => sum + (i.totalCobradoRenovacion || 0), 0)
       const totalCobradoTransferencia = informes.reduce((sum, i) => sum + i.totalCobradoTransferencia, 0)
       const totalCobradoDeposito = informes.reduce((sum, i) => sum + i.totalCobradoDeposito, 0)
       const moraCobrada = informes.reduce((sum, i) => sum + i.moraCobrada, 0)
@@ -512,6 +513,7 @@ export async function GET(request: NextRequest) {
       const totalPrestado = informes.reduce((sum, i) => sum + i.totalPrestado, 0)
       const totalPrestadoEfectivo = informes.reduce((sum, i) => sum + i.totalPrestadoEfectivo, 0)
       const totalPrestadoRefinanciamiento = informes.reduce((sum, i) => sum + (i.totalPrestadoRefinanciamiento || 0), 0)
+      const totalPrestadoRenovacion = informes.reduce((sum, i) => sum + (i.totalPrestadoRenovacion || 0), 0)
       const totalPrestadoTransferencia = informes.reduce((sum, i) => sum + i.totalPrestadoTransferencia, 0)
       const totalGastos = informes.reduce((sum, i) => sum + i.totalGastos, 0)
       const gastosOperativos = informes.reduce((sum, i) => sum + (i.gastosOperativos || 0), 0)
@@ -593,6 +595,7 @@ export async function GET(request: NextRequest) {
         totalCobrado,
         totalCobradoEfectivo,
         totalCobradoRefinanciamiento,
+        totalCobradoRenovacion,
         totalCobradoTransferencia,
         totalCobradoDeposito,
         moraCobrada,
@@ -600,6 +603,7 @@ export async function GET(request: NextRequest) {
         totalPrestado,
         totalPrestadoEfectivo,
         totalPrestadoRefinanciamiento,
+        totalPrestadoRenovacion,
         totalPrestadoTransferencia,
         totalGastos,
         gastosOperativos,
