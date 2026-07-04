@@ -619,7 +619,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     },
     saldoPendiente,
     cuotasPagadas,
-    montoTotal
+    montoTotal,
+    microseguroTotal: prestamo.microseguroTotal !== null && prestamo.microseguroTotal !== undefined ? Number(prestamo.microseguroTotal) : undefined,
+    microseguroValor: prestamo.microseguroValor !== null && prestamo.microseguroValor !== undefined ? Number(prestamo.microseguroValor) : undefined,
+    microseguroTipo: prestamo.microseguroTipo || undefined
   }
 
   const onPagoSuccess = () => {

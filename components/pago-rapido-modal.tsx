@@ -54,6 +54,8 @@ interface PrestamoConCliente {
   saldoPendiente: number
   cuotasPagadas: number
   microseguroTotal?: number
+  microseguroValor?: number
+  microseguroTipo?: string
 }
 
 interface PagoRegistrado {
@@ -976,7 +978,13 @@ export default function PagoRapidoModal({
                       onClick={() => {
                         setDevolverSeguro(true)
                         if (!montoDevolucion) {
-                          setMontoDevolucion(prestamo.microseguroTotal ? prestamo.microseguroTotal.toString() : "")
+                          let defaultVal = "";
+                          if (prestamo.microseguroTipo === 'DEVOLUCION' && prestamo.microseguroValor) {
+                            defaultVal = prestamo.microseguroValor.toString();
+                          } else if (prestamo.microseguroTotal) {
+                            defaultVal = prestamo.microseguroTotal.toString();
+                          }
+                          setMontoDevolucion(defaultVal)
                         }
                       }}
                     >

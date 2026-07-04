@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
         moraCredito: parseFloat(prestamo.moraCredito?.toString() || '0'),
         microseguroTipo: prestamo.microseguroTipo,
         microseguroTotal: parseFloat(prestamo.microseguroTotal?.toString() || '0'),
+        microseguroValor: parseFloat(prestamo.microseguroValor?.toString() || '0'),
         fechaActividadReciente,
         cliente: prestamo.cliente,
         saldoPendiente,
