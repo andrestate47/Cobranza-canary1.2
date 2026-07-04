@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       const interesTotal = parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100;
       const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
       const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION'
-        ? parseFloat(prestamo.monto.toString()) + interesTotal - microseguroTotal
+        ? parseFloat(prestamo.monto.toString()) + interesTotal
         : parseFloat(prestamo.monto.toString()) + interesTotal + microseguroTotal;
       const saldoPendiente = Math.round((montoTotal - totalPagado) * 100) / 100
       const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0
@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
     // Calcular valores
     const interesTotal = montoNum * interesNum / 100
     const montoTotal = microseguroTipo === 'DEVOLUCION'
-      ? montoNum + interesTotal - microseguroTotalNum
+      ? montoNum + interesTotal
       : montoNum + interesTotal + microseguroTotalNum
     const valorCuota = montoTotal / cuotasNum
 

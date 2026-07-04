@@ -404,7 +404,7 @@ export async function GET(request: NextRequest) {
     ;(prestamosConSaldo as any[]).forEach((prestamo) => {
       const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
       const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
-      const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
+      const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
       const totalPagado = getTotalPagado(prestamo.id)
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       balancePendiente += saldoPendiente
@@ -422,7 +422,7 @@ export async function GET(request: NextRequest) {
       .forEach((prestamo) => {
         const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
         const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
-        const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
+        const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
         const totalPagado = getTotalPagado(prestamo.id)
         const saldoPendiente = Math.max(0, montoTotal - totalPagado)
         capitalNoRecuperado += saldoPendiente
@@ -601,7 +601,7 @@ export async function GET(request: NextRequest) {
     const transferenciasEstimadas = (prestamosPorTransferencia as any[]).filter((p) => {
       const baseTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
       const microseguroTotal = parseFloat(p.microseguroTotal?.toString() || '0')
-      const montoTotal = p.microseguroTipo === 'DEVOLUCION' ? baseTotal - microseguroTotal : baseTotal + microseguroTotal
+      const montoTotal = p.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
       const totalPagado = getTotalPagado(p.id)
       return montoTotal > totalPagado && p.transferencias.length === 0
     }).length

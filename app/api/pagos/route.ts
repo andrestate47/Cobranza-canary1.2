@@ -167,9 +167,7 @@ export async function POST(request: NextRequest) {
     let montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
     
     const microseguroTotal = Number(prestamo.microseguroTotal || 0)
-    if (prestamo.microseguroTipo === 'DEVOLUCION') {
-      montoTotalPrestamo -= microseguroTotal
-    } else {
+    if (prestamo.microseguroTipo !== 'DEVOLUCION') {
       montoTotalPrestamo += microseguroTotal
     }
     const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)
