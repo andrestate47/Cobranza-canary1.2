@@ -22,7 +22,7 @@ export async function POST(
     const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones, microseguroTipo, microseguroValor, microseguroTotal, tipoOperacion = "REFINANCIAMIENTO" } = body
 
     // Validar campos obligatorios
-    if (!monto || !interes || !cuotas || !fechaInicio) {
+    if (monto === undefined || interes === undefined || !cuotas || !fechaInicio) {
       return NextResponse.json(
         { error: "Todos los campos obligatorios deben ser completados" },
         { status: 400 }
@@ -62,10 +62,17 @@ export async function POST(
     const saldoPendiente = Math.max(0, montoTotalAnterior - totalPagado)
 
     // Validar valores numéricos
-    const montoNuevo = parseFloat(monto.toString())
-    const interesNuevo = parseFloat(interes.toString())
+    const montoNuevo = Math.round(parseFloat(monto.toString()) * 100) / 100
+    const interesNuevo = Math.round(parseFloat(interes.toString()) * 100) / 100
     const cuotasNuevas = parseInt(cuotas.toString())
     const microseguroTotalNuevo = parseFloat(microseguroTotal?.toString() || "0")
+
+    if (isNaN(montoNuevo) || isNaN(interesNuevo) || isNaN(cuotasNuevas) || cuotasNuevas <= 0) {
+      return NextResponse.json(
+        { error: "Valores numéricos inválidos o cuotas en 0" },
+        { status: 400 }
+      )
+    }
 
     if (montoNuevo <= 0 || interesNuevo < 0 || cuotasNuevas <= 0) {
       return NextResponse.json(
@@ -75,7 +82,7 @@ export async function POST(
     }
 
     // El monto efectivo del nuevo préstamo es el monto nuevo menos el saldo pendiente
-    const montoEfectivo = montoNuevo - saldoPendiente
+    const montoEfectivo = Math.round((montoNuevo - saldoPendiente) * 100) / 100
     
     if (montoEfectivo < 0) {
       return NextResponse.json(
@@ -128,7 +135,14 @@ export async function POST(
 
     // Calcular valor de cuota
     const montoConInteresYSeguro = montoNuevo * (1 + interesNuevo / 100) + microseguroTotalNuevo
-    const valorCuota = montoConInteresYSeguro / cuotasNuevas
+    let valorCuota = montoConInteresYSeguro / cuotasNuevas
+
+    // Redondear a 2 decimales y evitar valores infinitos
+    if (!isFinite(valorCuota)) {
+      return NextResponse.json({ error: "Error matemático al calcular la cuota" }, { status: 400 })
+    }
+    
+    valorCuota = Math.round(valorCuota * 100) / 100;
 
     // Usar transacción para marcar el préstamo anterior como renovado y crear el nuevo
     const resultado = await prisma.$transaction(async (tx) => {
