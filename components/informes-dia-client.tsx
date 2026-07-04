@@ -36,6 +36,7 @@ interface InformeDelDia {
   totalCobrado: number
   totalCobradoEfectivo: number
   totalCobradoRefinanciamiento?: number
+  totalCobradoRenovacion?: number
   totalCobradoTransferencia: number
   totalCobradoDeposito: number
   moraCobrada: number
@@ -43,6 +44,7 @@ interface InformeDelDia {
   totalPrestado: number
   totalPrestadoEfectivo: number
   totalPrestadoRefinanciamiento?: number
+  totalPrestadoRenovacion?: number
   totalPrestadoTransferencia: number
   totalGastos: number
   gastosOperativos?: number
@@ -486,10 +488,16 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(+) Cobrado en Efectivo</span>
                         <span>{formatCurrency(informe.totalCobradoEfectivo)}</span>
                       </div>
-                      {informe.totalCobradoRefinanciamiento !== undefined && (
+                      {informe.totalCobradoRefinanciamiento !== undefined && informe.totalCobradoRefinanciamiento > 0 && (
                         <div className="flex justify-between items-center text-emerald-600 font-medium">
                           <span>(+) Cobro por Refinanciación</span>
                           <span>{formatCurrency(informe.totalCobradoRefinanciamiento)}</span>
+                        </div>
+                      )}
+                      {informe.totalCobradoRenovacion !== undefined && informe.totalCobradoRenovacion > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600 font-medium">
+                          <span>(+) Cobro por Renovación</span>
+                          <span>{formatCurrency(informe.totalCobradoRenovacion)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center text-emerald-600 font-medium">
@@ -504,10 +512,16 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                         <span>(-) Préstamos en Efectivo</span>
                         <span>{formatCurrency(informe.totalPrestadoEfectivo)}</span>
                       </div>
-                      {informe.totalPrestadoRefinanciamiento !== undefined && (
+                      {informe.totalPrestadoRefinanciamiento !== undefined && informe.totalPrestadoRefinanciamiento > 0 && (
                         <div className="flex justify-between items-center text-orange-500 font-medium">
                           <span>(-) Refinanciaciones</span>
                           <span>{formatCurrency(informe.totalPrestadoRefinanciamiento)}</span>
+                        </div>
+                      )}
+                      {informe.totalPrestadoRenovacion !== undefined && informe.totalPrestadoRenovacion > 0 && (
+                        <div className="flex justify-between items-center text-orange-500 font-medium">
+                          <span>(-) Renovaciones</span>
+                          <span>{formatCurrency(informe.totalPrestadoRenovacion)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center text-red-500 font-medium">

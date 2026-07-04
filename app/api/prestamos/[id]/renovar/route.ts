@@ -19,7 +19,7 @@ export async function POST(
 
     const { id } = params
     const body = await request.json()
-    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones, microseguroTipo, microseguroValor, microseguroTotal } = body
+    const { monto, interes, tipoPago, cuotas, fechaInicio, observaciones, microseguroTipo, microseguroValor, microseguroTotal, tipoOperacion = "REFINANCIAMIENTO" } = body
 
     // Validar campos obligatorios
     if (!monto || !interes || !cuotas || !fechaInicio) {
@@ -138,8 +138,8 @@ export async function POST(
         data: { 
           estado: "RENOVADO",
           observaciones: prestamoAnterior.observaciones 
-            ? `${prestamoAnterior.observaciones} | REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
-            : `REFINANCIADO el ${new Date().toISOString().split('T')[0]}`
+            ? `${prestamoAnterior.observaciones} | ${tipoOperacion} el ${new Date().toISOString().split('T')[0]}`
+            : `${tipoOperacion} el ${new Date().toISOString().split('T')[0]}`
         }
       })
 
@@ -157,8 +157,8 @@ export async function POST(
           fechaFin: fechaFin,
           estado: "ACTIVO",
           observaciones: observaciones 
-            ? `REFINANCIAMIENTO de ${prestamoAnterior.id} | ${observaciones}`
-            : `REFINANCIAMIENTO de ${prestamoAnterior.id}`,
+            ? `${tipoOperacion} de ${prestamoAnterior.id} | ${observaciones}`
+            : `${tipoOperacion} de ${prestamoAnterior.id}`,
           microseguroTipo: microseguroTipo || 'NINGUNO',
           microseguroValor: parseFloat(microseguroValor?.toString() || "0"),
           microseguroTotal: microseguroTotalNuevo,
@@ -169,7 +169,8 @@ export async function POST(
             cuotasOriginales: prestamoAnterior.cuotas,
             totalPagado: totalPagado,
             saldoPendiente: saldoPendiente,
-            fechaRefinanciamiento: new Date().toISOString()
+            fechaRefinanciamiento: new Date().toISOString(),
+            tipoOperacion: tipoOperacion // We keep it in the JSON blob to know exactly what kind it was
           }
         },
         include: {
@@ -185,7 +186,7 @@ export async function POST(
             userId: session.user.id,
             monto: saldoPendiente,
             metodoPago: "EFECTIVO",
-            observaciones: `Liquidación por refinanciamiento hacia nuevo préstamo ${nuevoPrestamo.id}`,
+            observaciones: `Liquidación por ${tipoOperacion.toLowerCase()} hacia nuevo préstamo ${nuevoPrestamo.id}`,
             fecha: new Date()
           }
         })
@@ -199,7 +200,7 @@ export async function POST(
           monto: montoEfectivo,
           saldoAnterior: 0,
           saldoNuevo: 0,
-          observaciones: `Refinanciamiento préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
+          observaciones: `${tipoOperacion === 'RENOVACION' ? 'Renovación' : 'Refinanciamiento'} préstamo: ${nuevoPrestamo.cliente.nombre} ${nuevoPrestamo.cliente.apellido} - Monto efectivo: $${montoEfectivo.toFixed(2)}`,
           asignadoPor: {
             connect: { id: session.user.id }
           }
@@ -210,7 +211,7 @@ export async function POST(
     })
 
     return NextResponse.json({
-      message: "Préstamo refinanciado exitosamente",
+      message: `Préstamo ${tipoOperacion === 'RENOVACION' ? 'renovado' : 'refinanciado'} exitosamente`,
       prestamoAnterior: {
         id: prestamoAnterior.id,
         saldoPendiente: saldoPendiente

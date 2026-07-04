@@ -185,9 +185,13 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
   const pagosRefinanciamiento = pagos.filter(p => p.observaciones?.startsWith("Liquidación por refinanciamiento"))
   const totalCobradoRefinanciamiento = pagosRefinanciamiento.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
 
-  // Calcular total cobrado en efectivo (sin transferencias ni depósitos ni refinanciaciones)
+  // Separar pagos virtuales por renovacion
+  const pagosRenovacion = pagos.filter(p => p.observaciones?.startsWith("Liquidación por renovacion") || p.observaciones?.startsWith("Liquidación por renovación"))
+  const totalCobradoRenovacion = pagosRenovacion.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+
+  // Calcular total cobrado en efectivo (sin transferencias ni depósitos ni refinanciaciones/renovaciones)
   const totalCobradoEfectivo = pagos
-    .filter(p => p.metodoPago === "EFECTIVO" && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
+    .filter(p => p.metodoPago === "EFECTIVO" && !p.observaciones?.startsWith("Liquidación por refinanciamiento") && !p.observaciones?.startsWith("Liquidación por renovacion") && !p.observaciones?.startsWith("Liquidación por renovación"))
     .reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
 
   const totalCobradoTransferencia = pagos
@@ -256,7 +260,10 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
   const prestamosRefinanciamiento = prestamos.filter(p => p.observaciones?.startsWith("REFINANCIAMIENTO"))
   const totalPrestadoRefinanciamiento = prestamosRefinanciamiento.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
-  const prestamosEfectivo = prestamos.filter(p => (p.tipoCredito === "EFECTIVO" || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
+  const prestamosRenovacion = prestamos.filter(p => p.observaciones?.startsWith("RENOVACION") || p.observaciones?.startsWith("RENOVACIÓN"))
+  const totalPrestadoRenovacion = prestamosRenovacion.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+  const prestamosEfectivo = prestamos.filter(p => (p.tipoCredito === "EFECTIVO" || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO") && !p.observaciones?.startsWith("RENOVACION") && !p.observaciones?.startsWith("RENOVACIÓN"))
   const totalPrestadoEfectivo = prestamosEfectivo.reduce((sum, prestamo) => 
     sum + parseFloat(prestamo.monto.toString()), 0
   )
@@ -370,6 +377,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     totalCobrado,
     totalCobradoEfectivo,
     totalCobradoRefinanciamiento,
+    totalCobradoRenovacion,
     totalCobradoTransferencia,
     totalCobradoDeposito,
     moraCobrada,
@@ -377,6 +385,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     totalPrestado,
     totalPrestadoEfectivo,
     totalPrestadoRefinanciamiento,
+    totalPrestadoRenovacion,
     totalPrestadoTransferencia,
     totalGastos: totalGastosReal,
     gastosOperativos: totalGastos,

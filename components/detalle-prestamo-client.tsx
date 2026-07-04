@@ -154,6 +154,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [showTransferenciaModal, setShowTransferenciaModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showRenovacionModal, setShowRenovacionModal] = useState(false)
+  const [tipoOperacion, setTipoOperacion] = useState<"REFINANCIAMIENTO" | "RENOVACION">("REFINANCIAMIENTO")
   const [renovando, setRenovando] = useState(false)
   const [showEditarModal, setShowEditarModal] = useState(false)
   const [showEditarBoletaModal, setShowEditarBoletaModal] = useState(false)
@@ -1032,9 +1033,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   // Función para manejar la renovación de crédito
-  const handleRenovarCredito = () => {
-    // Pre-llenar los campos con valores sugeridos
-    setMontoRenovacion((montoOriginal + Math.max(saldoPendiente, 0)).toString())
+  const handleRenovarCredito = (tipo: "REFINANCIAMIENTO" | "RENOVACION" = "REFINANCIAMIENTO") => {
+    setTipoOperacion(tipo)
+    setMontoRenovacion("")
     setInteresRenovacion(prestamo.interes.toString())
     setTipoPagoRenovacion(prestamo.tipoPago)
     setCuotasRenovacion(prestamo.cuotas.toString())
@@ -1100,15 +1101,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           observaciones: observacionesRenovacion.trim() || undefined,
           microseguroTipo: tipoMicroseguroRenovacion,
           microseguroValor: microseguroValorNum,
-          microseguroTotal: microseguroTotal
+          microseguroTotal: microseguroTotal,
+          tipoOperacion: tipoOperacion
         }),
       })
 
       if (response.ok) {
         const result = await response.json()
         toast({
-          title: "Crédito renovado",
-          description: `El crédito se ha renovado exitosamente. Nuevo ID: ${result.prestamoNuevo.id.slice(-6).toUpperCase()}`,
+          title: tipoOperacion === 'RENOVACION' ? "Crédito renovado" : "Crédito refinanciado",
+          description: `El crédito se ha ${tipoOperacion === 'RENOVACION' ? 'renovado' : 'refinanciado'} exitosamente. Nuevo ID: ${result.prestamoNuevo.id.slice(-6).toUpperCase()}`,
         })
 
         // Cerrar modal y redirigir al nuevo préstamo
@@ -1118,7 +1120,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         const error = await response.json()
         toast({
           title: "Error",
-          description: error.error || "No se pudo renovar el crédito",
+          description: error.error || `No se pudo ${tipoOperacion === 'RENOVACION' ? 'renovar' : 'refinanciar'} el crédito`,
           variant: "destructive",
         })
       }
@@ -1805,14 +1807,25 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </Button>
 
                 {prestamo.estado === "ACTIVO" && (
-                  <Button
-                    onClick={handleRenovarCredito}
-                    variant="outline"
-                    className="flex-1 border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-400"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refinanciar Crédito
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => handleRenovarCredito("REFINANCIAMIENTO")}
+                      variant="outline"
+                      className="flex-1 border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-400"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refinanciar Crédito
+                    </Button>
+
+                    <Button
+                      onClick={() => handleRenovarCredito("RENOVACION")}
+                      variant="outline"
+                      className="flex-1 border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-400"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Renovar Crédito
+                    </Button>
+                  </>
                 )}
 
                 <Button
@@ -1900,7 +1913,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8"
                 >
                   <RefreshCw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Historial de Refinanciamiento</span>
+                  <span className="hidden sm:inline">Historial Anterior</span>
                 </Button>
               )}
             </CardHeader>
@@ -2156,16 +2169,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         onTransferenciaSaved={onTransferenciaSaved}
       />
 
-      {/* Modal de refinanciamiento de crédito */}
+      {/* Modal de refinanciamiento / renovación de crédito */}
       <Dialog open={showRenovacionModal} onOpenChange={handleCancelRenovacion}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 text-orange-600">
+            <DialogTitle className={`flex items-center space-x-2 ${tipoOperacion === 'RENOVACION' ? 'text-blue-600' : 'text-orange-600'}`}>
               <RefreshCw className="h-5 w-5" />
-              <span>Refinanciar Crédito</span>
+              <span>{tipoOperacion === 'RENOVACION' ? 'Renovar Crédito' : 'Refinanciar Crédito'}</span>
             </DialogTitle>
             <DialogDescription>
-              Refinancia el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
+              {tipoOperacion === 'RENOVACION' ? 'Renueva' : 'Refinancia'} el crédito actual. El saldo pendiente se descontará automáticamente del nuevo monto.
             </DialogDescription>
           </DialogHeader>
 
@@ -2355,8 +2368,10 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
               {/* Resumen de cálculos */}
               {montoRenovacion && interesRenovacion && cuotasRenovacion && (
-                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                  <h4 className="font-semibold text-orange-900 mb-2">Resumen de Refinanciamiento:</h4>
+                <div className={`${tipoOperacion === 'RENOVACION' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'} rounded-lg p-4 border`}>
+                  <h4 className={`font-semibold ${tipoOperacion === 'RENOVACION' ? 'text-blue-900' : 'text-orange-900'} mb-2`}>
+                    Resumen de {tipoOperacion === 'RENOVACION' ? 'Renovación' : 'Refinanciamiento'}:
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-orange-700">Nuevo monto:</span>
@@ -2399,17 +2414,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <Button
                 type="submit"
                 disabled={renovando || !montoRenovacion || !interesRenovacion || !cuotasRenovacion}
-                className="bg-orange-600 hover:bg-orange-700"
+                className={tipoOperacion === 'RENOVACION' ? "bg-blue-600 hover:bg-blue-700" : "bg-orange-600 hover:bg-orange-700"}
               >
                 {renovando ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Refinanciando...
+                    {tipoOperacion === 'RENOVACION' ? 'Renovando...' : 'Refinanciando...'}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Refinanciar Crédito
+                    {tipoOperacion === 'RENOVACION' ? 'Renovar Crédito' : 'Refinanciar Crédito'}
                   </>
                 )}
               </Button>
@@ -2947,7 +2962,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Snapshot de Refinanciamiento */}
+      {/* Modal de Snapshot de Refinanciamiento/Renovacion */}
       <Dialog open={showSnapshotModal} onOpenChange={setShowSnapshotModal}>
         <DialogContent className="sm:max-w-md bg-slate-50">
           <DialogHeader>
@@ -2956,7 +2971,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               Fotografía del Préstamo Anterior
             </DialogTitle>
             <DialogDescription>
-              Estado del préstamo en el momento exacto en que fue refinanciado.
+              Estado del préstamo en el momento exacto en que fue {prestamo.datosRefinanciamiento?.tipoOperacion === 'RENOVACION' ? 'renovado' : 'refinanciado'}.
             </DialogDescription>
           </DialogHeader>
           
@@ -2981,7 +2996,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
                 
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 col-span-2">
-                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">Saldo Absorbido al Refinanciar</p>
+                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">
+                    Saldo Absorbido al {prestamo.datosRefinanciamiento?.tipoOperacion === 'RENOVACION' ? 'Renovar' : 'Refinanciar'}
+                  </p>
                   <p className="text-xl font-black text-blue-800">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
                 </div>
               </div>
