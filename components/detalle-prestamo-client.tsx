@@ -92,6 +92,7 @@ interface Pago {
   metodoPago: string
   usuario?: PagoUsuario
   createdAt?: string | Date
+  devolucionSeguro?: number
 }
 
 interface Transferencia {
@@ -293,7 +294,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const microseguroAmount = prestamo.microseguroTipo === 'DEVOLUCION' ? 0 : Number(prestamo.microseguroTotal || 0)
   const montoTotal = montoOriginal + interesAmount + microseguroAmount
   const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) =>
-    sum + Number(pago.monto), 0
+    sum + Number(pago.monto) + (Number(pago.devolucionSeguro) || 0), 0
   )
   const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
   const valorCuota = prestamo.valorCuota
@@ -1993,6 +1994,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                             <span className="font-semibold text-green-600 truncate">
                               {formatCurrency(pago.monto)}
                             </span>
+                            {pago.devolucionSeguro ? (
+                              <span className="ml-2 text-[10px] font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
+                                + {formatCurrency(pago.devolucionSeguro)} Seg.
+                              </span>
+                            ) : null}
                           </div>
                           <Badge className="bg-green-100 text-green-800 text-[10px] h-4 px-1 shrink-0">
                             PAGO

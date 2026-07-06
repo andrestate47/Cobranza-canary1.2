@@ -105,6 +105,7 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
         id: pago.id,
         prestamoId: pago.prestamoId,
         monto: parseFloat(pago.monto.toString()),
+        devolucionSeguro: pago.devolucionSeguro ? parseFloat(pago.devolucionSeguro.toString()) : undefined,
         fecha: pago.fecha.toISOString(),
         observaciones: pago.observaciones,
         metodoPago: pago.metodoPago,
