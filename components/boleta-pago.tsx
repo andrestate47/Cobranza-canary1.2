@@ -390,7 +390,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const prestamoFlex = data.prestamo as any
     const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
       ? Number(prestamoFlex.cuotasPagadasManual)
-      : (data.prestamo.valorCuota > 0 ? totalPagado / data.prestamo.valorCuota : 0)
+      : (valorCuotaMostrar > 0 ? totalPagado / valorCuotaMostrar : 0)
 
     // Nuevos cálculos adicionales
     // IMPORTANTE: Usamos Math.floor para cuotasPagadas para cálculos de "cuotas completas" en la lógica de atraso
@@ -420,7 +420,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
     const valorEnAtraso = (prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
       ? Number(prestamoFlex.valorEnAtrasoManual)
-      : cuotasAtrasadas * data.prestamo.valorCuota
+      : cuotasAtrasadas * valorCuotaMostrar
     
     let fechaProximaTeorica = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
     
@@ -600,7 +600,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cuotas pendientes:</span>
-                    <span className="font-medium text-orange-600">{cuotasPendientes}</span>
+                    <span className="font-medium text-orange-600">{Number(cuotasPendientes.toFixed(2))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cuotas atrasadas:</span>

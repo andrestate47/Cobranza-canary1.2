@@ -298,10 +298,15 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   )
   const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
   const valorCuota = prestamo.valorCuota
+  const microseguroPorCuota = (prestamo.microseguroTipo && prestamo.microseguroTipo !== 'DEVOLUCION' && prestamo.microseguroTotal && prestamo.cuotas)
+    ? Number(prestamo.microseguroTotal) / Number(prestamo.cuotas)
+    : 0;
+  const valorCuotaMostrar = valorCuota - microseguroPorCuota;
+
   const prestamoFlex = prestamo as any
   const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
     ? Number(prestamoFlex.cuotasPagadasManual)
-    : (valorCuota > 0 ? totalPagado / valorCuota : 0)
+    : (valorCuotaMostrar > 0 ? totalPagado / valorCuotaMostrar : 0)
 
   const progressPercentage = Math.min((totalPagado / montoTotal) * 100, 100)
 
@@ -375,7 +380,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     const diasGracia = prestamo.diasGracia || 0
     const cuotasPagadasFinancial = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
       ? Number(prestamoFlex.cuotasPagadasManual)
-      : (valorCuota > 0 ? totalPagado / valorCuota : 0)
+      : (valorCuotaMostrar > 0 ? totalPagado / valorCuotaMostrar : 0)
     const cuotasAtrasadas = (prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
       ? Number(prestamoFlex.cuotasAtrasadasManual)
       : Math.max(0, cuotasEsperadas - cuotasPagadasFinancial)
@@ -439,7 +444,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     // Valor en atrasos
     const valorEnAtrasos = (prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
       ? Number(prestamoFlex.valorEnAtrasoManual)
-      : Math.max(0, Math.round((cuotasAtrasadas * valorCuota) * 100) / 100)
+      : Math.max(0, Math.round((cuotasAtrasadas * valorCuotaMostrar) * 100) / 100)
 
     // Último pago
     const ultimoPago = prestamo.pagos.length > 0
