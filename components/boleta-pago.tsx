@@ -385,11 +385,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     
     const valorCuotaMostrar = data.prestamo.valorCuota - microseguroPorCuota;
     
-    let montoAbonoMostrar = data.monto;
-    if (microseguroPorCuota > 0 && data.prestamo.valorCuota > 0) {
-      const cuotasPagadasEnAbono = data.monto / data.prestamo.valorCuota;
-      montoAbonoMostrar = data.monto - (cuotasPagadasEnAbono * microseguroPorCuota);
-    }
+    const montoAbonoMostrar = data.monto;
 
     const prestamoFlex = data.prestamo as any
     const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
