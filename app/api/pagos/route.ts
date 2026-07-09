@@ -167,9 +167,8 @@ export async function POST(request: NextRequest) {
     let montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
     
     const microseguroTotal = Number(prestamo.microseguroTotal || 0)
-    if (prestamo.microseguroTipo !== 'DEVOLUCION') {
-      montoTotalPrestamo += microseguroTotal
-    }
+    // Se elimina la suma del microseguro al monto total prestado 
+    // para que no infle el saldo amortizable artificialmente.
     const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)
     // Redondear a 2 decimales para evitar precisiones de punto flotante
     const saldoActual = Math.max(0, Math.round((montoTotalPrestamo - totalPagosExistentes) * 100) / 100)

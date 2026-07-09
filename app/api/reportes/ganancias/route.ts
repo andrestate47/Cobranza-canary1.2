@@ -403,8 +403,7 @@ export async function GET(request: NextRequest) {
     let balancePendiente = 0
     ;(prestamosConSaldo as any[]).forEach((prestamo) => {
       const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
-      const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
+      const montoTotal = baseTotal
       const totalPagado = getTotalPagado(prestamo.id)
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       balancePendiente += saldoPendiente
@@ -421,8 +420,7 @@ export async function GET(request: NextRequest) {
       .filter((prestamo) => new Date(prestamo.fechaFin) < hoy)
       .forEach((prestamo) => {
         const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-        const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0')
-        const montoTotal = prestamo.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
+        const montoTotal = baseTotal
         const totalPagado = getTotalPagado(prestamo.id)
         const saldoPendiente = Math.max(0, montoTotal - totalPagado)
         capitalNoRecuperado += saldoPendiente
@@ -600,8 +598,7 @@ export async function GET(request: NextRequest) {
     
     const transferenciasEstimadas = (prestamosPorTransferencia as any[]).filter((p) => {
       const baseTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-      const microseguroTotal = parseFloat(p.microseguroTotal?.toString() || '0')
-      const montoTotal = p.microseguroTipo === 'DEVOLUCION' ? baseTotal : baseTotal + microseguroTotal
+      const montoTotal = baseTotal
       const totalPagado = getTotalPagado(p.id)
       return montoTotal > totalPagado && p.transferencias.length === 0
     }).length
@@ -618,26 +615,9 @@ export async function GET(request: NextRequest) {
         totalDevolucionesMicroseguro += parseFloat(pago.devolucionSeguro.toString());
       }
 
-      // Microseguro cobrado proporcionalmente
-      const prestamo = pago.prestamo;
-      const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
-      const tipoMicroseguro = prestamo.microseguroTipo || 'NINGUNO';
-      
-      if (microseguroTotal > 0 && tipoMicroseguro !== 'DEVOLUCION') {
-        const montoOriginal = parseFloat(prestamo.monto.toString());
-        const tasaInteres = parseFloat(prestamo.interes.toString()) / 100;
-        const interesTotal = montoOriginal * tasaInteres;
-        const montoTotalConSeguro = montoOriginal + interesTotal + microseguroTotal;
-        
-        if (montoTotalConSeguro > 0) {
-          const porcentajeMicroseguro = microseguroTotal / montoTotalConSeguro;
-          const microseguroEnPago = parseFloat(pago.monto.toString()) * porcentajeMicroseguro;
-          microseguroCobrado += microseguroEnPago;
-        }
-      }
     });
     
-    // Total generado por préstamos en el periodo
+    // Total generado por préstamos en el periodo (cobrado al inicio)
     let totalMicroseguroGenerado = 0;
     ;(prestamos as any[]).forEach((prestamo) => {
       const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
@@ -646,6 +626,9 @@ export async function GET(request: NextRequest) {
         totalMicroseguroGenerado += microseguroTotal;
       }
     });
+
+    // Como el microseguro se retiene al inicio, todo lo generado ya está cobrado
+    microseguroCobrado = totalMicroseguroGenerado;
 
     const gananciaNetaMicroseguro = microseguroCobrado - totalDevolucionesMicroseguro;
 

@@ -57,8 +57,7 @@ export async function POST(
       sum + parseFloat(pago.monto.toString()), 0)
     const montoOriginal = parseFloat(prestamoAnterior.monto.toString())
     const tasaInteres = parseFloat(prestamoAnterior.interes.toString()) / 100
-    const microseguroAnterior = parseFloat(prestamoAnterior.microseguroTotal?.toString() || "0")
-    const montoTotalAnterior = montoOriginal * (1 + tasaInteres) + microseguroAnterior
+    const montoTotalAnterior = montoOriginal * (1 + tasaInteres)
     const saldoPendiente = Math.max(0, montoTotalAnterior - totalPagado)
 
     // Validar valores numéricos
@@ -142,7 +141,7 @@ export async function POST(
     }
 
     // Calcular valor de cuota
-    const montoConInteresYSeguro = montoNuevo * (1 + interesNuevo / 100) + microseguroTotalNuevo
+    const montoConInteresYSeguro = montoNuevo * (1 + interesNuevo / 100)
     let valorCuota = montoConInteresYSeguro / cuotasNuevas
 
     // Redondear a 2 decimales y evitar valores infinitos

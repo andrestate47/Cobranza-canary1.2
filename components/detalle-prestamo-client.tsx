@@ -291,8 +291,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   // Calcular totales
   const montoOriginal = Number(prestamo.monto)
   const interesAmount = (montoOriginal * Number(prestamo.interes)) / 100
-  const microseguroAmount = prestamo.microseguroTipo === 'DEVOLUCION' ? 0 : Number(prestamo.microseguroTotal || 0)
-  const montoTotal = montoOriginal + interesAmount + microseguroAmount
+  // Microseguro ya no se suma a la deuda amortizable
+  const montoTotal = montoOriginal + interesAmount
   const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) =>
     sum + Number(pago.monto) + (Number(pago.devolucionSeguro) || 0), 0
   )

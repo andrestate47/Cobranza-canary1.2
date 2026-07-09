@@ -223,22 +223,14 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     if (pago.devolucionSeguro && parseFloat(pago.devolucionSeguro.toString()) > 0) {
       totalDevolucionesMicroseguro += parseFloat(pago.devolucionSeguro.toString());
     }
+  }
 
-    const prestamo = pago.prestamo;
+  // Microseguro se cobra al inicio (al entregar el préstamo)
+  for (const prestamo of prestamos) {
     const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
     const tipoMicroseguro = prestamo.microseguroTipo || 'NINGUNO';
-    
     if (microseguroTotal > 0 && tipoMicroseguro !== 'DEVOLUCION') {
-      const montoOriginal = parseFloat(prestamo.monto.toString());
-      const tasaInteres = parseFloat(prestamo.interes.toString()) / 100;
-      const interesTotal = montoOriginal * tasaInteres;
-      const montoTotalConSeguro = montoOriginal + interesTotal + microseguroTotal;
-      
-      if (montoTotalConSeguro > 0) {
-        const porcentajeMicroseguro = microseguroTotal / montoTotalConSeguro;
-        const microseguroEnPago = parseFloat(pago.monto.toString()) * porcentajeMicroseguro;
-        microseguroCobrado += microseguroEnPago;
-      }
+      microseguroCobrado += microseguroTotal;
     }
   }
 
