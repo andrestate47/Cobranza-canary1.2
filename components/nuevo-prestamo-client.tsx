@@ -228,11 +228,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
       microseguroTotalCalc = montoNum * (porcentaje / 100)
     }
 
-    const totalConMicroseguro = microseguroTipo === 'DEVOLUCION'
-      ? totalConInteres
-      : totalConInteres + microseguroTotalCalc
-
-    const cuota = totalConMicroseguro / cuotasNum
+    const cuota = totalConInteres / cuotasNum
 
     setMontoTotal(totalConInteres)
     setMicroseguroTotal(microseguroTotalCalc)
@@ -1218,7 +1214,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       )}
                       <div className="flex justify-between border-t border-blue-200 pt-2">
                         <span className="text-blue-700 font-medium">Total a pagar:</span>
-                        <span className="font-bold text-lg">{formatCurrency(microseguroTipo === 'DEVOLUCION' ? montoTotal : montoTotal + microseguroTotal)}</span>
+                        <span className="font-bold text-lg">{formatCurrency(montoTotal)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-blue-700 font-medium">Valor por cuota:</span>
