@@ -39,26 +39,9 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Calcular saldo actual de cada cobrador
-    const cobradoresConSaldo = await Promise.all(
-      cobradores.map(async (cobrador) => {
-        const ultimoMovimiento = await prisma.movimientoCajaChica.findFirst({
-          where: { cobradorId: cobrador.id },
-          orderBy: { fecha: "desc" },
-        })
-
-        return {
-          id: cobrador.id,
-          nombre: `${cobrador.firstName || cobrador.name || ""} ${cobrador.lastName || ""}`.trim(),
-          numeroRuta: cobrador.numeroRuta,
-          saldoActual: ultimoMovimiento?.saldoNuevo.toNumber() || 0,
-        }
-      })
-    )
-
-    // Calculate overall totals from ALL movements (not limited to date or 50)
+    // Calculate overall totals and balances from ALL movements
     const allTimeMovements = await prisma.movimientoCajaChica.findMany({
-      select: { tipo: true, monto: true }
+      select: { tipo: true, monto: true, cobradorId: true }
     })
     
     let totalApertura = 0
@@ -67,14 +50,40 @@ export async function GET(request: NextRequest) {
     let totalEgresosGenerales = 0
     let totalGastosCobradores = 0
 
+    const saldosCobradores: Record<string, number> = {}
+
     allTimeMovements.forEach(m => {
       const montoNum = m.monto.toNumber()
-      if (m.tipo === "APERTURA_CAJA") totalApertura += montoNum
-      else if (m.tipo === "ENTREGA") totalEntregas += montoNum
-      else if (m.tipo === "DEVOLUCION") totalDevoluciones += montoNum
-      else if (m.tipo === "EGRESO_GENERAL") totalEgresosGenerales += montoNum
-      else if (m.tipo === "GASTO") totalGastosCobradores += montoNum
+      const tipo = m.tipo
+
+      // Totales Globales Admin
+      if (tipo === "APERTURA_CAJA") totalApertura += montoNum
+      else if (tipo === "ENTREGA" || tipo === "ENTREGADO") totalEntregas += montoNum
+      else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO") totalDevoluciones += montoNum
+      else if (tipo === "EGRESO_GENERAL") totalEgresosGenerales += montoNum
+      else if (tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") totalGastosCobradores += montoNum
+
+      // Saldo de cada cobrador
+      if (m.cobradorId) {
+        if (!saldosCobradores[m.cobradorId]) {
+          saldosCobradores[m.cobradorId] = 0
+        }
+        if (tipo === "ENTREGA" || tipo === "ENTREGADO" || tipo === "INGRESO" || tipo === "APERTURA_CAJA") {
+          saldosCobradores[m.cobradorId] += montoNum
+        } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO" || tipo === "EGRESO") {
+          saldosCobradores[m.cobradorId] -= montoNum
+        } else if (tipo === "AJUSTE") {
+          saldosCobradores[m.cobradorId] += montoNum
+        }
+      }
     })
+
+    const cobradoresConSaldo = cobradores.map((cobrador) => ({
+      id: cobrador.id,
+      nombre: `${cobrador.firstName || cobrador.name || ""} ${cobrador.lastName || ""}`.trim(),
+      numeroRuta: cobrador.numeroRuta,
+      saldoActual: saldosCobradores[cobrador.id] || 0,
+    }))
 
     const totalesGlobales = {
       totalApertura,

@@ -90,6 +90,8 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
+      success: true,
+      saldoActual: balance.toNumber(),
       balance: {
         balance: balance.toNumber(),
         totalEntregado: totalEntregado.toNumber(),
@@ -278,9 +280,9 @@ export async function POST(request: NextRequest) {
     
     // Calcular nuevo saldo según el tipo
     let saldoNuevo = saldoAnterior
-    if (tipo === "ENTREGA" || tipo === "ENTREGADO") {
+    if (tipo === "ENTREGA" || tipo === "ENTREGADO" || tipo === "INGRESO") {
       saldoNuevo = saldoAnterior.plus(montoDecimal)
-    } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") {
+    } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO" || tipo === "EGRESO") {
       saldoNuevo = saldoAnterior.minus(montoDecimal)
     } else if (tipo === "AJUSTE") {
       // Para ajustes, el monto puede ser positivo o negativo

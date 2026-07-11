@@ -378,12 +378,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const totalCuotas = data.prestamo.cuotas || Math.ceil(data.prestamo.montoTotal / data.prestamo.valorCuota)
     const progresoPrecentaje = ((totalPagado / data.prestamo.montoTotal) * 100).toFixed(1)
 
-    // Ocultar microseguro de la boleta visualmente a pedido del usuario
+    // Ocultar microseguro de la boleta visualmente a pedido del usuario (Ya no es necesario restarlo)
     const microseguroPorCuota = (data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'DEVOLUCION' && data.prestamo.microseguroTotal && data.prestamo.cuotas) 
       ? data.prestamo.microseguroTotal / data.prestamo.cuotas 
       : 0;
     
-    const valorCuotaMostrar = data.prestamo.valorCuota - microseguroPorCuota;
+    const valorCuotaMostrar = data.prestamo.valorCuota;
     
     const montoAbonoMostrar = data.monto;
 
