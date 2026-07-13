@@ -383,7 +383,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       ? data.prestamo.microseguroTotal / data.prestamo.cuotas 
       : 0;
     
-    const valorCuotaMostrar = data.prestamo.valorCuota;
+    const valorCuotaMostrar = totalCuotas > 0 ? (data.prestamo.montoTotal / totalCuotas) : data.prestamo.valorCuota;
     
     const montoAbonoMostrar = data.monto;
 

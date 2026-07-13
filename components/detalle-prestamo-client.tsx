@@ -301,7 +301,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const microseguroPorCuota = (prestamo.microseguroTipo && prestamo.microseguroTipo !== 'DEVOLUCION' && prestamo.microseguroTotal && prestamo.cuotas)
     ? Number(prestamo.microseguroTotal) / Number(prestamo.cuotas)
     : 0;
-  const valorCuotaMostrar = valorCuota;
+  const valorCuotaMostrar = prestamo.cuotas > 0 ? (montoTotal / prestamo.cuotas) : valorCuota;
 
   const prestamoFlex = prestamo as any
   const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
