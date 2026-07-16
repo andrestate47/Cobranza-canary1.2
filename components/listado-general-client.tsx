@@ -30,8 +30,10 @@ import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
-import PagoRapidoModal from "@/components/pago-rapido-modal"
-import ImageViewerModal from "@/components/image-viewer-modal"
+import dynamic from "next/dynamic"
+
+const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
+const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
 
 interface Prestamo {
   id: string

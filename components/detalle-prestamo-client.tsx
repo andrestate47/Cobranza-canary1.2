@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -56,11 +56,13 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
-import PagoRapidoModal from "@/components/pago-rapido-modal"
-import CameraModal from "@/components/camera-modal"
-import TransferenciaModal from "@/components/transferencia-modal"
-import ImageViewerModal from "@/components/image-viewer-modal"
-import BoletaViewerModal from "@/components/boleta-viewer-modal"
+import dynamic from "next/dynamic"
+
+const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
+const CameraModal = dynamic(() => import("@/components/camera-modal"), { ssr: false })
+const TransferenciaModal = dynamic(() => import("@/components/transferencia-modal"), { ssr: false })
+const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
+const BoletaViewerModal = dynamic(() => import("@/components/boleta-viewer-modal"), { ssr: false })
 
 // Tipos basados en el modelo de Prisma
 interface Cliente {
@@ -310,8 +312,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
   const progressPercentage = Math.min((totalPagado / montoTotal) * 100, 100)
 
-  // Calcular información extendida del préstamo
-  const calcularInformacionExtendida = () => {
+  // Calcular información extendida del préstamo usando useMemo para optimización
+  const infoExtendida = useMemo(() => {
     const hoy = new Date()
     // Normalizar a medianoche UTC
     const hoyMidnight = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 12, 0, 0))
@@ -599,9 +601,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       diasVencidosAuto,
       valorEnAtrasoAuto
     }
-  }
-
-  const infoExtendida = calcularInformacionExtendida()
+  }, [prestamo, totalPagado, valorCuotaMostrar, cuotasPagadas, valorCuota])
 
   const prestamoFormatted = {
     id: prestamo.id,
@@ -2161,7 +2161,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       <PagoRapidoModal
         isOpen={showPagoModal}
         onClose={() => setShowPagoModal(false)}
-        prestamo={prestamoFormatted as Parameters<typeof PagoRapidoModal>[0]['prestamo']}
+        prestamo={prestamoFormatted as any}
         onSuccess={onPagoSuccess}
       />
 

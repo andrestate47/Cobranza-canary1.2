@@ -6,7 +6,9 @@ const nextConfig = {
   output: process.env.NEXT_OUTPUT_MODE,
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../'),
+    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', 'framer-motion'],
   },
+  swcMinify: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
