@@ -346,23 +346,23 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const diasPeriodo: Date[] = []
-    let tempDia = new Date(fechaInicioDate)
-    while (tempDia <= fechaFinDate) {
-      diasPeriodo.push(new Date(tempDia))
-      tempDia.setDate(tempDia.getDate() + 1)
-    }
-
     let expectativaCobroPeriodo = 0
     for (const prestamo of prestamosVigentesPeriodo) {
       const inicioPrestamo = new Date(prestamo.fechaInicio)
       const finPrestamo = new Date(prestamo.fechaFin)
+      const tipoPago = prestamo.tipoPago
+      const valorCuota = parseFloat(prestamo.valorCuota.toString())
       
-      for (const dia of diasPeriodo) {
-        if (dia >= inicioPrestamo && dia <= finPrestamo) {
-          if (esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, dia)) {
-            expectativaCobroPeriodo += parseFloat(prestamo.valorCuota.toString())
+      const startOverlap = new Date(Math.max(fechaInicioDate.getTime(), inicioPrestamo.getTime()))
+      const endOverlap = new Date(Math.min(fechaFinDate.getTime(), finPrestamo.getTime()))
+      
+      if (startOverlap <= endOverlap) {
+        let current = new Date(startOverlap)
+        while (current <= endOverlap) {
+          if (esDiaDePago(tipoPago, prestamo.fechaInicio, current)) {
+            expectativaCobroPeriodo += valorCuota
           }
+          current.setDate(current.getDate() + 1)
         }
       }
     }
@@ -920,28 +920,34 @@ export async function GET(request: NextRequest) {
           perdidasRutaPeriodo += saldoPendiente
         })
 
+        // Pre-filter para mejorar rendimiento
+        const pagosAnioCobrador = pagosAnio.filter(p => p.userId === cobrador.id)
+        const gastosAnioCobrador = gastosAnio.filter(g => g.userId === cobrador.id)
+        const movsAnioCobrador = movsAnio.filter(m => m.cobradorId === cobrador.id)
+        const prestamosAnioCobrador = prestamosAnio.filter(p => p.userId === cobrador.id)
+
         // Helper para calcular métricas históricas de esta ruta
         const calcularPeriodoHistorico = (inicio: Date) => {
           // Cobrado
-          const pagos = pagosAnio.filter(p => p.userId === cobrador.id && p.fecha >= inicio)
+          const pagos = pagosAnioCobrador.filter(p => p.fecha >= inicio)
           const cobrado = pagos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
           // Gastos
-          const gst = gastosAnio.filter(g => g.userId === cobrador.id && g.fecha >= inicio)
+          const gst = gastosAnioCobrador.filter(g => g.fecha >= inicio)
           const gastosOperativosHist = gst.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
           
-          const movs = movsAnio.filter(m => m.cobradorId === cobrador.id && m.fecha >= inicio)
+          const movs = movsAnioCobrador.filter(m => m.fecha >= inicio)
           const gastosSueldosHist = movs.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
           const otrosGastosHist = movs.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
           
           const gastosTotal = gastosOperativosHist + gastosSueldosHist + otrosGastosHist
 
           // Capital Invertido
-          const prestamosCreados = prestamosAnio.filter(p => p.userId === cobrador.id && p.createdAt >= inicio)
+          const prestamosCreados = prestamosAnioCobrador.filter(p => p.createdAt >= inicio)
           const invertido = prestamosCreados.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
           // Pérdidas (expiraron en el período histórico y tienen saldo pendiente)
-          const prestamosExpirados = prestamosAnio.filter(p => p.userId === cobrador.id && p.fechaFin >= inicio && p.fechaFin <= hoy)
+          const prestamosExpirados = prestamosAnioCobrador.filter(p => p.fechaFin >= inicio && p.fechaFin <= hoy)
           let perdidas = 0
           prestamosExpirados.forEach((p) => {
             const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)

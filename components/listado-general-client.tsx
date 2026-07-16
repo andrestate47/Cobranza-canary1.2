@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
 import {
@@ -86,7 +86,6 @@ interface ListadoGeneralClientProps {
 
 export default function ListadoGeneralClient({ session }: ListadoGeneralClientProps) {
   const [clientes, setClientes] = useState<ClienteConPrestamos[]>([])
-  const [filteredClientes, setFilteredClientes] = useState<ClienteConPrestamos[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState<'OK' | 'PROXIMO_A_VENCER' | 'MOROSO' | 'VENCIDO' | 'INACTIVO'>('OK')
@@ -107,7 +106,6 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       if (response.ok) {
         const data = await response.json()
         setClientes(data)
-        setFilteredClientes(data)
       } else {
         toast({
           title: "Error",
@@ -149,19 +147,32 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
   }, [soloConSaldo])
 
-  useEffect(() => {
-    const filtered = clientes.filter(clienteData => {
-      const searchLower = searchTerm.toLowerCase()
-      return (
-        clienteData.cliente.nombre.toLowerCase().includes(searchLower) ||
-        clienteData.cliente.apellido.toLowerCase().includes(searchLower) ||
-        clienteData.cliente.documento.includes(searchTerm) ||
-        clienteData.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
-        clienteData.cliente.telefono?.includes(searchTerm)
-      )
+  // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
+  const clientesConEstados = useMemo(() => {
+    return clientes.map(clienteData => {
+      return {
+        ...clienteData,
+        estadoAlerta: calcularEstadoCliente(clienteData),
+        tipoPagoInfo: getTipoPagoBadge(clienteData)
+      }
     })
-    setFilteredClientes(filtered)
-  }, [searchTerm, clientes])
+  }, [clientes])
+
+  const clientesFiltradosActivos = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    
+    return clientesConEstados.filter(c => {
+      const matchBusqueda = (
+        c.cliente.nombre.toLowerCase().includes(searchLower) ||
+        c.cliente.apellido.toLowerCase().includes(searchLower) ||
+        c.cliente.documento.includes(searchTerm) ||
+        c.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
+        (c.cliente.telefono && c.cliente.telefono.includes(searchTerm))
+      )
+      
+      return matchBusqueda && c.estadoAlerta.estado === activeTab
+    })
+  }, [clientesConEstados, searchTerm, activeTab])
 
   const handlePagoRapido = (prestamo: Prestamo, cliente: ClienteConPrestamos) => {
     setSelectedPrestamo(prestamo)
@@ -538,9 +549,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             </Button>
 
             <div className="text-sm text-gray-500">
-              {filteredClientes.filter(c => {
-                return calcularEstadoCliente(c).estado === activeTab;
-              }).length} cliente{filteredClientes.length !== 1 ? 's' : ''}
+              {clientesFiltradosActivos.length} cliente{clientesFiltradosActivos.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
@@ -604,12 +613,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
         {/* Lista de préstamos */}
         <div className="space-y-3">
-          {filteredClientes.filter(c => {
-            return calcularEstadoCliente(c).estado === activeTab;
-          }).map((clienteData, index) => {
+          {clientesFiltradosActivos.map((clienteData, index) => {
             const isExpanded = expandedCards.has(clienteData.cliente.id)
-            const estadoAlerta = calcularEstadoCliente(clienteData)
-            const tipoPagoInfo = getTipoPagoBadge(clienteData)
+            const estadoAlerta = clienteData.estadoAlerta!
+            const tipoPagoInfo = clienteData.tipoPagoInfo!
             const IconoAlerta = estadoAlerta.icono
 
             return (
@@ -961,7 +968,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             )
           })}
 
-          {filteredClientes.length === 0 && (
+          {clientesFiltradosActivos.length === 0 && (
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">

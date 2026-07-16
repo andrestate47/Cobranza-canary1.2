@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
 import {
@@ -53,7 +53,6 @@ interface GastosClientProps {
 
 export default function GastosClient({ session }: GastosClientProps) {
   const [gastos, setGastos] = useState<Gasto[]>([])
-  const [filteredGastos, setFilteredGastos] = useState<Gasto[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [fechaFiltro, setFechaFiltro] = useState("")
@@ -81,7 +80,6 @@ export default function GastosClient({ session }: GastosClientProps) {
       if (response.ok) {
         const data = await response.json()
         setGastos(data)
-        setFilteredGastos(data)
       } else {
         toast({
           title: "Error",
@@ -105,16 +103,15 @@ export default function GastosClient({ session }: GastosClientProps) {
     fetchGastos()
   }, [fechaFiltro])
 
-  useEffect(() => {
-    const filtered = gastos.filter(gasto => {
-      const searchLower = searchTerm.toLowerCase()
+  const filteredGastos = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return gastos.filter(gasto => {
       return (
         gasto.concepto.toLowerCase().includes(searchLower) ||
         gasto.usuario.nombre.toLowerCase().includes(searchLower) ||
         gasto.observaciones?.toLowerCase().includes(searchLower)
       )
     })
-    setFilteredGastos(filtered)
   }, [searchTerm, gastos])
 
   const onGastoSuccess = () => {
