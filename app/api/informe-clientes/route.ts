@@ -450,7 +450,7 @@ export async function GET(request: NextRequest) {
 
     // Function to check if a loan has actually missing payments
     const hasSaldoPendiente = (prestamo: any) => {
-      const pagado = prestamo.pagos.reduce((sum: any, pago: any) => sum + Number(pago.monto), 0)
+      const pagado = prestamo.pagos?.reduce((sum: any, pago: any) => sum + Number(pago.monto), 0) || 0
       return Number(prestamo.monto) - pagado > 0
     }
 
@@ -553,18 +553,18 @@ export async function GET(request: NextRequest) {
         }),
 
         prestamosVencidos: prestamosVencidosReales.map(prestamo => {
-          const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
+          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
           const saldoPendiente = Number(prestamo.monto) - totalPagado
-          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
-          const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
+          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
+          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
+          const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
 
           return {
             id: prestamo.id,
-            cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
-            documento: prestamo.cliente.documento,
-            telefono: prestamo.cliente.telefono,
-            direccion: prestamo.cliente.direccionCobro || prestamo.cliente.direccionCliente,
+            cliente: `${prestamo.cliente?.nombre || ''} ${prestamo.cliente?.apellido || ''}`.trim() || 'Desconocido',
+            documento: prestamo.cliente?.documento || '',
+            telefono: prestamo.cliente?.telefono || '',
+            direccion: prestamo.cliente?.direccionCobro || prestamo.cliente?.direccionCliente || '',
             monto: Number(prestamo.monto),
             valorCuota: Number(prestamo.valorCuota),
             cuotas: prestamo.cuotas,
@@ -599,16 +599,16 @@ export async function GET(request: NextRequest) {
         }),
 
         nuevosPrestamos: nuevosPrestamos.map(prestamo => {
-          const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
-          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
+          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
+          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
+          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
 
           return {
             id: prestamo.id,
-            cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
-            documento: prestamo.cliente.documento,
-            telefono: prestamo.cliente.telefono,
-            direccion: prestamo.cliente.direccionCobro,
+            cliente: `${prestamo.cliente?.nombre || ''} ${prestamo.cliente?.apellido || ''}`.trim() || 'Desconocido',
+            documento: prestamo.cliente?.documento || '',
+            telefono: prestamo.cliente?.telefono || '',
+            direccion: prestamo.cliente?.direccionCobro || '',
             monto: Number(prestamo.monto),
             interes: Number(prestamo.interes),
             tipoPago: prestamo.tipoPago,
@@ -616,37 +616,37 @@ export async function GET(request: NextRequest) {
             cuotas: prestamo.cuotas,
             fechaInicio: prestamo.fechaInicio,
             fechaFin: prestamo.fechaFin,
-            creadoPor: `${prestamo.usuario.firstName} ${prestamo.usuario.lastName}`,
+            creadoPor: prestamo.usuario ? `${prestamo.usuario.firstName} ${prestamo.usuario.lastName}` : 'Desconocido',
             totalPagado,
             cuotasPagadas,
             porcentajePagado,
-            pagosRealizados: prestamo.pagos.length
+            pagosRealizados: prestamo.pagos?.length || 0
           }
         }),
 
         cobrosHoy: cobrosHoy.map(pago => {
-          const totalPagado = pago.prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
-          const montoPrestamo = Number(pago.prestamo.monto)
+          const totalPagado = pago.prestamo?.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
+          const montoPrestamo = Number(pago.prestamo?.monto || 1)
           const porcentajePagado = (totalPagado / montoPrestamo * 100).toFixed(1)
-          const cuotasPagadas = Math.floor(totalPagado / Number(pago.prestamo.valorCuota))
+          const cuotasPagadas = Math.floor(totalPagado / Number(pago.prestamo?.valorCuota || 1))
           const saldoPendiente = montoPrestamo - totalPagado
 
           return {
             id: pago.id,
-            cliente: `${pago.prestamo.cliente.nombre} ${pago.prestamo.cliente.apellido}`,
-            documento: pago.prestamo.cliente.documento,
-            telefono: pago.prestamo.cliente.telefono,
+            cliente: pago.prestamo ? `${pago.prestamo.cliente?.nombre || ''} ${pago.prestamo.cliente?.apellido || ''}`.trim() : 'Desconocido',
+            documento: pago.prestamo?.cliente?.documento || '',
+            telefono: pago.prestamo?.cliente?.telefono || '',
             monto: Number(pago.monto),
             fecha: pago.fecha,
             prestamoId: pago.prestamoId,
             montoPrestamo,
-            valorCuota: Number(pago.prestamo.valorCuota),
-            cuotasTotales: pago.prestamo.cuotas,
+            valorCuota: Number(pago.prestamo?.valorCuota || 0),
+            cuotasTotales: pago.prestamo?.cuotas || 0,
             totalPagado,
             saldoPendiente,
             cuotasPagadas,
             porcentajePagado,
-            cobradoPor: `${pago.usuario.firstName} ${pago.usuario.lastName}`,
+            cobradoPor: pago.usuario ? `${pago.usuario.firstName} ${pago.usuario.lastName}` : 'Desconocido',
             observaciones: pago.observaciones
           }
         }),
@@ -687,21 +687,21 @@ export async function GET(request: NextRequest) {
 
         // NUEVAS LISTAS PARA LAS SUB-PESTAÑAS DE PRÉSTAMOS
         todosPrestamosTotales: todosPrestamosTotales.map(prestamo => {
-          const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
+          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
           const saldoPendiente = Number(prestamo.monto) - totalPagado
-          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
-          const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
+          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
+          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
+          const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
           const estaVencido = new Date(prestamo.fechaFin) < new Date()
           const diasVencido = estaVencido ?
             getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago) : 0
 
           return {
             id: prestamo.id,
-            cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
-            documento: prestamo.cliente.documento,
-            telefono: prestamo.cliente.telefono,
-            direccion: prestamo.cliente.direccionCobro || prestamo.cliente.direccionCliente,
+            cliente: `${prestamo.cliente?.nombre || ''} ${prestamo.cliente?.apellido || ''}`.trim() || 'Desconocido',
+            documento: prestamo.cliente?.documento || '',
+            telefono: prestamo.cliente?.telefono || '',
+            direccion: prestamo.cliente?.direccionCobro || prestamo.cliente?.direccionCliente || '',
             monto: Number(prestamo.monto),
             interes: Number(prestamo.interes),
             tipoPago: prestamo.tipoPago,
@@ -720,16 +720,16 @@ export async function GET(request: NextRequest) {
         }),
 
         prestamosCanceladosLista: prestamosCanceladosLista.map(prestamo => {
-          const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
+          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
           const cuotasPagadas = prestamo.cuotas
-          const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
+          const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
 
           return {
             id: prestamo.id,
-            cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
-            documento: prestamo.cliente.documento,
-            telefono: prestamo.cliente.telefono,
-            direccion: prestamo.cliente.direccionCobro || prestamo.cliente.direccionCliente,
+            cliente: `${prestamo.cliente?.nombre || ''} ${prestamo.cliente?.apellido || ''}`.trim() || 'Desconocido',
+            documento: prestamo.cliente?.documento || '',
+            telefono: prestamo.cliente?.telefono || '',
+            direccion: prestamo.cliente?.direccionCobro || prestamo.cliente?.direccionCliente || '',
             monto: Number(prestamo.monto),
             interes: Number(prestamo.interes),
             tipoPago: prestamo.tipoPago,
@@ -745,19 +745,19 @@ export async function GET(request: NextRequest) {
         }),
 
         prestamosEnMoraLista: prestamosEnMoraListaReales.map(prestamo => {
-          const totalPagado = prestamo.pagos.reduce((sum, p) => sum + Number(p.monto), 0)
+          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
           const saldoPendiente = Number(prestamo.monto) - totalPagado
-          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto) * 100).toFixed(1)
-          const ultimoPago = prestamo.pagos.length > 0 ? prestamo.pagos[0].fecha : null
+          const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
+          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
+          const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
           const diasVencido = getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago)
 
           return {
             id: prestamo.id,
-            cliente: `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`,
-            documento: prestamo.cliente.documento,
-            telefono: prestamo.cliente.telefono,
-            direccion: prestamo.cliente.direccionCobro || prestamo.cliente.direccionCliente,
+            cliente: `${prestamo.cliente?.nombre || ''} ${prestamo.cliente?.apellido || ''}`.trim() || 'Desconocido',
+            documento: prestamo.cliente?.documento || '',
+            telefono: prestamo.cliente?.telefono || '',
+            direccion: prestamo.cliente?.direccionCobro || prestamo.cliente?.direccionCliente || '',
             monto: Number(prestamo.monto),
             interes: Number(prestamo.interes),
             tipoPago: prestamo.tipoPago,
