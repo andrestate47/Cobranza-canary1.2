@@ -147,32 +147,6 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
   }, [soloConSaldo])
 
-  // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
-  const clientesConEstados = useMemo(() => {
-    return clientes.map(clienteData => {
-      return {
-        ...clienteData,
-        estadoAlerta: calcularEstadoCliente(clienteData),
-        tipoPagoInfo: getTipoPagoBadge(clienteData)
-      }
-    })
-  }, [clientes])
-
-  const clientesFiltradosActivos = useMemo(() => {
-    const searchLower = searchTerm.toLowerCase()
-    
-    return clientesConEstados.filter(c => {
-      const matchBusqueda = (
-        c.cliente.nombre.toLowerCase().includes(searchLower) ||
-        c.cliente.apellido.toLowerCase().includes(searchLower) ||
-        c.cliente.documento.includes(searchTerm) ||
-        c.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
-        (c.cliente.telefono && c.cliente.telefono.includes(searchTerm))
-      )
-      
-      return matchBusqueda && c.estadoAlerta.estado === activeTab
-    })
-  }, [clientesConEstados, searchTerm, activeTab])
 
   const handlePagoRapido = (prestamo: Prestamo, cliente: ClienteConPrestamos) => {
     setSelectedPrestamo(prestamo)
@@ -483,6 +457,33 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       })
     }
   }
+
+  // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
+  const clientesConEstados = useMemo(() => {
+    return clientes.map(clienteData => {
+      return {
+        ...clienteData,
+        estadoAlerta: calcularEstadoCliente(clienteData),
+        tipoPagoInfo: getTipoPagoBadge(clienteData)
+      }
+    })
+  }, [clientes])
+
+  const clientesFiltradosActivos = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    
+    return clientesConEstados.filter(c => {
+      const matchBusqueda = (
+        c.cliente.nombre.toLowerCase().includes(searchLower) ||
+        c.cliente.apellido.toLowerCase().includes(searchLower) ||
+        c.cliente.documento.includes(searchTerm) ||
+        c.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
+        (c.cliente.telefono && c.cliente.telefono.includes(searchTerm))
+      )
+      
+      return matchBusqueda && c.estadoAlerta.estado === activeTab
+    })
+  }, [clientesConEstados, searchTerm, activeTab])
 
   if (loading) {
     return (
