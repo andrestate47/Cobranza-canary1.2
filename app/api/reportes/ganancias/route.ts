@@ -171,6 +171,11 @@ export async function GET(request: NextRequest) {
         fecha: {
           gte: anualInicio
         }
+      },
+      select: {
+        userId: true,
+        fecha: true,
+        monto: true
       }
     })
 
@@ -179,6 +184,11 @@ export async function GET(request: NextRequest) {
         fecha: {
           gte: anualInicio
         }
+      },
+      select: {
+        userId: true,
+        fecha: true,
+        monto: true
       }
     })
 
@@ -187,6 +197,12 @@ export async function GET(request: NextRequest) {
         fecha: {
           gte: anualInicio
         }
+      },
+      select: {
+        cobradorId: true,
+        fecha: true,
+        monto: true,
+        tipo: true
       }
     })
 
@@ -196,6 +212,14 @@ export async function GET(request: NextRequest) {
           { createdAt: { gte: anualInicio } },
           { fechaFin: { gte: anualInicio } }
         ]
+      },
+      select: {
+        id: true,
+        userId: true,
+        createdAt: true,
+        fechaFin: true,
+        monto: true,
+        interes: true
       }
     })
 

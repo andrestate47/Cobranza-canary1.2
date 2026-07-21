@@ -21,9 +21,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import NuevoGastoModal from "@/components/nuevo-gasto-modal"
-import ImageViewerModal from "@/components/image-viewer-modal"
 import { useCurrency } from "@/hooks/use-currency"
+import dynamic from "next/dynamic"
+import { useInView } from "react-intersection-observer"
+
+const NuevoGastoModal = dynamic(() => import("@/components/nuevo-gasto-modal"), { ssr: false })
+const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,10 +60,28 @@ export default function GastosClient({ session }: GastosClientProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [fechaFiltro, setFechaFiltro] = useState("")
   const [showNuevoGasto, setShowNuevoGasto] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(20)
 
   // Estado para visualización de imagen
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+
+  const { ref: observerRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: '200px',
+  })
+
+  // Cargar más al llegar al final
+  useEffect(() => {
+    if (inView) {
+      setVisibleCount(prev => prev + 20)
+    }
+  }, [inView])
+
+  // Resetear el conteo visible al cambiar los filtros
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchTerm, fechaFiltro])
 
   // Estado para eliminación
   const [gastoAEliminar, setGastoAEliminar] = useState<{ id: string, concepto: string } | null>(null)
@@ -297,7 +318,7 @@ export default function GastosClient({ session }: GastosClientProps) {
 
         {/* Lista de gastos */}
         <div className="space-y-4">
-          {filteredGastos.map((gasto, index) => (
+          {filteredGastos.slice(0, visibleCount).map((gasto, index) => (
             <Card
               key={gasto.id}
               className="list-item animate-fadeInScale"
@@ -365,6 +386,13 @@ export default function GastosClient({ session }: GastosClientProps) {
               </CardContent>
             </Card>
           ))}
+
+          {visibleCount < filteredGastos.length && (
+            <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Cargando más gastos...
+            </div>
+          )}
 
           {filteredGastos.length === 0 && (
             <div className="text-center py-12">

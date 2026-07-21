@@ -31,6 +31,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
 import dynamic from "next/dynamic"
+import { useInView } from "react-intersection-observer"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
@@ -96,8 +97,26 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string, title: string, subtitle?: string } | null>(null)
+  const [visibleCount, setVisibleCount] = useState(20)
   const { toast } = useToast()
   const { format: formatCurrency } = useCurrency()
+
+  const { ref: observerRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: '200px',
+  })
+
+  // Cargar más al llegar al final
+  useEffect(() => {
+    if (inView) {
+      setVisibleCount(prev => prev + 20)
+    }
+  }, [inView])
+
+  // Resetear el conteo visible al cambiar los filtros
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchTerm, activeTab, soloConSaldo])
 
   const fetchClientes = async () => {
     setLoading(true)
@@ -614,7 +633,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
         {/* Lista de préstamos */}
         <div className="space-y-3">
-          {clientesFiltradosActivos.map((clienteData, index) => {
+          {clientesFiltradosActivos.slice(0, visibleCount).map((clienteData, index) => {
             const isExpanded = expandedCards.has(clienteData.cliente.id)
             const estadoAlerta = clienteData.estadoAlerta!
             const tipoPagoInfo = clienteData.tipoPagoInfo!
@@ -968,6 +987,13 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
               </Card>
             )
           })}
+
+          {visibleCount < clientesFiltradosActivos.length && (
+            <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Cargando más resultados...
+            </div>
+          )}
 
           {clientesFiltradosActivos.length === 0 && (
             <div className="text-center py-12">
