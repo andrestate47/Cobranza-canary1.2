@@ -29,6 +29,7 @@ import {
   Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useInView } from "react-intersection-observer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -236,6 +237,24 @@ export default function InformeClientesClient({ session }: InformeClientesClient
   // Estado para el diálogo de confirmación de eliminación
   const [clienteAEliminar, setClienteAEliminar] = useState<{ id: string, nombre: string } | null>(null)
   const [eliminandoCliente, setEliminandoCliente] = useState(false)
+
+  const [visibleCount, setVisibleCount] = useState(20)
+  const { ref: observerRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: '200px',
+  })
+
+  // Cargar más al llegar al final
+  useEffect(() => {
+    if (inView) {
+      setVisibleCount(prev => prev + 20)
+    }
+  }, [inView])
+
+  // Resetear el conteo al cambiar de pestaña o usar filtro
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [activeTab, filtroTexto, fechaSeleccionada])
 
   const fetchInforme = async (fecha: string) => {
     setLoading(true)
@@ -582,6 +601,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       cliente.nombre.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cliente.documento.includes(filtroTexto)
                     )
+                    .slice(0, visibleCount)
                     .map((cliente, index) => (
                       <Card key={cliente.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
@@ -684,6 +704,14 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         </CardContent>
                       </Card>
                     ))}
+                  
+                  {visibleCount < informe.detalles.clientesVisitados.length && (
+                    <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Cargando más clientes...
+                    </div>
+                  )}
+
                   {informe.detalles.clientesVisitados.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -708,6 +736,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       cliente.nombre.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cliente.documento.includes(filtroTexto)
                     )
+                    .slice(0, visibleCount)
                     .map((cliente, index) => (
                       <Card key={cliente.id} className="animate-fadeInScale border-l-4 border-l-orange-400" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
@@ -806,6 +835,14 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         </CardContent>
                       </Card>
                     ))}
+
+                  {visibleCount < informe.detalles.clientesNoVisitados.length && (
+                    <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Cargando más clientes...
+                    </div>
+                  )}
+
                   {informe.detalles.clientesNoVisitados.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -830,6 +867,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       prestamo.cliente.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       prestamo.documento.includes(filtroTexto)
                     )
+                    .slice(0, visibleCount)
                     .map((prestamo, index) => (
                       <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
@@ -871,6 +909,14 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         </CardContent>
                       </Card>
                     ))}
+
+                  {visibleCount < informe.detalles.prestamosVencidos.length && (
+                    <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Cargando más préstamos...
+                    </div>
+                  )}
+
                   {informe.detalles.prestamosVencidos.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -958,6 +1004,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       cobro.cliente.toLowerCase().includes(filtroTexto.toLowerCase()) ||
                       cobro.documento.includes(filtroTexto)
                     )
+                    .slice(0, visibleCount)
                     .map((cobro, index) => (
                       <Card key={cobro.id} className="animate-fadeInScale border-l-4 border-l-green-400" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
@@ -992,6 +1039,14 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         </CardContent>
                       </Card>
                     ))}
+
+                  {visibleCount < informe.detalles.cobrosHoy.length && (
+                    <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Cargando más cobros...
+                    </div>
+                  )}
+
                   {informe.detalles.cobrosHoy.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">
@@ -1123,6 +1178,14 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         </CardContent>
                       </Card>
                     ))}
+
+                  {visibleCount < informe.detalles.clientesConMora.length && (
+                    <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Cargando más clientes...
+                    </div>
+                  )}
+
                   {informe.detalles.clientesConMora.length === 0 && (
                     <Card>
                       <CardContent className="p-8 text-center text-gray-500">

@@ -65,8 +65,18 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
         notIn: ["CANCELADO"]
       }
     },
-    include: {
-      pagos: true,
+    select: {
+      id: true,
+      monto: true,
+      interes: true,
+      tipoPago: true,
+      fechaInicio: true,
+      fechaFin: true,
+      moraCredito: true,
+      valorCuota: true,
+      pagos: {
+        select: { monto: true }
+      },
       cliente: {
         select: {
           id: true,
@@ -115,7 +125,8 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
           }
         }
       }
-    }
+    },
+    select: { id: true }
   })
 
   // Clientes pendientes (con préstamos activos sin pago en el día)
@@ -128,14 +139,13 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     where: {
       rutaId: usuario?.rutaId || null
     },
-    include: {
+    select: {
+      id: true,
       prestamos: {
         where: {
           userId: userId
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
+        select: { id: true }
       }
     }
   })
@@ -163,7 +173,8 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
           }
         }
       }
-    }
+    },
+    select: { id: true }
   })
 
   // Renovaciones pendientes (clientes con préstamos activos que ya vencieron)
@@ -173,7 +184,8 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       fechaFin: {
         lt: fecha
       }
-    }
+    },
+    select: { id: true }
   })
 
   // Calcular totales
