@@ -44,7 +44,7 @@ interface Gasto {
   monto: number
   fecha: string
   observaciones?: string
-  fotoComprobante?: string
+  tieneComprobante?: boolean
   usuario: {
     nombre: string
   }
@@ -348,7 +348,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                             {gasto.observaciones}
                           </p>
                         )}
-                        {gasto.fotoComprobante && (
+                        {gasto.tieneComprobante && (
                           <Button
                             variant="outline"
                             size="sm"

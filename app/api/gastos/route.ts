@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       monto: parseFloat(gasto.monto.toString()),
       fecha: gasto.fecha,
       observaciones: gasto.observaciones,
-      fotoComprobante: gasto.fotoComprobante,
+      tieneComprobante: !!gasto.fotoComprobante,
       usuario: {
         nombre: gasto.usuario.firstName && gasto.usuario.lastName
           ? `${gasto.usuario.firstName} ${gasto.usuario.lastName}`
