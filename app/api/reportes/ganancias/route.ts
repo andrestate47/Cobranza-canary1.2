@@ -165,191 +165,84 @@ export async function GET(request: NextRequest) {
     const semestreInicio = new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
     const anualInicio = new Date(hoy.getTime() - 365 * 24 * 60 * 60 * 1000)
 
-    // Consultar datos históricos para el breakdown por periodos (últimos 365 días)
-    const pagosAnio = await prisma.pago.findMany({
-      where: {
-        fecha: {
-          gte: anualInicio
+    // Consultar todos los datos requeridos en paralelo con Promise.all
+    const [
+      pagosAnio,
+      gastosAnio,
+      movsAnio,
+      prestamosAnio,
+      prestamos,
+      todosPagos,
+      gastos,
+      movimientosCajaChica,
+      prestamosConSaldo,
+      prestamosRenovados,
+      prestamosNuevos,
+      prestamosVigentesPeriodo,
+      prestamosPorTransferencia,
+      agregacionPagos
+    ] = await Promise.all([
+      prisma.pago.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { userId: true, fecha: true, monto: true }
+      }),
+      prisma.gasto.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { userId: true, fecha: true, monto: true }
+      }),
+      prisma.movimientoCajaChica.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { cobradorId: true, fecha: true, monto: true, tipo: true }
+      }),
+      prisma.prestamo.findMany({
+        where: { OR: [{ createdAt: { gte: anualInicio } }, { fechaFin: { gte: anualInicio } }] },
+        select: { id: true, userId: true, createdAt: true, fechaFin: true, monto: true, interes: true }
+      }),
+      prisma.prestamo.findMany({
+        where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
+        include: {
+          cliente: { select: { nombre: true, apellido: true, documento: true } },
+          pagos: { where: { fecha: { gte: fechaInicioDate, lte: fechaFinDate } } }
         }
-      },
-      select: {
-        userId: true,
-        fecha: true,
-        monto: true
-      }
-    })
-
-    const gastosAnio = await prisma.gasto.findMany({
-      where: {
-        fecha: {
-          gte: anualInicio
-        }
-      },
-      select: {
-        userId: true,
-        fecha: true,
-        monto: true
-      }
-    })
-
-    const movsAnio = await prisma.movimientoCajaChica.findMany({
-      where: {
-        fecha: {
-          gte: anualInicio
-        }
-      },
-      select: {
-        cobradorId: true,
-        fecha: true,
-        monto: true,
-        tipo: true
-      }
-    })
-
-    const prestamosAnio = await prisma.prestamo.findMany({
-      where: {
-        OR: [
-          { createdAt: { gte: anualInicio } },
-          { fechaFin: { gte: anualInicio } }
-        ]
-      },
-      select: {
-        id: true,
-        userId: true,
-        createdAt: true,
-        fechaFin: true,
-        monto: true,
-        interes: true
-      }
-    })
-
-    // Obtener todos los préstamos en el rango de fechas
-    const prestamos = await prisma.prestamo.findMany({
-      where: {
-        createdAt: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true
-          }
-        },
-        pagos: {
-          where: {
-            fecha: {
-              gte: fechaInicioDate,
-              lte: fechaFinDate
-            }
+      }),
+      prisma.pago.findMany({
+        where: { fecha: { gte: fechaInicioDate, lte: fechaFinDate } },
+        include: {
+          prestamo: {
+            include: { cliente: { select: { nombre: true, apellido: true, documento: true } } }
           }
         }
-      }
-    })
-
-    // Obtener todos los pagos en el rango de fechas
-    const todosPagos = await prisma.pago.findMany({
-      where: {
-        fecha: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      },
-      include: {
-        prestamo: {
-          include: {
-            cliente: {
-              select: {
-                nombre: true,
-                apellido: true,
-                documento: true
-              }
-            }
-          }
-        }
-      }
-    })
-
-    // Obtener todos los gastos en el rango de fechas
-    const gastos = await prisma.gasto.findMany({
-      where: {
-        fecha: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      }
-    })
-
-    // Obtener movimientos de caja chica en el rango
-    const movimientosCajaChica = await prisma.movimientoCajaChica.findMany({
-      where: {
-        fecha: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      }
-    })
-
-    // Obtener todos los préstamos para calcular saldos pendientes
-    const prestamosConSaldo = await prisma.prestamo.findMany({
-      where: {
-        estado: 'ACTIVO'
-      },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            documento: true
-          }
-        }
-      }
-    })
-
-    // Obtener préstamos renovados en el rango de fechas
-    const prestamosRenovados = await prisma.prestamo.findMany({
-      where: {
-        estado: 'RENOVADO',
-        updatedAt: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            documento: true
-          }
-        }
-      }
-    })
-
-    // Obtener nuevos préstamos (que podrían ser renovaciones)
-    const prestamosNuevos = await prisma.prestamo.findMany({
-      where: {
-        createdAt: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            documento: true
-          }
-        }
-      }
-    })
+      }),
+      prisma.gasto.findMany({
+        where: { fecha: { gte: fechaInicioDate, lte: fechaFinDate } }
+      }),
+      prisma.movimientoCajaChica.findMany({
+        where: { fecha: { gte: fechaInicioDate, lte: fechaFinDate } }
+      }),
+      prisma.prestamo.findMany({
+        where: { estado: 'ACTIVO' },
+        include: { cliente: { select: { id: true, nombre: true, apellido: true, documento: true } } }
+      }),
+      prisma.prestamo.findMany({
+        where: { estado: 'RENOVADO', updatedAt: { gte: fechaInicioDate, lte: fechaFinDate } },
+        include: { cliente: { select: { id: true, nombre: true, apellido: true, documento: true } } }
+      }),
+      prisma.prestamo.findMany({
+        where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
+        include: { cliente: { select: { id: true, nombre: true, apellido: true, documento: true } } }
+      }),
+      prisma.prestamo.findMany({
+        where: { fechaInicio: { lte: fechaFinDate }, fechaFin: { gte: fechaInicioDate } }
+      }),
+      prisma.prestamo.findMany({
+        where: { tipoCredito: 'TRANSFERENCIA', estado: 'ACTIVO' },
+        include: { transferencias: true }
+      }),
+      prisma.pago.groupBy({
+        by: ["prestamoId"],
+        _sum: { monto: true, devolucionSeguro: true }
+      })
+    ])
 
     // CÁLCULOS FINANCIEROS
 
@@ -359,17 +252,6 @@ export async function GET(request: NextRequest) {
     )
 
     // Expectativa de cobro en el período (suma de las cuotas programadas en el rango)
-    const prestamosVigentesPeriodo = await prisma.prestamo.findMany({
-      where: {
-        fechaInicio: {
-          lte: fechaFinDate
-        },
-        fechaFin: {
-          gte: fechaInicioDate
-        }
-      }
-    })
-
     let expectativaCobroPeriodo = 0
     for (const prestamo of prestamosVigentesPeriodo) {
       const inicioPrestamo = new Date(prestamo.fechaInicio)
@@ -390,31 +272,6 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-
-    // Transferencias pendientes (préstamos de tipo TRANSFERENCIA con saldo pendiente)
-    const prestamosPorTransferencia = await prisma.prestamo.findMany({
-      where: {
-        tipoCredito: 'TRANSFERENCIA',
-        estado: 'ACTIVO'
-      },
-      include: {
-        transferencias: true
-      }
-    })
-
-    // === NUEVA LÓGICA DE AGREGACIÓN GLOBAL DE PAGOS ===
-    const allPrestamoIds = new Set([
-      ...prestamosAnio.map(p => p.id),
-      ...prestamosConSaldo.map(p => p.id),
-      ...prestamosPorTransferencia.map(p => p.id),
-      ...prestamos.map(p => p.id)
-    ])
-
-    const agregacionPagos = await prisma.pago.groupBy({
-      by: ["prestamoId"],
-      _sum: { monto: true, devolucionSeguro: true },
-      where: { prestamoId: { in: Array.from(allPrestamoIds) } }
-    })
 
     const totalPagadoMap = new Map()
     agregacionPagos.forEach(agg => {
@@ -780,6 +637,81 @@ export async function GET(request: NextRequest) {
       cobradores: promedioSalarioCobrador
     }
 
+    // Pre-agrupar colecciones por usuario/cobrador para evitar O(C * N) filtrados en bucle
+    const todosPagosByCobrador = new Map<string, typeof todosPagos>()
+    todosPagos.forEach(p => {
+      const list = todosPagosByCobrador.get(p.userId) || []
+      list.push(p)
+      todosPagosByCobrador.set(p.userId, list)
+    })
+
+    const prestamosNuevosByCobrador = new Map<string, typeof prestamosNuevos>()
+    prestamosNuevos.forEach(p => {
+      const list = prestamosNuevosByCobrador.get(p.userId) || []
+      list.push(p)
+      prestamosNuevosByCobrador.set(p.userId, list)
+    })
+
+    const gastosByCobrador = new Map<string, typeof gastos>()
+    gastos.forEach(g => {
+      const list = gastosByCobrador.get(g.userId) || []
+      list.push(g)
+      gastosByCobrador.set(g.userId, list)
+    })
+
+    const movsByCobrador = new Map<string, typeof movimientosCajaChica>()
+    movimientosCajaChica.forEach(m => {
+      if (m.cobradorId) {
+        const list = movsByCobrador.get(m.cobradorId) || []
+        list.push(m)
+        movsByCobrador.set(m.cobradorId, list)
+      }
+    })
+
+    const prestamosByCobrador = new Map<string, typeof prestamos>()
+    prestamos.forEach(p => {
+      const list = prestamosByCobrador.get(p.userId) || []
+      list.push(p)
+      prestamosByCobrador.set(p.userId, list)
+    })
+
+    const prestamosConSaldoByCobrador = new Map<string, typeof prestamosConSaldo>()
+    prestamosConSaldo.forEach(p => {
+      const list = prestamosConSaldoByCobrador.get((p as any).userId) || []
+      list.push(p)
+      prestamosConSaldoByCobrador.set((p as any).userId, list)
+    })
+
+    const pagosAnioByCobrador = new Map<string, typeof pagosAnio>()
+    pagosAnio.forEach(p => {
+      const list = pagosAnioByCobrador.get(p.userId) || []
+      list.push(p)
+      pagosAnioByCobrador.set(p.userId, list)
+    })
+
+    const gastosAnioByCobrador = new Map<string, typeof gastosAnio>()
+    gastosAnio.forEach(g => {
+      const list = gastosAnioByCobrador.get(g.userId) || []
+      list.push(g)
+      gastosAnioByCobrador.set(g.userId, list)
+    })
+
+    const movsAnioByCobrador = new Map<string, typeof movsAnio>()
+    movsAnio.forEach(m => {
+      if (m.cobradorId) {
+        const list = movsAnioByCobrador.get(m.cobradorId) || []
+        list.push(m)
+        movsAnioByCobrador.set(m.cobradorId, list)
+      }
+    })
+
+    const prestamosAnioByCobrador = new Map<string, typeof prestamosAnio>()
+    prestamosAnio.forEach(p => {
+      const list = prestamosAnioByCobrador.get(p.userId) || []
+      list.push(p)
+      prestamosAnioByCobrador.set(p.userId, list)
+    })
+
     const reporte = {
       periodo: {
         fechaInicio: fechaInicioDate,
@@ -873,20 +805,27 @@ export async function GET(request: NextRequest) {
         }
       },
       rutas: cobradores.map((cobrador) => {
+        const todosPagosCobrador = todosPagosByCobrador.get(cobrador.id) || []
+        const prestamosNuevosCobrador = prestamosNuevosByCobrador.get(cobrador.id) || []
+        const gastosCobrador = gastosByCobrador.get(cobrador.id) || []
+        const movsCobrador = movsByCobrador.get(cobrador.id) || []
+        const prestamosCobrador = prestamosByCobrador.get(cobrador.id) || []
+        const prestamosConSaldoCobrador = prestamosConSaldoByCobrador.get(cobrador.id) || []
+
         // Filtrar pagos en efectivo del cobrador
-        const pagosRuta = todosPagos.filter(p => p.userId === cobrador.id && p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
+        const pagosRuta = todosPagosCobrador.filter(p => p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
         const totalCobradoEfectivo = pagosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Filtrar préstamos en efectivo del cobrador
-        const prestamosRuta = prestamosNuevos.filter(p => p.userId === cobrador.id && (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
+        const prestamosRuta = prestamosNuevosCobrador.filter(p => (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
         const totalPrestadoEfectivo = prestamosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Gastos operativos
-        const gastosRuta = gastos.filter(g => g.userId === cobrador.id)
+        const gastosRuta = gastosCobrador
         const gastosOperativos = gastosRuta.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
         
         // Gastos sueldos y viaticos del cobrador
-        const movsRuta = movimientosCajaChica.filter(m => m.cobradorId === cobrador.id)
+        const movsRuta = movsCobrador
         const gastosSueldos = movsRuta.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         const otrosGastos = movsRuta.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         
@@ -895,29 +834,26 @@ export async function GET(request: NextRequest) {
         
         const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos + ingresosExtra - egresosExtra
 
-        // === NUEVAS MÉTRICAS SOLICITADAS POR EL CLIENTE ===
-        // 1. Capital invertido en el período (efectivo y transferencia)
-        const prestamosRutaTodos = prestamos.filter(p => p.userId === cobrador.id)
+        // === MÉTRICAS DE RUTA ===
+        const prestamosRutaTodos = prestamosCobrador
         const capitalInvertidoRuta = prestamosRutaTodos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
-        // 2. Cobrador regado en la calle (saldo pendiente actual)
+        // Regado en la calle
         let regadoCalleRuta = 0
-        prestamosConSaldo
-          .filter(p => (p as any).userId === cobrador.id)
-          .forEach((p) => {
-            const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-            const totalPagado = getTotalPagado(p.id)
-            const saldoPendiente = Math.max(0, montoTotal - totalPagado)
-            regadoCalleRuta += saldoPendiente
-          })
+        prestamosConSaldoCobrador.forEach((p) => {
+          const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+          const totalPagado = getTotalPagado(p.id)
+          const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+          regadoCalleRuta += saldoPendiente
+        })
 
-        // 3. Interés ganado de esa ruta (Proyectado y Cobrado del período seleccionado)
+        // Interés ganado
         const interesProyectadoRuta = prestamosRutaTodos.reduce((sum, p) => 
           sum + parseFloat(p.monto.toString()) * (parseFloat(p.interes.toString()) / 100), 0
         )
 
         let interesCobradoRuta = 0
-        const pagosRutaPeriodo = todosPagos.filter(p => p.userId === cobrador.id)
+        const pagosRutaPeriodo = todosPagosCobrador
         pagosRutaPeriodo.forEach((pago) => {
           const prestamo = pago.prestamo
           const montoOriginal = parseFloat(prestamo.monto.toString())
@@ -930,10 +866,14 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        // 4. Pérdidas del período (préstamos que vencieron en el período con saldo pendiente)
+        // Pérdidas del período
+        const prestamosAnioCobrador = prestamosAnioByCobrador.get(cobrador.id) || []
+        const pagosAnioCobrador = pagosAnioByCobrador.get(cobrador.id) || []
+        const gastosAnioCobrador = gastosAnioByCobrador.get(cobrador.id) || []
+        const movsAnioCobrador = movsAnioByCobrador.get(cobrador.id) || []
+
         let perdidasRutaPeriodo = 0
-        const prestamosExpiradosPeriodo = prestamosAnio.filter(p => 
-          p.userId === cobrador.id && 
+        const prestamosExpiradosPeriodo = prestamosAnioCobrador.filter(p => 
           p.fechaFin >= fechaInicioDate && 
           p.fechaFin <= fechaFinDate
         )
@@ -944,19 +884,11 @@ export async function GET(request: NextRequest) {
           perdidasRutaPeriodo += saldoPendiente
         })
 
-        // Pre-filter para mejorar rendimiento
-        const pagosAnioCobrador = pagosAnio.filter(p => p.userId === cobrador.id)
-        const gastosAnioCobrador = gastosAnio.filter(g => g.userId === cobrador.id)
-        const movsAnioCobrador = movsAnio.filter(m => m.cobradorId === cobrador.id)
-        const prestamosAnioCobrador = prestamosAnio.filter(p => p.userId === cobrador.id)
-
         // Helper para calcular métricas históricas de esta ruta
         const calcularPeriodoHistorico = (inicio: Date) => {
-          // Cobrado
           const pagos = pagosAnioCobrador.filter(p => p.fecha >= inicio)
           const cobrado = pagos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
-          // Gastos
           const gst = gastosAnioCobrador.filter(g => g.fecha >= inicio)
           const gastosOperativosHist = gst.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
           
@@ -966,11 +898,9 @@ export async function GET(request: NextRequest) {
           
           const gastosTotal = gastosOperativosHist + gastosSueldosHist + otrosGastosHist
 
-          // Capital Invertido
           const prestamosCreados = prestamosAnioCobrador.filter(p => p.createdAt >= inicio)
           const invertido = prestamosCreados.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
 
-          // Pérdidas (expiraron en el período histórico y tienen saldo pendiente)
           const prestamosExpirados = prestamosAnioCobrador.filter(p => p.fechaFin >= inicio && p.fechaFin <= hoy)
           let perdidas = 0
           prestamosExpirados.forEach((p) => {
@@ -1033,42 +963,7 @@ export async function GET(request: NextRequest) {
             fecha: m.fecha.toISOString()
           }))
         }
-      }),
-      detalles: {
-        prestamos: (prestamos as PrestamoConCliente[]).map((p) => {
-          const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-          const totalPagado = (p.pagos || []).reduce((sum: number, pago) => sum + parseFloat(pago.monto.toString()), 0)
-          const saldoPendiente = Math.max(0, montoTotal - getTotalPagado(p.id))
-          
-          return {
-            id: p.id,
-            cliente: `${p.cliente.nombre} ${p.cliente.apellido}`,
-            documento: p.cliente.documento,
-            monto: parseFloat(p.monto.toString()),
-            interes: parseFloat(p.interes.toString()),
-            saldoPendiente: saldoPendiente,
-            fechaInicio: p.fechaFin,
-            fechaVencimiento: p.fechaFin, // Usar fechaFin como fechaVencimiento
-            pagosEnPeriodo: (p.pagos || []).length,
-            montoPagado: totalPagado
-          }
-        }),
-        pagos: (todosPagos as PagoDetallado[]).map((p) => ({
-          id: p.id,
-          cliente: `${p.prestamo.cliente.nombre} ${p.prestamo.cliente.apellido}`,
-          monto: parseFloat(p.monto.toString()),
-          fecha: p.fecha,
-          prestamoId: p.prestamoId,
-          observaciones: p.observaciones
-        })),
-        gastos: (gastos as GastoDetallado[]).map((g) => ({
-          id: g.id,
-          concepto: g.concepto,
-          monto: parseFloat(g.monto.toString()),
-          fecha: g.fecha,
-          observaciones: g.observaciones
-        }))
-      }
+      })
     }
 
     return NextResponse.json(reporte)

@@ -44,41 +44,41 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Obtener préstamos activos con información completa de cliente y pagos
-    const prestamos = await prisma.prestamo.findMany({
-      where: whereClause,
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            codigoCliente: true,
-            documento: true,
-            nombre: true,
-            apellido: true,
-            direccionCliente: true,
-            direccionCobro: true,
-            telefono: true,
-            foto: true,
-            pais: true,
-            ciudad: true,
-            referenciasPersonales: true
+    // Obtener préstamos activos y agregaciones de pagos en paralelo con Promise.all
+    const [prestamos, agregacionPagos] = await Promise.all([
+      prisma.prestamo.findMany({
+        where: whereClause,
+        include: {
+          cliente: {
+            select: {
+              id: true,
+              codigoCliente: true,
+              documento: true,
+              nombre: true,
+              apellido: true,
+              direccionCliente: true,
+              direccionCobro: true,
+              telefono: true,
+              foto: true,
+              pais: true,
+              ciudad: true,
+              referenciasPersonales: true
+            }
           }
+        },
+        orderBy: [
+          { fechaInicio: "desc" }
+        ]
+      }),
+      prisma.pago.groupBy({
+        by: ["prestamoId"],
+        _sum: { monto: true, devolucionSeguro: true },
+        _max: { fecha: true },
+        where: {
+          prestamo: whereClause
         }
-      },
-      orderBy: [
-        { fechaInicio: "desc" }
-      ]
-    })
-
-    const prestamoIds = prestamos.map(p => p.id)
-
-    // Obtener agregaciones de pagos (suma y fecha del último pago)
-    const agregacionPagos = prestamoIds.length > 0 ? await prisma.pago.groupBy({
-      by: ["prestamoId"],
-      _sum: { monto: true, devolucionSeguro: true },
-      _max: { fecha: true },
-      where: { prestamoId: { in: prestamoIds } }
-    }) : []
+      })
+    ])
 
     const pagosAgrupadosMap = new Map()
     agregacionPagos.forEach(agg => {

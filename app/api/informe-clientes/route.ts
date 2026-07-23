@@ -40,110 +40,71 @@ export async function GET(request: NextRequest) {
     const fechaInicio = new Date(year, month - 1, day, 0, 0, 0, 0)
     const fechaFin = new Date(year, month - 1, day, 23, 59, 59, 999)
 
-    // 1. CLIENTES TOTALES
-    const totalClientes = await prisma.cliente.count({
-      where: { 
-        activo: true,
-        ...routeFilter
-      }
-    })
-
-    // 2. PRÉSTAMOS TOTALES Y ACTIVOS
-    const prestamosData = await prisma.prestamo.aggregate({
-      _count: { id: true },
-      where: { 
-        estado: 'ACTIVO',
-        cliente: routeFilter
-      }
-    })
-
-    // 2.1 PRÉSTAMOS CANCELADOS (COMPLETADOS)
-    const prestamosCancelados = await prisma.prestamo.count({
-      where: { 
-        estado: 'CANCELADO',
-        cliente: routeFilter
-      }
-    })
-
-    // 2.2 PRÉSTAMOS NUEVOS HOY
-    const prestamosNuevosHoy = await prisma.prestamo.count({
-      where: {
-        createdAt: {
-          gte: fechaInicio,
-          lte: fechaFin
-        },
-        cliente: routeFilter
-      }
-    })
-
-    // 2.3 PRÉSTAMOS VENCIDOS (Total)
-    const prestamosVencidosTotal = await prisma.prestamo.count({
-      where: {
-        estado: 'ACTIVO',
-        fechaFin: {
-          lt: new Date()
-        },
-        cliente: routeFilter
-      }
-    })
-
-    // 3. CLIENTES VISITADOS HOY
-    const clientesVisitados = await prisma.cliente.findMany({
-      where: {
-        activo: true,
-        ...routeFilter,
-        visitas: {
-          some: {
-            fecha: {
-              gte: fechaInicio,
-              lte: fechaFin
-            }
-          }
+    // Ejecutar todas las consultas del informe de clientes en paralelo con Promise.all
+    const [
+      totalClientes,
+      prestamosData,
+      prestamosCancelados,
+      prestamosNuevosHoy,
+      prestamosVencidosTotal,
+      clientesVisitados,
+      clientesNoVisitados,
+      prestamosVencidos,
+      nuevosClientes,
+      nuevosPrestamos,
+      cobrosHoy,
+      clientesConMora,
+      todosPrestamosTotales,
+      prestamosCanceladosLista,
+      prestamosEnMoraLista
+    ] = await Promise.all([
+      // 1. CLIENTES TOTALES
+      prisma.cliente.count({
+        where: { 
+          activo: true,
+          ...routeFilter
         }
-      },
-      include: {
-        visitas: {
-          where: {
-            fecha: {
-              gte: fechaInicio,
-              lte: fechaFin
-            }
-          },
-          include: {
-            usuario: {
-              select: {
-                firstName: true,
-                lastName: true
-              }
-            }
-          },
-          orderBy: {
-            fecha: 'desc'
-          },
-          take: 1
-        },
-        prestamos: {
-          where: { estado: 'ACTIVO' },
-          include: {
-            pagos: {
-              select: {
-                monto: true
-              }
-            }
-          }
+      }),
+      // 2. PRÉSTAMOS TOTALES Y ACTIVOS
+      prisma.prestamo.aggregate({
+        _count: { id: true },
+        where: { 
+          estado: 'ACTIVO',
+          cliente: routeFilter
         }
-      }
-    })
-
-    // 4. CLIENTES NO VISITADOS HOY (con préstamos activos)
-    const clientesNoVisitados = await prisma.cliente.findMany({
-      where: {
-        activo: true,
-        ...routeFilter,
-        prestamos: {
-          some: { estado: 'ACTIVO' }
-        },
-        NOT: {
+      }),
+      // 2.1 PRÉSTAMOS CANCELADOS (COMPLETADOS)
+      prisma.prestamo.count({
+        where: { 
+          estado: 'CANCELADO',
+          cliente: routeFilter
+        }
+      }),
+      // 2.2 PRÉSTAMOS NUEVOS HOY
+      prisma.prestamo.count({
+        where: {
+          createdAt: {
+            gte: fechaInicio,
+            lte: fechaFin
+          },
+          cliente: routeFilter
+        }
+      }),
+      // 2.3 PRÉSTAMOS VENCIDOS (Total)
+      prisma.prestamo.count({
+        where: {
+          estado: 'ACTIVO',
+          fechaFin: {
+            lt: new Date()
+          },
+          cliente: routeFilter
+        }
+      }),
+      // 3. CLIENTES VISITADOS HOY
+      prisma.cliente.findMany({
+        where: {
+          activo: true,
+          ...routeFilter,
           visitas: {
             some: {
               fecha: {
@@ -152,301 +113,343 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-        }
-      },
-      include: {
-        visitas: {
-          orderBy: {
-            fecha: 'desc'
-          },
-          take: 1
         },
-        prestamos: {
-          where: { estado: 'ACTIVO' },
-          include: {
-            pagos: {
-              select: {
-                monto: true
-              }
-            }
-          }
-        }
-      }
-    })
-
-
-    // 5. PRÉSTAMOS VENCIDOS
-    const prestamosVencidos = await prisma.prestamo.findMany({
-      where: {
-        estado: 'ACTIVO',
-        fechaFin: {
-          lt: new Date()
-        },
-        cliente: routeFilter
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCobro: true,
-            direccionCliente: true
-          }
-        },
-        pagos: {
-          select: {
-            monto: true,
-            fecha: true
-          },
-          orderBy: {
-            fecha: 'desc'
-          }
-        }
-      }
-    })
-
-    // 6. LISTA DE CLIENTES (Todos los activos para el reporte)
-    // Se cambió la lógica para mostrar todos los clientes activos en la pestaña "Clientes"
-    const nuevosClientes = await prisma.cliente.findMany({
-      where: {
-        activo: true,
-        ...routeFilter
-      },
-      include: {
-        prestamos: {
-          select: {
-            id: true,
-            monto: true,
-            estado: true,
-            fechaInicio: true,
-            tipoPago: true,
-            interes: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    // 7. NUEVOS PRÉSTAMOS (creados hoy)
-    const nuevosPrestamos = await prisma.prestamo.findMany({
-      where: {
-        createdAt: {
-          gte: fechaInicio,
-          lte: fechaFin
-        },
-        cliente: routeFilter
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCobro: true
-          }
-        },
-        usuario: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        },
-        pagos: {
-          select: {
-            monto: true,
-            fecha: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    // 8. COBROS DE HOY
-    const cobrosHoy = await prisma.pago.findMany({
-      where: {
-        fecha: {
-          gte: fechaInicio,
-          lte: fechaFin
-        },
-        prestamo: {
-          cliente: routeFilter
-        }
-      },
-      include: {
-        prestamo: {
-          include: {
-            cliente: {
-              select: {
-                nombre: true,
-                apellido: true,
-                documento: true,
-                telefono: true
+        include: {
+          visitas: {
+            where: {
+              fecha: {
+                gte: fechaInicio,
+                lte: fechaFin
               }
             },
-            pagos: {
-              select: {
-                monto: true
+            include: {
+              usuario: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
               }
-            }
-          }
-        },
-        usuario: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      },
-      orderBy: {
-        fecha: 'desc'
-      }
-    })
-
-    // 9. CLIENTES CON MORA (préstamos vencidos + saldo pendiente)
-    const clientesConMora = await prisma.cliente.findMany({
-      where: {
-        activo: true,
-        ...routeFilter,
-        prestamos: {
-          some: {
-            estado: 'ACTIVO',
-            fechaFin: {
-              lt: new Date()
-            }
-          }
-        }
-      },
-      include: {
-        visitas: {
-          orderBy: {
-            fecha: 'desc'
+            },
+            orderBy: {
+              fecha: 'desc'
+            },
+            take: 1
           },
-          take: 1
-        },
-        prestamos: {
-          where: {
-            estado: 'ACTIVO',
-            fechaFin: {
-              lt: new Date()
-            }
-          },
-          include: {
-            pagos: {
-              select: {
-                monto: true
+          prestamos: {
+            where: { estado: 'ACTIVO' },
+            include: {
+              pagos: {
+                select: {
+                  monto: true
+                }
               }
             }
           }
         }
-      }
-    })
-
-    // 10. TODOS LOS PRÉSTAMOS ACTIVOS (para pestaña Total)
-    const todosPrestamosTotales = await prisma.prestamo.findMany({
-      where: { 
-        estado: 'ACTIVO',
-        cliente: routeFilter
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCobro: true,
-            direccionCliente: true
+      }),
+      // 4. CLIENTES NO VISITADOS HOY (con préstamos activos)
+      prisma.cliente.findMany({
+        where: {
+          activo: true,
+          ...routeFilter,
+          prestamos: {
+            some: { estado: 'ACTIVO' }
+          },
+          NOT: {
+            visitas: {
+              some: {
+                fecha: {
+                  gte: fechaInicio,
+                  lte: fechaFin
+                }
+              }
+            }
           }
         },
-        pagos: {
-          select: {
-            monto: true,
-            fecha: true
+        include: {
+          visitas: {
+            orderBy: {
+              fecha: 'desc'
+            },
+            take: 1
           },
-          orderBy: {
-            fecha: 'desc'
+          prestamos: {
+            where: { estado: 'ACTIVO' },
+            include: {
+              pagos: {
+                select: {
+                  monto: true
+                }
+              }
+            }
           }
         }
-      },
-      orderBy: {
-        fechaInicio: 'desc'
-      }
-    })
-
-    // 11. PRÉSTAMOS CANCELADOS (completados)
-    const prestamosCanceladosLista = await prisma.prestamo.findMany({
-      where: { 
-        estado: 'CANCELADO',
-        cliente: routeFilter
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCobro: true,
-            direccionCliente: true
-          }
-        },
-        pagos: {
-          select: {
-            monto: true,
-            fecha: true
+      }),
+      // 5. PRÉSTAMOS VENCIDOS
+      prisma.prestamo.findMany({
+        where: {
+          estado: 'ACTIVO',
+          fechaFin: {
+            lt: new Date()
           },
-          orderBy: {
-            fecha: 'desc'
+          cliente: routeFilter
+        },
+        include: {
+          cliente: {
+            select: {
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCobro: true,
+              direccionCliente: true
+            }
+          },
+          pagos: {
+            select: {
+              monto: true,
+              fecha: true
+            },
+            orderBy: {
+              fecha: 'desc'
+            }
           }
         }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      take: 100 // Limitamos a los últimos 100
-    })
-
-    // 12. PRÉSTAMOS EN MORA (préstamos específicos vencidos con info del cliente)
-    const prestamosEnMoraLista = await prisma.prestamo.findMany({
-      where: {
-        estado: 'ACTIVO',
-        fechaFin: {
-          lt: new Date()
+      }),
+      // 6. LISTA DE CLIENTES (Todos los activos para el reporte)
+      prisma.cliente.findMany({
+        where: {
+          activo: true,
+          ...routeFilter
         },
-        cliente: routeFilter
-      },
-      include: {
-        cliente: {
-          select: {
-            nombre: true,
-            apellido: true,
-            documento: true,
-            telefono: true,
-            direccionCobro: true,
-            direccionCliente: true
+        include: {
+          prestamos: {
+            select: {
+              id: true,
+              monto: true,
+              estado: true,
+              fechaInicio: true,
+              tipoPago: true,
+              interes: true
+            }
           }
         },
-        pagos: {
-          select: {
-            monto: true,
-            fecha: true
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      // 7. NUEVOS PRÉSTAMOS (creados hoy)
+      prisma.prestamo.findMany({
+        where: {
+          createdAt: {
+            gte: fechaInicio,
+            lte: fechaFin
           },
-          orderBy: {
-            fecha: 'desc'
+          cliente: routeFilter
+        },
+        include: {
+          cliente: {
+            select: {
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCobro: true
+            }
+          },
+          usuario: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          },
+          pagos: {
+            select: {
+              monto: true,
+              fecha: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      // 8. COBROS DE HOY
+      prisma.pago.findMany({
+        where: {
+          fecha: {
+            gte: fechaInicio,
+            lte: fechaFin
+          },
+          prestamo: {
+            cliente: routeFilter
+          }
+        },
+        include: {
+          prestamo: {
+            include: {
+              cliente: {
+                select: {
+                  nombre: true,
+                  apellido: true,
+                  documento: true,
+                  telefono: true
+                }
+              },
+              pagos: {
+                select: {
+                  monto: true
+                }
+              }
+            }
+          },
+          usuario: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: {
+          fecha: 'desc'
+        }
+      }),
+      // 9. CLIENTES CON MORA (préstamos vencidos + saldo pendiente)
+      prisma.cliente.findMany({
+        where: {
+          activo: true,
+          ...routeFilter,
+          prestamos: {
+            some: {
+              estado: 'ACTIVO',
+              fechaFin: {
+                lt: new Date()
+              }
+            }
+          }
+        },
+        include: {
+          visitas: {
+            orderBy: {
+              fecha: 'desc'
+            },
+            take: 1
+          },
+          prestamos: {
+            where: {
+              estado: 'ACTIVO',
+              fechaFin: {
+                lt: new Date()
+              }
+            },
+            include: {
+              pagos: {
+                select: {
+                  monto: true
+                }
+              }
+            }
           }
         }
-      },
-      orderBy: {
-        fechaFin: 'asc' // Los más vencidos primero
-      }
-    })
+      }),
+      // 10. TODOS LOS PRÉSTAMOS ACTIVOS (para pestaña Total)
+      prisma.prestamo.findMany({
+        where: { 
+          estado: 'ACTIVO',
+          cliente: routeFilter
+        },
+        include: {
+          cliente: {
+            select: {
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCobro: true,
+              direccionCliente: true
+            }
+          },
+          pagos: {
+            select: {
+              monto: true,
+              fecha: true
+            },
+            orderBy: {
+              fecha: 'desc'
+            }
+          }
+        },
+        orderBy: {
+          fechaInicio: 'desc'
+        }
+      }),
+      // 11. PRÉSTAMOS CANCELADOS (completados)
+      prisma.prestamo.findMany({
+        where: { 
+          estado: 'CANCELADO',
+          cliente: routeFilter
+        },
+        include: {
+          cliente: {
+            select: {
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCobro: true,
+              direccionCliente: true
+            }
+          },
+          pagos: {
+            select: {
+              monto: true,
+              fecha: true
+            },
+            orderBy: {
+              fecha: 'desc'
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        },
+        take: 100 // Limitamos a los últimos 100
+      }),
+      // 12. PRÉSTAMOS EN MORA (préstamos específicos vencidos con info del cliente)
+      prisma.prestamo.findMany({
+        where: {
+          estado: 'ACTIVO',
+          fechaFin: {
+            lt: new Date()
+          },
+          cliente: routeFilter
+        },
+        include: {
+          cliente: {
+            select: {
+              nombre: true,
+              apellido: true,
+              documento: true,
+              telefono: true,
+              direccionCobro: true,
+              direccionCliente: true
+            }
+          },
+          pagos: {
+            select: {
+              monto: true,
+              fecha: true
+            },
+            orderBy: {
+              fecha: 'desc'
+            }
+          }
+        },
+        orderBy: {
+          fechaFin: 'asc' // Los más vencidos primero
+        }
+      })
+    ])
 
     // Function to check if a loan has actually missing payments
     const hasSaldoPendiente = (prestamo: any) => {
