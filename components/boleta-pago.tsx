@@ -397,30 +397,32 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     // pero mantenemos el decimal para el progreso visual.
     const cuotasPagadasEnteras = Math.floor(cuotasPagadas)
 
-    const cuotasPendientes = (prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
+    const totalPagadoHistorico = prestamoFlex.pagos?.reduce((sum: number, p: any) => sum + Number(p.monto), 0) || 0
+    const montoTotalHistorico = Number(prestamoFlex.monto || 0) * (1 + Number(prestamoFlex.interes || 0) / 100)
+    const saldoPendienteHistorico = prestamoFlex.saldoPendiente !== undefined ? Number(prestamoFlex.saldoPendiente) : Math.max(0, montoTotalHistorico - totalPagadoHistorico)
+    const estaCompletado = prestamoFlex.estado === 'CANCELADO' || saldoPendienteHistorico <= 0 || cuotasPagadas >= totalCuotas
+
+    const cuotasPendientes = estaCompletado ? 0 : ((prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
       ? Number(prestamoFlex.cuotasPendientesManual)
-      : Math.max(0, totalCuotas - cuotasPagadas)
+      : Math.max(0, totalCuotas - cuotasPagadas))
 
-    // Calcular atraso REAL AL MOMENTO DEL PAGO
-    // Si estamos viendo un recibo histórico, 'cuotasPagadas' debería ser el acumulado HASTA ese pago.
-    // data.prestamo.saldoPendiente viene ya calculado para ese momento histórico en handleVerBoletaPago,
-    // por lo tanto 'cuotasPagadas' derivada de ahí es correcta para ese momento.
-
-    const cuotasAtrasadas = (prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
+    const cuotasAtrasadas = estaCompletado ? 0 : ((prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
       ? Number(prestamoFlex.cuotasAtrasadasManual)
-      : calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, data.fecha as string)
+      : calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, data.fecha as string))
 
-    // Para días vencidos, refinamos: solo si hay atraso
+    // Para días vencidos, refinamos: solo si hay atraso y no está completado
     let diasVencidos = 0
-    if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
-      diasVencidos = Number(prestamoFlex.diasVencidosManual)
-    } else if (cuotasAtrasadas > 0) {
-      diasVencidos = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string)
+    if (!estaCompletado) {
+      if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
+        diasVencidos = Number(prestamoFlex.diasVencidosManual)
+      } else if (cuotasAtrasadas > 0) {
+        diasVencidos = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string)
+      }
     }
 
-    const valorEnAtraso = (prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
+    const valorEnAtraso = estaCompletado ? 0 : ((prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
       ? Number(prestamoFlex.valorEnAtrasoManual)
-      : cuotasAtrasadas * valorCuotaMostrar
+      : cuotasAtrasadas * valorCuotaMostrar)
     
     let fechaProximaTeorica = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
     

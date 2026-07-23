@@ -200,8 +200,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
   // Función para calcular el estado de alerta del cliente
   const calcularEstadoCliente = (clienteData: ClienteConPrestamos) => {
+    const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.saldoPendiente <= 0 || p.cuotasPagadas >= p.cuotas
+
     // Si no tiene préstamos o todos están pagados, está Inactivo
-    const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(p => p.saldoPendiente <= 0)
+    const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(p => esPrestamoCompletado(p))
     if (inactivo) {
       return {
         estado: 'INACTIVO',
@@ -214,7 +216,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
     // Verificar si algún préstamo está completamente vencido y no ha sido pagado
     const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
-      prestamo.saldoPendiente > 0 && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date())
+      !esPrestamoCompletado(prestamo) && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date())
     )
 
     if (tienePrestamoVencido) {
@@ -230,7 +232,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     // Verificar morosidad (préstamos con pagos atrasados)
     const hoy = new Date()
     const prestamosConAtraso = clienteData.prestamos.filter(prestamo => {
-      if (prestamo.saldoPendiente <= 0) return false // Ya está pagado
+      if (esPrestamoCompletado(prestamo)) return false // Ya está pagado
 
       // Calcular días desde el último pago esperado
       const diasPorTipo = {
@@ -292,7 +294,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
     // Verificar si el préstamo está próximo a vencer (su fechaFin es en los próximos 3 días)
     const proximoAVencer = clienteData.prestamos.some(prestamo => {
-      if (prestamo.saldoPendiente <= 0) return false
+      if (esPrestamoCompletado(prestamo)) return false
 
       const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
       

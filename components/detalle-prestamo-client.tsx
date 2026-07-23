@@ -374,79 +374,82 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       ? prestamoFlex.diasTranscurridosManual 
       : diasHabilesTotales
 
-    const cuotasPendientes = (prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
+    const saldoPendienteCalculado = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
+    const estaCompletado = prestamo.estado === 'CANCELADO' || saldoPendienteCalculado <= 0 || cuotasPagadas >= prestamo.cuotas
+
+    const cuotasPendientes = estaCompletado ? 0 : ((prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
       ? Number(prestamoFlex.cuotasPendientesManual)
-      : Math.max(0, prestamo.cuotas - cuotasPagadas)
+      : Math.max(0, prestamo.cuotas - cuotasPagadas))
 
     // Cuotas atrasadas (considerando días de gracia)
     const diasGracia = prestamo.diasGracia || 0
     const cuotasPagadasFinancial = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
       ? Number(prestamoFlex.cuotasPagadasManual)
       : (valorCuotaMostrar > 0 ? totalPagado / valorCuotaMostrar : 0)
-    const cuotasAtrasadas = (prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
+
+    const cuotasAtrasadas = estaCompletado ? 0 : ((prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
       ? Number(prestamoFlex.cuotasAtrasadasManual)
-      : Math.max(0, cuotasEsperadas - cuotasPagadasFinancial)
+      : Math.max(0, cuotasEsperadas - cuotasPagadasFinancial))
 
     // Días vencidos
     let diasVencidos = 0
     let fechaReferenciaMora: Date | null = null
 
-    if (hoyMidnight > fechaFinMidnight) {
-      fechaReferenciaMora = fechaFinMidnight
-    } else if (cuotasAtrasadas > 0) {
-      // El atraso se cuenta desde el día que venció la primera cuota no pagada
-      // Para simplificar y ser consistentes con el reporte del usuario:
-      // Si debe 1 cuota, lleva 1 o más días vencido
-      const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
+    if (!estaCompletado) {
+      if (hoyMidnight > fechaFinMidnight) {
+        fechaReferenciaMora = fechaFinMidnight
+      } else if (cuotasAtrasadas > 0) {
+        // El atraso se cuenta desde el día que venció la primera cuota no pagada
+        const proximaCuotaIdx = Math.floor(cuotasPagadasFinancial) + 1
 
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        // Buscamos la fecha en que venció la cuota que le tocaba pagar (proximaCuotaIdx)
-        let current = new Date(fechaInicioMidnight)
-        let count = 0
-        while (count < proximaCuotaIdx) {
-          current.setUTCDate(current.getUTCDate() + 1)
-          const d = current.getUTCDay()
-          let valid = true
-          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
-          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
-          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
+        if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
+          let current = new Date(fechaInicioMidnight)
+          let count = 0
+          while (count < proximaCuotaIdx) {
+            current.setUTCDate(current.getUTCDate() + 1)
+            const d = current.getUTCDay()
+            let valid = true
+            if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+            if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+            if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
 
-          if (valid) {
-            count++
+            if (valid) {
+              count++
+            }
           }
+          fechaReferenciaMora = current
+        } else {
+          const diasPorTipo = {
+            'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+            'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+          }
+          const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+          fechaReferenciaMora = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
         }
-        fechaReferenciaMora = current
-      } else {
-        const diasPorTipo = {
-          'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
-          'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
-        }
-        const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-        fechaReferenciaMora = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdx * diasPorCuota * oneDay))
       }
-    }
 
-    if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
-      diasVencidos = Number(prestamoFlex.diasVencidosManual)
-    } else if (fechaReferenciaMora) {
-      let diasHabilesVencidos = 0;
-      let tempDate = new Date(fechaReferenciaMora);
-      while (tempDate <= hoyMidnight) {
-        const d = tempDate.getUTCDay();
-        let esDiaValido = true;
-        if (d === 0) esDiaValido = false; // Domingo nunca es válido
-        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false; // Sábado tampoco si es Lunes a Viernes
-        
-        if (esDiaValido) diasHabilesVencidos++;
-        tempDate.setUTCDate(tempDate.getUTCDate() + 1);
+      if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
+        diasVencidos = Number(prestamoFlex.diasVencidosManual)
+      } else if (fechaReferenciaMora) {
+        let diasHabilesVencidos = 0;
+        let tempDate = new Date(fechaReferenciaMora);
+        while (tempDate <= hoyMidnight) {
+          const d = tempDate.getUTCDay();
+          let esDiaValido = true;
+          if (d === 0) esDiaValido = false; // Domingo nunca es válido
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false; // Sábado tampoco si es Lunes a Viernes
+          
+          if (esDiaValido) diasHabilesVencidos++;
+          tempDate.setUTCDate(tempDate.getUTCDate() + 1);
+        }
+        diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
       }
-      diasVencidos = Math.max(0, diasHabilesVencidos - diasGracia);
     }
 
     // Valor en atrasos
-    const valorEnAtrasos = (prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
+    const valorEnAtrasos = estaCompletado ? 0 : ((prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
       ? Number(prestamoFlex.valorEnAtrasoManual)
-      : Math.max(0, Math.round((cuotasAtrasadas * valorCuotaMostrar) * 100) / 100)
+      : Math.max(0, Math.round((cuotasAtrasadas * valorCuotaMostrar) * 100) / 100))
 
     // Último pago
     const ultimoPago = prestamo.pagos.length > 0
@@ -455,7 +458,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Fecha próximo pago
     let fechaProximoPago: Date | null = null
-    if (cuotasPagadas < prestamo.cuotas) {
+    if (!estaCompletado && cuotasPagadas < prestamo.cuotas) {
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         const targetCuota = Math.floor(cuotasPagadas) + 1
         let current = new Date(fechaInicioMidnight)
@@ -488,10 +491,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       if (fechaProximoPago < hoyMidnight) {
         let proximaFechalogica = new Date(hoyMidnight);
         
-        // Si el cobrador RECIÉN registró un pago hoy en la aplicación (sin importar si lo anotó con fecha de ayer)
+        // Si el cobrador RECIÉN registró un pago hoy en la aplicación
         let interaccionHoy = false;
         if (ultimoPago) {
-          // Buscamos si algún pago se ingresó físicamente HOY en el sistema (usando UTC-5 para precisión total)
           const pagoFisicoDeHoy = prestamo.pagos.find(p => {
              if (p.createdAt) {
                const cDate = new Date(new Date(p.createdAt).getTime() - (5 * 60 * 60 * 1000));
@@ -504,7 +506,6 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           if (pagoFisicoDeHoy) {
             interaccionHoy = true;
           } else {
-             // Fallback usando UTC-5 manual para asegurar que "Hoy" es verdaderamente hoy en Latinoamérica
              const hDate = new Date(Date.now() - (5 * 60 * 60 * 1000)).toISOString().split('T')[0];
              const pDateStr = new Date(new Date(ultimoPago.fecha).getTime() - (5 * 60 * 60 * 1000)).toISOString().split('T')[0];
              if (pDateStr === hDate) interaccionHoy = true;
@@ -532,59 +533,61 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     
     // Si hay un override manual explícito, lo usamos e ignoramos toda la lógica anterior
     const prestamoFlex2 = prestamo as any;
-    if (prestamoFlex2.fechaProximoPagoManual) {
+    if (!estaCompletado && prestamoFlex2.fechaProximoPagoManual) {
       fechaProximoPago = new Date(prestamoFlex2.fechaProximoPagoManual)
     }
 
     // Calcular valores puramente automáticos (sin overrides manuales) para placeholders
     const cuotasPagadasAuto = valorCuota > 0 ? totalPagado / valorCuota : 0
-    const cuotasAtrasadasAuto = Math.max(0, cuotasEsperadas - cuotasPagadasAuto)
-    const cuotasPendientesAuto = Math.max(0, prestamo.cuotas - cuotasPagadasAuto)
+    const cuotasAtrasadasAuto = estaCompletado ? 0 : Math.max(0, cuotasEsperadas - cuotasPagadasAuto)
+    const cuotasPendientesAuto = estaCompletado ? 0 : Math.max(0, prestamo.cuotas - cuotasPagadasAuto)
     
     let diasVencidosAuto = 0
     let fechaReferenciaMoraAuto: Date | null = null
-    if (hoyMidnight > fechaFinMidnight) {
-      fechaReferenciaMoraAuto = fechaFinMidnight
-    } else if (cuotasAtrasadasAuto > 0) {
-      const proximaCuotaIdxAuto = Math.floor(cuotasPagadasAuto) + 1
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        let current = new Date(fechaInicioMidnight)
-        let count = 0
-        while (count < proximaCuotaIdxAuto) {
-          current.setUTCDate(current.getUTCDate() + 1)
-          const d = current.getUTCDay()
-          let valid = true
-          if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
-          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
-          if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
-          if (valid) count++
+    if (!estaCompletado) {
+      if (hoyMidnight > fechaFinMidnight) {
+        fechaReferenciaMoraAuto = fechaFinMidnight
+      } else if (cuotasAtrasadasAuto > 0) {
+        const proximaCuotaIdxAuto = Math.floor(cuotasPagadasAuto) + 1
+        if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
+          let current = new Date(fechaInicioMidnight)
+          let count = 0
+          while (count < proximaCuotaIdxAuto) {
+            current.setUTCDate(current.getUTCDate() + 1)
+            const d = current.getUTCDay()
+            let valid = true
+            if (prestamo.tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+            if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+            if (prestamo.tipoPago === 'DIARIO' && d === 0) valid = false
+            if (valid) count++
+          }
+          fechaReferenciaMoraAuto = current
+        } else {
+          const diasPorTipo = {
+            'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
+            'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+          }
+          const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+          fechaReferenciaMoraAuto = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdxAuto * diasPorCuota * oneDay))
         }
-        fechaReferenciaMoraAuto = current
-      } else {
-        const diasPorTipo = {
-          'SEMANAL': 7, 'QUINCENAL': 15, 'CATORCENAL': 14, 'FIN_DE_MES': 30,
-          'MENSUAL': 30, 'TRIMESTRAL': 90, 'CUATRIMESTRAL': 120, 'SEMESTRAL': 180, 'ANUAL': 365
+      }
+
+      if (fechaReferenciaMoraAuto) {
+        let diasHabilesVencidosAuto = 0
+        let tempDate = new Date(fechaReferenciaMoraAuto)
+        while (tempDate <= hoyMidnight) {
+          const d = tempDate.getUTCDay()
+          let esDiaValido = true
+          if (d === 0) esDiaValido = false
+          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false
+          if (esDiaValido) diasHabilesVencidosAuto++
+          tempDate.setUTCDate(tempDate.getUTCDate() + 1)
         }
-        const diasPorCuota = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
-        fechaReferenciaMoraAuto = new Date(fechaInicioMidnight.getTime() + (proximaCuotaIdxAuto * diasPorCuota * oneDay))
+        diasVencidosAuto = Math.max(0, diasHabilesVencidosAuto - (prestamo.diasGracia || 0))
       }
     }
 
-    if (fechaReferenciaMoraAuto) {
-      let diasHabilesVencidosAuto = 0
-      let tempDate = new Date(fechaReferenciaMoraAuto)
-      while (tempDate <= hoyMidnight) {
-        const d = tempDate.getUTCDay()
-        let esDiaValido = true
-        if (d === 0) esDiaValido = false
-        if (prestamo.tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false
-        if (esDiaValido) diasHabilesVencidosAuto++
-        tempDate.setUTCDate(tempDate.getUTCDate() + 1)
-      }
-      diasVencidosAuto = Math.max(0, diasHabilesVencidosAuto - (prestamo.diasGracia || 0))
-    }
-
-    const valorEnAtrasoAuto = Math.max(0, Math.round((cuotasAtrasadasAuto * valorCuota) * 100) / 100)
+    const valorEnAtrasoAuto = estaCompletado ? 0 : Math.max(0, Math.round((cuotasAtrasadasAuto * valorCuota) * 100) / 100)
 
     return {
       diasTranscurridos,
