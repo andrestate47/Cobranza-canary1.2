@@ -9,6 +9,10 @@ import { getEcuadorDayRange, getEcuadorRange, esDiaDePago, getDiasMoraSinDomingo
 
 export const dynamic = "force-dynamic"
 
+// Caché en memoria para respuestas instantáneas (< 5ms)
+const reportCache = new Map<string, { timestamp: number; data: any }>()
+const CACHE_TTL_MS = 30000 // 30 segundos
+
 
 interface PrestamoConCliente {
   id: string
@@ -157,6 +161,13 @@ export async function GET(request: NextRequest) {
       const base = new Date(inicio)
       fechaInicioDate = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), 1, 5, 0, 0))
       fechaFinDate = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0, 4, 59, 59, 999))
+    }
+
+    // Comprobar respuesta en caché (retorno en < 5ms)
+    const cacheKey = `${fechaInicioDate.toISOString()}_${fechaFinDate.toISOString()}_${user.id}`
+    const cached = reportCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json(cached.data)
     }
 
     const hoy = new Date()
@@ -893,6 +904,9 @@ export async function GET(request: NextRequest) {
         }
       })
     }
+
+    // Guardar en caché para respuesta instantánea en siguientes navegaciones
+    reportCache.set(cacheKey, { timestamp: Date.now(), data: reporte })
 
     return NextResponse.json(reporte)
   } catch (error) {
