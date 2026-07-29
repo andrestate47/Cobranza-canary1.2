@@ -173,10 +173,8 @@ export async function GET(request: NextRequest) {
       movimientosCajaChica,
       prestamosConSaldo,
       prestamosRenovados,
-      prestamosNuevos,
       prestamosVigentesPeriodo,
       prestamosPorTransferencia,
-      agregacionPagos,
       prestamosProximosVencer,
       transferencias,
       usuarios
@@ -211,24 +209,11 @@ export async function GET(request: NextRequest) {
         include: { cliente: { select: { id: true, nombre: true, apellido: true, documento: true } } }
       }),
       prisma.prestamo.findMany({
-        where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
-        include: { cliente: { select: { id: true, nombre: true, apellido: true, documento: true } } }
-      }),
-      prisma.prestamo.findMany({
         where: { fechaInicio: { lte: fechaFinDate }, fechaFin: { gte: fechaInicioDate } }
       }),
       prisma.prestamo.findMany({
         where: { tipoCredito: 'TRANSFERENCIA', estado: 'ACTIVO' },
         include: { transferencias: true }
-      }),
-      prisma.pago.groupBy({
-        by: ["prestamoId"],
-        _sum: { monto: true, devolucionSeguro: true },
-        where: {
-          prestamo: {
-            estado: { in: ['ACTIVO', 'RENOVADO', 'VENCIDO'] }
-          }
-        }
       }),
       prisma.prestamo.findMany({
         where: {
@@ -274,6 +259,22 @@ export async function GET(request: NextRequest) {
         ]
       })
     ])
+
+    const prestamosNuevos = prestamos
+
+    // Agregación instantánea de pagos indexada solo por IDs relevantes (O(1) index lookup)
+    const targetPrestamoIds = Array.from(new Set([
+      ...prestamosConSaldo.map(p => p.id),
+      ...prestamosPorTransferencia.map(p => p.id)
+    ]))
+
+    const agregacionPagos = targetPrestamoIds.length > 0 ? await prisma.pago.groupBy({
+      by: ["prestamoId"],
+      _sum: { monto: true, devolucionSeguro: true },
+      where: {
+        prestamoId: { in: targetPrestamoIds }
+      }
+    }) : []
 
     // CÁLCULOS FINANCIEROS
 
