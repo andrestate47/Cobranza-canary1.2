@@ -97,35 +97,44 @@ export function esDiaDePago(tipoPago: string, fechaInicio: Date | string, fechaE
 }
 
 /**
- * Calcula la diferencia en días hábiles (excluyendo domingos) entre dos fechas.
+ * Calcula la diferencia en días hábiles (excluyendo domingos) entre dos fechas en tiempo O(1).
  * Si tipoPago es 'LUNES_A_VIERNES', también excluye sábados.
  */
-export function getDiasMoraSinDomingos(desde: Date | string, hasta: Date | string, tipoPago: string = 'DIARIO'): number {
+export function countDiasHabiles(desde: Date | string, hasta: Date | string, tipoPago: string = 'DIARIO'): number {
   const dInicio = new Date(desde)
   const dFin = new Date(hasta)
-  
-  let currentUTC = Date.UTC(dInicio.getUTCFullYear(), dInicio.getUTCMonth(), dInicio.getUTCDate(), 12, 0, 0)
-  const finUTC = Date.UTC(dFin.getUTCFullYear(), dFin.getUTCMonth(), dFin.getUTCDate(), 12, 0, 0)
-  
-  if (currentUTC >= finUTC) return 0
-  
+
+  const startMs = Date.UTC(dInicio.getUTCFullYear(), dInicio.getUTCMonth(), dInicio.getUTCDate(), 12, 0, 0)
+  const endMs = Date.UTC(dFin.getUTCFullYear(), dFin.getUTCMonth(), dFin.getUTCDate(), 12, 0, 0)
+
+  if (startMs >= endMs) return 0
+
+  const totalDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24))
+  const fullWeeks = Math.floor(totalDays / 7)
+  const remainingDays = totalDays % 7
+
+  const startDay = new Date(startMs).getUTCDay()
+
   let workingDays = 0
-  while (currentUTC < finUTC) {
-    currentUTC += 1000 * 60 * 60 * 24
-    const d = new Date(currentUTC)
-    const day = d.getUTCDay()
-    
-    let isWorkingDay = true
-    if (tipoPago === 'LUNES_A_VIERNES') {
-      isWorkingDay = (day !== 0 && day !== 6)
-    } else {
-      isWorkingDay = (day !== 0) // Excluye domingos
+  if (tipoPago === 'LUNES_A_VIERNES') {
+    workingDays = fullWeeks * 5
+    for (let i = 1; i <= remainingDays; i++) {
+      const day = (startDay + i) % 7
+      if (day !== 0 && day !== 6) workingDays++
     }
-    
-    if (isWorkingDay) {
-      workingDays++
+  } else {
+    // Excluye domingos por defecto para cobros diarios / lunes a sábado
+    workingDays = fullWeeks * 6
+    for (let i = 1; i <= remainingDays; i++) {
+      const day = (startDay + i) % 7
+      if (day !== 0) workingDays++
     }
   }
+
   return workingDays
+}
+
+export function getDiasMoraSinDomingos(desde: Date | string, hasta: Date | string, tipoPago: string = 'DIARIO'): number {
+  return countDiasHabiles(desde, hasta, tipoPago)
 }
 

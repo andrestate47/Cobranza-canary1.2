@@ -196,6 +196,9 @@ model Prestamo {
   @@index([estado])
   @@index([fechaInicio])
   @@index([fechaFin])
+  @@index([estado, clienteId])
+  @@index([userId, estado])
+  @@index([createdAt, fechaFin])
   @@map("prestamos")
 }
 
@@ -220,6 +223,8 @@ model Pago {
   @@index([userId])
   @@index([fecha])
   @@index([createdAt])
+  @@index([prestamoId, fecha])
+  @@index([userId, fecha])
   @@map("pagos")
 }
 
@@ -236,6 +241,7 @@ model Gasto {
   usuario         User     @relation(fields: [userId], references: [id])
 
   @@index([fecha])
+  @@index([userId, fecha])
   @@map("gastos")
 }
 
@@ -460,6 +466,7 @@ model MovimientoCajaChica {
   cobrador      User?              @relation("CobradorCajaChica", fields: [cobradorId], references: [id])
 
   @@index([fecha])
+  @@index([cobradorId, fecha])
   @@map("movimientos_caja_chica")
 }
 

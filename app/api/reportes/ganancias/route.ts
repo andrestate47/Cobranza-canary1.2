@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
 
-import { getEcuadorDayRange, getEcuadorRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
+import { getEcuadorDayRange, getEcuadorRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -240,7 +240,12 @@ export async function GET(request: NextRequest) {
       }),
       prisma.pago.groupBy({
         by: ["prestamoId"],
-        _sum: { monto: true, devolucionSeguro: true }
+        _sum: { monto: true, devolucionSeguro: true },
+        where: {
+          prestamo: {
+            estado: { in: ['ACTIVO', 'RENOVADO', 'VENCIDO'] }
+          }
+        }
       })
     ])
 
@@ -263,12 +268,18 @@ export async function GET(request: NextRequest) {
       const endOverlap = new Date(Math.min(fechaFinDate.getTime(), finPrestamo.getTime()))
       
       if (startOverlap <= endOverlap) {
-        let current = new Date(startOverlap)
-        while (current <= endOverlap) {
-          if (esDiaDePago(tipoPago, prestamo.fechaInicio, current)) {
-            expectativaCobroPeriodo += valorCuota
+        if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
+          // Uso de función O(1) instantánea sin bucles
+          const diasPago = countDiasHabiles(new Date(startOverlap.getTime() - 86400000), endOverlap, tipoPago)
+          expectativaCobroPeriodo += diasPago * valorCuota
+        } else {
+          let current = new Date(startOverlap)
+          while (current <= endOverlap) {
+            if (esDiaDePago(tipoPago, prestamo.fechaInicio, current)) {
+              expectativaCobroPeriodo += valorCuota
+            }
+            current.setDate(current.getDate() + 1)
           }
-          current.setDate(current.getDate() + 1)
         }
       }
     }

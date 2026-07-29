@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
 import dynamic from "next/dynamic"
 import { useInView } from "react-intersection-observer"
+import { countDiasHabiles } from "@/lib/date-utils"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
@@ -257,24 +258,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
 
       let pagosEsperados = 0
+      const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
+
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        let current = new Date(fechaInicioMidnight)
-        current.setDate(current.getDate() + 1)
-
-        while (current < hoyMidnight) {
-          const day = current.getDay()
-          let valid = true
-          if (prestamo.tipoPago === 'LUNES_A_SABADO' && day === 0) valid = false
-          if (prestamo.tipoPago === 'LUNES_A_VIERNES' && (day === 0 || day === 6)) valid = false
-          if (prestamo.tipoPago === 'DIARIO' && day === 0) valid = false
-
-          if (valid) {
-            pagosEsperados++
-          }
-          current.setDate(current.getDate() + 1)
-        }
+        pagosEsperados = countDiasHabiles(fechaInicioMidnight, ayerMidnight, prestamo.tipoPago)
       } else {
-        const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
         pagosEsperados = Math.floor((ayerMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
       }
 
