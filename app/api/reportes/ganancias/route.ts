@@ -176,7 +176,10 @@ export async function GET(request: NextRequest) {
       prestamosNuevos,
       prestamosVigentesPeriodo,
       prestamosPorTransferencia,
-      agregacionPagos
+      agregacionPagos,
+      prestamosProximosVencer,
+      transferencias,
+      usuarios
     ] = await Promise.all([
       prisma.prestamo.findMany({
         where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
@@ -226,6 +229,49 @@ export async function GET(request: NextRequest) {
             estado: { in: ['ACTIVO', 'RENOVADO', 'VENCIDO'] }
           }
         }
+      }),
+      prisma.prestamo.findMany({
+        where: {
+          estado: 'ACTIVO',
+          fechaFin: {
+            gte: hoy,
+            lte: new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000)
+          }
+        }
+      }),
+      prisma.transferencia.findMany({
+        where: {
+          fecha: {
+            gte: fechaInicioDate,
+            lte: fechaFinDate
+          }
+        },
+        include: {
+          prestamo: {
+            include: {
+              cliente: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  apellido: true,
+                  documento: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.user.findMany({
+        where: {
+          isActive: true
+        },
+        include: {
+          configuracionSueldo: true
+        },
+        orderBy: [
+          { role: 'asc' },
+          { firstName: 'asc' }
+        ]
       })
     ])
 
@@ -365,15 +411,6 @@ export async function GET(request: NextRequest) {
     const renovacionesRealizadas = prestamosRenovados.length
     
     // Préstamos que están próximos a vencer (renovaciones pendientes)
-    const prestamosProximosVencer = await prisma.prestamo.findMany({
-      where: {
-        estado: 'ACTIVO',
-        fechaFin: {
-          gte: hoy,
-          lte: new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 días desde hoy
-        }
-      }
-    })
     const renovacionesPendientes = prestamosProximosVencer.length
     
     const renovacionesPorRealizar = (prestamosConSaldo as PrestamoConCliente[]).filter((p) => {
@@ -440,30 +477,6 @@ export async function GET(request: NextRequest) {
     const interesTotalGanado = interesesPorClienteArray.reduce((sum: number, c) => sum + c.interesGanado, 0)
 
     // ===== TRANSFERENCIAS =====
-    // Obtener transferencias en el rango de fechas
-    const transferencias = await prisma.transferencia.findMany({
-      where: {
-        fecha: {
-          gte: fechaInicioDate,
-          lte: fechaFinDate
-        }
-      },
-      include: {
-        prestamo: {
-          include: {
-            cliente: {
-              select: {
-                id: true,
-                nombre: true,
-                apellido: true,
-                documento: true
-              }
-            }
-          }
-        }
-      }
-    })
-    
     const transferenciasRealizadas = transferencias.length
     const valorTotalTransferencias = (transferencias as TransferenciaConPrestamo[]).reduce((sum: number, t) => sum + parseFloat(t.monto.toString()), 0)
     const clientesTransferencia = new Set((transferencias as TransferenciaConPrestamo[]).map((t) => t.prestamo.clienteId)).size
@@ -506,18 +519,6 @@ export async function GET(request: NextRequest) {
 
 
     // ===== SALARIOS DE USUARIOS =====
-    const usuarios = await prisma.user.findMany({
-      where: {
-        isActive: true
-      },
-      include: {
-        configuracionSueldo: true
-      },
-      orderBy: [
-        { role: 'asc' },
-        { firstName: 'asc' }
-      ]
-    })
 
     // Función para calcular pagos semanales, quincenales y mensuales
     const calcularPagos = (salarioMensual: number) => {
