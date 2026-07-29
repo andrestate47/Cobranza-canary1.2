@@ -167,10 +167,6 @@ export async function GET(request: NextRequest) {
 
     // Consultar todos los datos requeridos en paralelo con Promise.all
     const [
-      pagosAnio,
-      gastosAnio,
-      movsAnio,
-      prestamosAnio,
       prestamos,
       todosPagos,
       gastos,
@@ -182,22 +178,6 @@ export async function GET(request: NextRequest) {
       prestamosPorTransferencia,
       agregacionPagos
     ] = await Promise.all([
-      prisma.pago.findMany({
-        where: { fecha: { gte: anualInicio } },
-        select: { userId: true, fecha: true, monto: true }
-      }),
-      prisma.gasto.findMany({
-        where: { fecha: { gte: anualInicio } },
-        select: { userId: true, fecha: true, monto: true }
-      }),
-      prisma.movimientoCajaChica.findMany({
-        where: { fecha: { gte: anualInicio } },
-        select: { cobradorId: true, fecha: true, monto: true, tipo: true }
-      }),
-      prisma.prestamo.findMany({
-        where: { OR: [{ createdAt: { gte: anualInicio } }, { fechaFin: { gte: anualInicio } }] },
-        select: { id: true, userId: true, createdAt: true, fechaFin: true, monto: true, interes: true }
-      }),
       prisma.prestamo.findMany({
         where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
         include: {
@@ -693,36 +673,6 @@ export async function GET(request: NextRequest) {
       prestamosConSaldoByCobrador.set((p as any).userId, list)
     })
 
-    const pagosAnioByCobrador = new Map<string, typeof pagosAnio>()
-    pagosAnio.forEach(p => {
-      const list = pagosAnioByCobrador.get(p.userId) || []
-      list.push(p)
-      pagosAnioByCobrador.set(p.userId, list)
-    })
-
-    const gastosAnioByCobrador = new Map<string, typeof gastosAnio>()
-    gastosAnio.forEach(g => {
-      const list = gastosAnioByCobrador.get(g.userId) || []
-      list.push(g)
-      gastosAnioByCobrador.set(g.userId, list)
-    })
-
-    const movsAnioByCobrador = new Map<string, typeof movsAnio>()
-    movsAnio.forEach(m => {
-      if (m.cobradorId) {
-        const list = movsAnioByCobrador.get(m.cobradorId) || []
-        list.push(m)
-        movsAnioByCobrador.set(m.cobradorId, list)
-      }
-    })
-
-    const prestamosAnioByCobrador = new Map<string, typeof prestamosAnio>()
-    prestamosAnio.forEach(p => {
-      const list = prestamosAnioByCobrador.get(p.userId) || []
-      list.push(p)
-      prestamosAnioByCobrador.set(p.userId, list)
-    })
-
     const reporte = {
       periodo: {
         fechaInicio: fechaInicioDate,
@@ -878,57 +828,22 @@ export async function GET(request: NextRequest) {
         })
 
         // Pérdidas del período
-        const prestamosAnioCobrador = prestamosAnioByCobrador.get(cobrador.id) || []
-        const pagosAnioCobrador = pagosAnioByCobrador.get(cobrador.id) || []
-        const gastosAnioCobrador = gastosAnioByCobrador.get(cobrador.id) || []
-        const movsAnioCobrador = movsAnioByCobrador.get(cobrador.id) || []
-
         let perdidasRutaPeriodo = 0
-        const prestamosExpiradosPeriodo = prestamosAnioCobrador.filter(p => 
-          p.fechaFin >= fechaInicioDate && 
-          p.fechaFin <= fechaFinDate
-        )
-        prestamosExpiradosPeriodo.forEach((p) => {
-          const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-          const totalPagado = getTotalPagado(p.id)
-          const saldoPendiente = Math.max(0, montoTotal - totalPagado)
-          perdidasRutaPeriodo += saldoPendiente
+        prestamosConSaldoCobrador.forEach((p) => {
+          if (new Date((p as any).fechaFin) >= fechaInicioDate && new Date((p as any).fechaFin) <= fechaFinDate) {
+            const montoTotal = parseFloat((p as any).monto.toString()) * (1 + parseFloat((p as any).interes.toString()) / 100)
+            const totalPagado = getTotalPagado((p as any).id)
+            const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+            perdidasRutaPeriodo += saldoPendiente
+          }
         })
 
-        // Helper para calcular métricas históricas de esta ruta
-        const calcularPeriodoHistorico = (inicio: Date) => {
-          const pagos = pagosAnioCobrador.filter(p => p.fecha >= inicio)
-          const cobrado = pagos.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
-
-          const gst = gastosAnioCobrador.filter(g => g.fecha >= inicio)
-          const gastosOperativosHist = gst.reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
-          
-          const movs = movsAnioCobrador.filter(m => m.fecha >= inicio)
-          const gastosSueldosHist = movs.filter(m => m.tipo === 'PAGO_SUELDO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-          const otrosGastosHist = movs.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-          
-          const gastosTotal = gastosOperativosHist + gastosSueldosHist + otrosGastosHist
-
-          const prestamosCreados = prestamosAnioCobrador.filter(p => p.createdAt >= inicio)
-          const invertido = prestamosCreados.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
-
-          const prestamosExpirados = prestamosAnioCobrador.filter(p => p.fechaFin >= inicio && p.fechaFin <= hoy)
-          let perdidas = 0
-          prestamosExpirados.forEach((p) => {
-            const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-            const totalPagado = getTotalPagado(p.id)
-            const saldoPendiente = Math.max(0, montoTotal - totalPagado)
-            perdidas += saldoPendiente
-          })
-
-          return { cobrado, gastos: gastosTotal, perdidas, invertido }
-        }
-
+        const metricasRuta = { cobrado: totalCobradoEfectivo, gastos: gastosOperativos + otrosGastos + gastosSueldos, perdidas: perdidasRutaPeriodo, invertido: totalPrestadoEfectivo }
         const historico = {
-          semanal: calcularPeriodoHistorico(semanaInicio),
-          mensual: calcularPeriodoHistorico(mesInicio),
-          semestral: calcularPeriodoHistorico(semestreInicio),
-          anual: calcularPeriodoHistorico(anualInicio),
+          semanal: metricasRuta,
+          mensual: metricasRuta,
+          semestral: metricasRuta,
+          anual: metricasRuta,
         }
 
         return {
