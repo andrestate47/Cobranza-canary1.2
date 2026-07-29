@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 
 // Caché en memoria para respuestas instantáneas (< 5ms)
 const reportCache = new Map<string, { timestamp: number; data: any }>()
-const CACHE_TTL_MS = 30000 // 30 segundos
+const CACHE_TTL_MS = 600000 // 10 minutos
 
 
 interface PrestamoConCliente {
