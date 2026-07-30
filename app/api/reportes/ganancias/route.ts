@@ -787,11 +787,11 @@ export async function GET(request: NextRequest) {
         const prestamosConSaldoCobrador = prestamosConSaldoByCobrador.get(cobrador.id) || []
 
         // Filtrar pagos en efectivo del cobrador
-        const pagosRuta = todosPagosCobrador.filter(p => p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento"))
+        const pagosRuta = todosPagosCobrador.filter(p => p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento") && !p.observaciones?.startsWith("Liquidación por renovacion") && !p.observaciones?.startsWith("Liquidación por renovación"))
         const totalCobradoEfectivo = pagosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Filtrar préstamos en efectivo del cobrador
-        const prestamosRuta = prestamosNuevosCobrador.filter(p => (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO"))
+        const prestamosRuta = prestamosNuevosCobrador.filter(p => (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO") && !p.observaciones?.startsWith("RENOVACION") && !p.observaciones?.startsWith("RENOVACIÓN"))
         const totalPrestadoEfectivo = prestamosRuta.reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
         
         // Gastos operativos
@@ -804,7 +804,7 @@ export async function GET(request: NextRequest) {
         const otrosGastos = movsRuta.filter(m => m.tipo === 'GASTO' || m.tipo === 'GASTADO').reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         
         const ingresosExtra = movsRuta.filter(m => ['INGRESO', 'ENTREGADO', 'ENTREGA', 'APERTURA_CAJA'].includes(m.tipo)).reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
-        const egresosExtra = movsRuta.filter(m => ['EGRESO', 'EGRESO_GENERAL', 'DEVUELTO', 'DEVOLUCION'].includes(m.tipo) && !(m.observaciones && m.observaciones.includes("Refinanciamiento préstamo:"))).reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+        const egresosExtra = movsRuta.filter(m => ['EGRESO', 'EGRESO_GENERAL', 'DEVUELTO', 'DEVOLUCION'].includes(m.tipo) && !(m.observaciones && (m.observaciones.includes("Refinanciamiento préstamo:") || m.observaciones.includes("Renovación préstamo:")))).reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
         
         const balancePeriodo = totalCobradoEfectivo - totalPrestadoEfectivo - gastosOperativos - gastosSueldos - otrosGastos + ingresosExtra - egresosExtra
 

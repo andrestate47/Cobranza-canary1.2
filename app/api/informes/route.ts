@@ -298,7 +298,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
 
   const egresosExtraCaja = movimientosCajaChica
     .filter(m => m.tipo === "EGRESO" || m.tipo === "EGRESO_GENERAL" || m.tipo === "DEVUELTO" || m.tipo === "DEVOLUCION")
-    .filter(m => !(m.observaciones && m.observaciones.includes("Refinanciamiento préstamo:"))) // Fix double deduction
+    .filter(m => !(m.observaciones && (m.observaciones.includes("Refinanciamiento préstamo:") || m.observaciones.includes("Renovación préstamo:")))) // Fix double deduction
     .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
 
   const gastosCajaChica = movimientosCajaChica
