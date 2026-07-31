@@ -199,8 +199,29 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     return Math.min((cuotasPagadas / totalCuotas) * 100, 100)
   }
 
+  // Map estático para evitar recrearlo en cada iteración
+  const DIAS_POR_TIPO_PAGO: Record<string, number> = {
+    'DIARIO': 1,
+    'SEMANAL': 7,
+    'LUNES_A_VIERNES': 1,
+    'LUNES_A_SABADO': 1,
+    'QUINCENAL': 15,
+    'CATORCENAL': 14,
+    'FIN_DE_MES': 30,
+    'MENSUAL': 30,
+    'TRIMESTRAL': 90,
+    'CUATRIMESTRAL': 120,
+    'SEMESTRAL': 180,
+    'ANUAL': 365
+  }
+
   // Función para calcular el estado de alerta del cliente
-  const calcularEstadoCliente = (clienteData: ClienteConPrestamos) => {
+  const calcularEstadoCliente = (
+    clienteData: ClienteConPrestamos,
+    hoy: Date,
+    hoyMidnight: Date,
+    ayerMidnight: Date
+  ) => {
     const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.saldoPendiente <= 0 || p.cuotasPagadas >= p.cuotas
 
     // Si no tiene préstamos o todos están pagados, está Inactivo
@@ -217,7 +238,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
     // Verificar si algún préstamo está completamente vencido y no ha sido pagado
     const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
-      !esPrestamoCompletado(prestamo) && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < new Date())
+      !esPrestamoCompletado(prestamo) && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < hoy)
     )
 
     if (tienePrestamoVencido) {
@@ -231,34 +252,15 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
 
     // Verificar morosidad (préstamos con pagos atrasados)
-    const hoy = new Date()
     const prestamosConAtraso = clienteData.prestamos.filter(prestamo => {
       if (esPrestamoCompletado(prestamo)) return false // Ya está pagado
 
-      // Calcular días desde el último pago esperado
-      const diasPorTipo = {
-        'DIARIO': 1,
-        'SEMANAL': 7,
-        'LUNES_A_VIERNES': 1,     // Pago diario de lunes a viernes
-        'LUNES_A_SABADO': 1,      // Pago diario de lunes a sábado
-        'QUINCENAL': 15,
-        'CATORCENAL': 14,         // Cada 14 días
-        'FIN_DE_MES': 30,
-        'MENSUAL': 30,
-        'TRIMESTRAL': 90,
-        'CUATRIMESTRAL': 120,     // Cada 4 meses
-        'SEMESTRAL': 180,
-        'ANUAL': 365
-      }
-
-      const diasEsperados = diasPorTipo[prestamo.tipoPago as keyof typeof diasPorTipo] || 1
+      const diasEsperados = DIAS_POR_TIPO_PAGO[prestamo.tipoPago] || 1
       const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
       const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
       const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
-      const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
 
       let pagosEsperados = 0
-      const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
 
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
         pagosEsperados = countDiasHabiles(fechaInicioMidnight, ayerMidnight, prestamo.tipoPago)
@@ -284,8 +286,6 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     const proximoAVencer = clienteData.prestamos.some(prestamo => {
       if (esPrestamoCompletado(prestamo)) return false
 
-      const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
-      
       const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
       const [year, month, day] = fechaFinStr.split('-').map(Number)
       const fechaFinMidnight = new Date(year, month - 1, day)
@@ -469,10 +469,14 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
   // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
   const clientesConEstados = useMemo(() => {
+    const hoy = new Date()
+    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
+
     return clientes.map(clienteData => {
       return {
         ...clienteData,
-        estadoAlerta: calcularEstadoCliente(clienteData),
+        estadoAlerta: calcularEstadoCliente(clienteData, hoy, hoyMidnight, ayerMidnight),
         tipoPagoInfo: getTipoPagoBadge(clienteData)
       }
     })
@@ -633,7 +637,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
               <Card
                 key={clienteData.cliente.id}
                 className="list-item animate-fadeInScale"
-                style={{ animationDelay: `${index * 0.05}s` }}
+                style={{ animationDelay: `${Math.min(index * 0.02, 0.2)}s` }}
               >
                 <Collapsible
                   open={isExpanded}
