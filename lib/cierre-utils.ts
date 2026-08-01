@@ -8,13 +8,65 @@ dayjs.extend(timezone)
 
 const ECUADOR_TZ = 'America/Guayaquil'
 const TIPOS_INGRESO = ["INGRESO", "ENTREGADO", "ENTREGA", "APERTURA_CAJA"]
-const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION", "GASTO", "GASTADO"]
+const TIPOS_EGRESO  = ["EGRESO", "EGRESO_GENERAL", "DEVUELTO", "DEVOLUCION"]
 
 /**
- * Calcula el saldo inicial para un día dado.
+ * Calcula los movimientos netos de un rango de fechas para un usuario dado.
+ */
+export async function calcularMovimientosNetosParaRango(
+  userId: string, 
+  whereFecha: { gte?: Date; lt?: Date; lte?: Date }
+) {
+  const [pagos, prestamos, gastos, movimientos] = await Promise.all([
+    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: whereFecha } }),
+    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: whereFecha } }),
+    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: whereFecha } }),
+    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: whereFecha } })
+  ])
+
+  const totalCobrado = Number(pagos._sum.monto || 0)
+  const totalPrestado = Number(prestamos._sum.monto || 0)
+  const gastosDirectos = Number(gastos._sum.monto || 0)
+
+  const ingresosExtra = movimientos
+    .filter(m => TIPOS_INGRESO.includes(m.tipo))
+    .reduce((s, m) => s + Number(m.monto), 0)
+
+  const egresosExtra = movimientos
+    .filter(m => TIPOS_EGRESO.includes(m.tipo))
+    .filter(m => !(m.observaciones && (m.observaciones.includes("Refinanciamiento préstamo:") || m.observaciones.includes("Renovación préstamo:"))))
+    .reduce((s, m) => s + Number(m.monto), 0)
+
+  const gastosCajaChica = movimientos
+    .filter(m => m.tipo === "GASTO" || m.tipo === "GASTADO")
+    .reduce((s, m) => s + Number(m.monto), 0)
+
+  const gastosSueldos = movimientos
+    .filter(m => m.tipo === "PAGO_SUELDO")
+    .reduce((s, m) => s + Number(m.monto), 0)
+
+  const totalGastosReal = gastosDirectos + gastosCajaChica + gastosSueldos
+
+  const flujoNeto = totalCobrado - totalPrestado - totalGastosReal + ingresosExtra - egresosExtra
+
+  return {
+    totalCobrado,
+    totalPrestado,
+    totalGastos: totalGastosReal,
+    gastosDirectos,
+    gastosCajaChica,
+    gastosSueldos,
+    ingresosExtra,
+    egresosExtra,
+    flujoNeto
+  }
+}
+
+/**
+ * Obtiene el saldo inicial para un día dado.
  * Regla: saldoInicial = saldoEfectivo del último cierre anterior +
  *        movimientos netos de los días sin cerrar entre ese cierre y el día actual.
- * Esto permite gaps de varios días (ej: fin de semana, feriados) sin perder datos.
+ * Si no existen cierres anteriores, acumula los movimientos históricos antes de fechaInicio.
  */
 export async function obtenerSaldoInicialParaDia(userId: string, fechaInicio: Date) {
   const cierreAnterior = await prisma.cierreDia.findFirst({
@@ -41,45 +93,30 @@ export async function obtenerSaldoInicialParaDia(userId: string, fechaInicio: Da
       }
 
       // Acumular movimientos de los días intermedios sin cierre
-      const [pagosAnt, prestamosAnt, gastosAnt, cajasAnt] = await Promise.all([
-        prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaDesde, lt: fechaInicio } } }),
-        prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: fechaDesde, lt: fechaInicio } } }),
-        prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaDesde, lt: fechaInicio } } }),
-        prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: fechaDesde, lt: fechaInicio } } })
-      ])
+      const { flujoNeto } = await calcularMovimientosNetosParaRango(userId, {
+        gte: fechaDesde,
+        lt: fechaInicio
+      })
 
-      const cobradoAnt  = Number(pagosAnt._sum.monto || 0)
-      const prestadoAnt = Number(prestamosAnt._sum.monto || 0)
-      const gastadoAnt  = Number(gastosAnt._sum.monto || 0)
-      const ingresosAnt = cajasAnt.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-      const egresosAnt  = cajasAnt.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-
-      saldoInicial = saldoInicial + cobradoAnt - prestadoAnt - gastadoAnt + ingresosAnt - egresosAnt
+      saldoInicial += flujoNeto
     }
   } else {
-    // Sin cierres previos: activar alerta
+    // Sin cierres previos: acumular todos los movimientos antes de fechaInicio
     diasSinCerrar = 1
-    saldoInicial = 0
+    const { flujoNeto } = await calcularMovimientosNetosParaRango(userId, {
+      lt: fechaInicio
+    })
+    saldoInicial = flujoNeto
   }
 
   return { saldoInicial, diasSinCerrar, cierreAnterior }
 }
 
 export async function calcularSaldoParaDia(userId: string, fechaInicio: Date, fechaFin: Date, saldoInicialDia: number) {
-  const [pagos, prestamos, gastos, movimientos] = await Promise.all([
-    prisma.pago.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } } }),
-    prisma.prestamo.aggregate({ _sum: { monto: true }, where: { userId, createdAt: { gte: fechaInicio, lte: fechaFin } } }),
-    prisma.gasto.aggregate({ _sum: { monto: true }, where: { userId, fecha: { gte: fechaInicio, lte: fechaFin } } }),
-    prisma.movimientoCajaChica.findMany({ where: { cobradorId: userId, fecha: { gte: fechaInicio, lte: fechaFin } } })
-  ])
+  const { totalCobrado, totalPrestado, totalGastos, flujoNeto } = 
+    await calcularMovimientosNetosParaRango(userId, { gte: fechaInicio, lte: fechaFin })
 
-  const totalCobrado  = Number(pagos._sum.monto || 0)
-  const totalPrestado = Number(prestamos._sum.monto || 0)
-  const totalGastos   = Number(gastos._sum.monto || 0)
-  const ingresosExtra = movimientos.filter(m => TIPOS_INGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-  const egresosExtra  = movimientos.filter(m => TIPOS_EGRESO.includes(m.tipo)).reduce((s, m) => s + Number(m.monto), 0)
-
-  const saldoEfectivo = saldoInicialDia + totalCobrado - totalPrestado - totalGastos + ingresosExtra - egresosExtra
+  const saldoEfectivo = saldoInicialDia + flujoNeto
   return { totalCobrado, totalPrestado, totalGastos, saldoEfectivo }
 }
 
@@ -110,3 +147,4 @@ export async function recalcularYPropagarSaldos(userId: string, fechaDesde: Date
     })
   }
 }
+
