@@ -323,23 +323,23 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
     const tipoPago = prestamoMasReciente.tipoPago
     const badges = {
-      'DIARIO': { texto: 'Diario', color: 'bg-blue-100 text-blue-800' },
-      'SEMANAL': { texto: 'Semanal', color: 'bg-green-100 text-green-800' },
-      'LUNES_A_VIERNES': { texto: 'Lun-Vie', color: 'bg-cyan-100 text-cyan-800' },
-      'LUNES_A_SABADO': { texto: 'Lun-Sáb', color: 'bg-sky-100 text-sky-800' },
-      'QUINCENAL': { texto: 'Quincenal', color: 'bg-orange-100 text-orange-800' },
-      'CATORCENAL': { texto: 'Catorcenal', color: 'bg-amber-100 text-amber-800' },
-      'FIN_DE_MES': { texto: 'Fin de Mes', color: 'bg-teal-100 text-teal-800' },
-      'MENSUAL': { texto: 'Mensual', color: 'bg-purple-100 text-purple-800' },
-      'TRIMESTRAL': { texto: 'Trimestral', color: 'bg-indigo-100 text-indigo-800' },
-      'CUATRIMESTRAL': { texto: 'Cuatrimestral', color: 'bg-violet-100 text-violet-800' },
-      'SEMESTRAL': { texto: 'Semestral', color: 'bg-pink-100 text-pink-800' },
-      'ANUAL': { texto: 'Anual', color: 'bg-yellow-100 text-yellow-800' }
+      'DIARIO': { texto: 'Diario', color: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-700' },
+      'SEMANAL': { texto: 'Semanal', color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-700' },
+      'LUNES_A_VIERNES': { texto: 'Lun-Vie', color: 'bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-200 dark:border-cyan-700' },
+      'LUNES_A_SABADO': { texto: 'Lun-Sáb', color: 'bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/80 dark:text-sky-200 dark:border-sky-700' },
+      'QUINCENAL': { texto: 'Quincenal', color: 'bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-950/80 dark:text-orange-200 dark:border-orange-700' },
+      'CATORCENAL': { texto: 'Catorcenal', color: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' },
+      'FIN_DE_MES': { texto: 'Fin de Mes', color: 'bg-teal-100 text-teal-900 border-teal-300 dark:bg-teal-950/80 dark:text-teal-200 dark:border-teal-700' },
+      'MENSUAL': { texto: 'Mensual', color: 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700' },
+      'TRIMESTRAL': { texto: 'Trimestral', color: 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-200 dark:border-indigo-700' },
+      'CUATRIMESTRAL': { texto: 'Cuatrimestral', color: 'bg-violet-100 text-violet-900 border-violet-300 dark:bg-violet-950/80 dark:text-violet-200 dark:border-violet-700' },
+      'SEMESTRAL': { texto: 'Semestral', color: 'bg-pink-100 text-pink-900 border-pink-300 dark:bg-pink-950/80 dark:text-pink-200 dark:border-pink-700' },
+      'ANUAL': { texto: 'Anual', color: 'bg-yellow-100 text-yellow-900 border-yellow-300 dark:bg-yellow-950/80 dark:text-yellow-200 dark:border-yellow-700' }
     }
 
     return badges[tipoPago as keyof typeof badges] || {
       texto: tipoPago,
-      color: 'bg-gray-100 text-gray-800'
+      color: 'bg-gray-100 text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-gray-200'
     }
   }
 
@@ -511,26 +511,27 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-[#102525] shadow-sm border-b dark:border-[#34766D]">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="dark:text-[#F4FFFF] dark:hover:bg-[#173333]">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Listado General</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-[#F4FFFF]">Listado General</h1>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchClientes}
+              className="dark:bg-[#173333] dark:border-[#34766D] dark:text-[#F4FFFF] dark:hover:bg-[#34766D]"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualizar
@@ -543,12 +544,12 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         {/* Filtros */}
         <div className="mb-6 space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-[#9CB7B2]" />
             <Input
               placeholder="Buscar por nombre, código, documento o teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 dark:bg-[#173333] dark:border-[#34766D] dark:text-[#F4FFFF] dark:placeholder-[#9CB7B2]"
             />
           </div>
 
@@ -556,26 +557,26 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             <Button
               variant={soloConSaldo ? "default" : "outline"}
               onClick={() => setSoloConSaldo(!soloConSaldo)}
-              className="flex items-center space-x-2"
+              className={`flex items-center space-x-2 ${soloConSaldo ? "dark:bg-[#36E2C2] dark:text-[#071313] dark:hover:bg-[#28CBAE]" : "dark:bg-[#173333] dark:border-[#34766D] dark:text-[#F4FFFF]"}`}
             >
               <Filter className="h-4 w-4" />
               <span>{soloConSaldo ? "Solo con saldo" : "Todos los préstamos"}</span>
             </Button>
 
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-[#9CB7B2]">
               {clientesFiltradosActivos.length} cliente{clientesFiltradosActivos.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
 
         {/* Custom Tabs - 5 Options */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-100 p-1 rounded-lg mb-6 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-100 dark:bg-[#102525] p-1 border dark:border-[#34766D] rounded-lg mb-6 w-full">
           <button
             onClick={() => setActiveTab('OK')}
             className={`py-2 text-xs font-medium rounded-md transition-all ${
               activeTab === 'OK' 
-                ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                ? 'bg-white text-green-700 dark:bg-[#36E2C2] dark:text-[#071313] shadow-sm' 
+                : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
             Al Día
@@ -584,8 +585,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             onClick={() => setActiveTab('PROXIMO_A_VENCER')}
             className={`py-2 text-xs font-medium rounded-md transition-all ${
               activeTab === 'PROXIMO_A_VENCER' 
-                ? 'bg-white text-yellow-600 shadow-sm ring-1 ring-black/5' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                ? 'bg-white text-yellow-600 dark:bg-[#F5A623] dark:text-[#071313] shadow-sm' 
+                : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
             Próximo a Vencer
@@ -594,8 +595,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             onClick={() => setActiveTab('MOROSO')}
             className={`py-2 text-xs font-medium rounded-md transition-all ${
               activeTab === 'MOROSO' 
-                ? 'bg-white text-orange-600 shadow-sm ring-1 ring-black/5' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                ? 'bg-white text-orange-600 dark:bg-[#F5A623] dark:text-[#071313] shadow-sm' 
+                : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
             Morosos
@@ -604,8 +605,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             onClick={() => setActiveTab('VENCIDO')}
             className={`py-2 text-xs font-medium rounded-md transition-all ${
               activeTab === 'VENCIDO' 
-                ? 'bg-white text-red-700 shadow-sm ring-1 ring-black/5' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                ? 'bg-white text-red-700 dark:bg-[#FF5C5C] dark:text-[#F4FFFF] shadow-sm' 
+                : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
             Vencidos
@@ -613,12 +614,12 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           <button
             onClick={() => {
               setActiveTab('INACTIVO')
-              if (soloConSaldo) setSoloConSaldo(false) // Auto-fetch todos si vemos inactivos
+              if (soloConSaldo) setSoloConSaldo(false)
             }}
             className={`col-span-2 sm:col-span-1 py-2 text-xs font-medium rounded-md transition-all ${
               activeTab === 'INACTIVO' 
-                ? 'bg-white text-gray-700 shadow-sm ring-1 ring-black/5' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                ? 'bg-white text-gray-700 dark:bg-[#173333] dark:text-[#F4FFFF] shadow-sm' 
+                : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
             Inactivos
@@ -644,72 +645,76 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                   onOpenChange={() => toggleCardExpansion(clienteData.cliente.id)}
                 >
                   <CardContent className="p-4">
-                    {/* Vista compacta del cliente - siempre visible */}
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
-                        <div className="relative w-10 h-10 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
-                          {clienteData.cliente.foto ? (
-                            <button
-                              onClick={() => abrirImagenModal(clienteData.cliente)}
-                              className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
-                              title="Ver foto del cliente"
-                            >
-                              <img
-                                src={clienteData.cliente.foto}
-                                alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </button>
-                          ) : (
-                            <User className="h-5 w-5 text-gray-400" />
-                          )}
-                          {/* Ícono de alerta superpuesto */}
-                          <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${estadoAlerta.color}`}>
-                            <IconoAlerta className="h-3 w-3 text-white" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <div className="flex flex-col mb-1 w-full">
-                            <h3 className="font-semibold text-gray-900 truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
-                              {clienteData.cliente.nombre} {clienteData.cliente.apellido}
-                            </h3>
-                            <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
-                              <Badge
-                                className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
-                                  }`}
+                    {/* Vista compacta del cliente - siempre visible y completamente clickeable */}
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between w-full cursor-pointer select-none">
+                        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
+                          <div className="relative w-10 h-10 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
+                            {clienteData.cliente.foto ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  abrirImagenModal(clienteData.cliente)
+                                }}
+                                className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+                                title="Ver foto del cliente"
                               >
-                                {estadoAlerta.texto}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${tipoPagoInfo.color}`}
-                              >
-                                {tipoPagoInfo.texto}
-                              </Badge>
-                              {clienteData.prestamos.length > 1 && (
-                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px]">
-                                  {clienteData.prestamos.length} ptmos
-                                </Badge>
-                              )}
+                                <img
+                                  src={clienteData.cliente.foto}
+                                  alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ) : (
+                              <User className="h-5 w-5 text-gray-400" />
+                            )}
+                            {/* Ícono de alerta superpuesto */}
+                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${estadoAlerta.color}`}>
+                              <IconoAlerta className="h-3 w-3 text-white" />
                             </div>
                           </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
-                            <span className="text-[13px] sm:text-sm text-gray-500 whitespace-nowrap truncate block">
-                              Saldo: <span className="font-semibold text-red-600">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
-                            </span>
-                            <span className="text-[11px] sm:text-xs text-gray-500 whitespace-nowrap hidden sm:block">
-                              {Number(clienteData.cuotasTotalesPagadas.toFixed(2))} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mt-0.5">
-                            <span className="text-[10px] sm:text-[11px] text-gray-400 truncate">
-                              Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
-                            </span>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex flex-col mb-1 w-full">
+                              <h3 className="font-semibold text-gray-900 dark:text-white truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
+                                {clienteData.cliente.nombre} {clienteData.cliente.apellido}
+                              </h3>
+                              <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
+                                <Badge
+                                  className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                                    }`}
+                                >
+                                  {estadoAlerta.texto}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${tipoPagoInfo.color}`}
+                                >
+                                  {tipoPagoInfo.texto}
+                                </Badge>
+                                {clienteData.prestamos.length > 1 && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 min-h-[16px] leading-[14px] bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700 font-bold">
+                                    {clienteData.prestamos.length} ptmos
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
+                              <span className="text-[13px] sm:text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap truncate block">
+                                Saldo: <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
+                              </span>
+                              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden sm:block">
+                                {Number(clienteData.cuotasTotalesPagadas.toFixed(2))} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <span className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 truncate">
+                                Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="ml-1 p-1 sm:p-2 sm:ml-2 flex-shrink-0">
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" />
@@ -717,8 +722,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             <ChevronRight className="h-4 w-4" />
                           )}
                         </Button>
-                      </CollapsibleTrigger>
-                    </div>
+                      </div>
+                    </CollapsibleTrigger>
+
 
                     {/* Vista expandida - historial de préstamos */}
                     <CollapsibleContent className="space-y-3">
@@ -755,23 +761,23 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                 {/* Header del préstamo */}
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
                                   <div className="flex items-center flex-wrap gap-2">
-                                    <Badge variant="outline" className="text-xs font-semibold bg-white">
+                                    <Badge variant="outline" className="text-xs font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                       Préstamo #{prestamoIndex + 1}
                                     </Badge>
                                     <Badge
                                       variant="default"
-                                      className={`text-xs ${prestamo.tipoPago === 'DIARIO' ? 'bg-blue-400' :
-                                        prestamo.tipoPago === 'SEMANAL' ? 'bg-green-400' :
-                                          prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-400' :
-                                            prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-400' :
-                                              prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-400' :
-                                                prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-400' :
-                                                  prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-400' :
-                                                    prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-400' :
-                                                      prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-400' :
-                                                        prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-400' :
-                                                          prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-400' :
-                                                            prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-400' : 'bg-gray-400'
+                                      className={`text-xs font-bold text-slate-950 ${prestamo.tipoPago === 'DIARIO' ? 'bg-blue-300' :
+                                        prestamo.tipoPago === 'SEMANAL' ? 'bg-emerald-400' :
+                                          prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-300' :
+                                            prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-300' :
+                                              prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-300' :
+                                                prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-300' :
+                                                  prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-300' :
+                                                    prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-300' :
+                                                      prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-300' :
+                                                        prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-300' :
+                                                          prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-300' :
+                                                            prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-300' : 'bg-slate-300'
                                         }`}
                                     >
                                       {prestamo.tipoPago === 'FIN_DE_MES' ? 'Fin de Mes' :
@@ -782,7 +788,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                                 prestamo.tipoPago}
                                     </Badge>
                                     {prestamo.tipoCredito && (
-                                      <Badge variant="secondary" className="text-xs">
+                                      <Badge variant="secondary" className="text-xs font-semibold bg-slate-900 text-white dark:bg-slate-700">
                                         {prestamo.tipoCredito === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia'}
                                       </Badge>
                                     )}

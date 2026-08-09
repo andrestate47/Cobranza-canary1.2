@@ -9,6 +9,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-roboto-condensed)', 'Roboto Condensed', 'Arial', 'sans-serif'],
+        condensed: ['var(--font-roboto-condensed)', 'Roboto Condensed', 'Arial', 'sans-serif'],
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':

@@ -381,7 +381,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] transition-colors">
         <div className="container-mobile py-4">
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -392,26 +392,27 @@ export default function InformeClientesClient({ session }: InformeClientesClient
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Informe de Clientes</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Informe de Clientes</h1>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fetchInforme(fechaSeleccionada)}
+              className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualizar
@@ -421,27 +422,27 @@ export default function InformeClientesClient({ session }: InformeClientesClient
       </div>
 
       <div className="container-mobile py-6">
-        {/* Selector de fecha */}
+        {/* Selector de fecha y filtro */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="flex-1 max-w-xs">
-            <Label htmlFor="fecha">Fecha del informe</Label>
+            <Label htmlFor="fecha" className="text-gray-700 dark:text-gray-200 font-semibold mb-1 block">Fecha del informe</Label>
             <Input
               id="fecha"
               type="date"
               value={fechaSeleccionada}
               onChange={(e) => setFechaSeleccionada(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] dark:text-white"
             />
           </div>
           <div className="flex-1 max-w-xs">
-            <Label htmlFor="filtro">Buscar en detalles</Label>
+            <Label htmlFor="filtro" className="text-gray-700 dark:text-gray-200 font-semibold mb-1 block">Buscar en detalles</Label>
             <Input
               id="filtro"
               type="text"
               placeholder="Buscar cliente, documento..."
               value={filtroTexto}
               onChange={(e) => setFiltroTexto(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] dark:text-white"
             />
           </div>
         </div>
@@ -450,22 +451,22 @@ export default function InformeClientesClient({ session }: InformeClientesClient
           <div className="space-y-6">
             {/* Header del informe */}
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 {formatDate(informe.fecha)}
               </h2>
             </div>
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-1 h-auto p-1">
-                <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 h-auto">Resumen</TabsTrigger>
-                <TabsTrigger value="visitados" className="text-xs sm:text-sm px-2 py-2 h-auto">Visitados</TabsTrigger>
-                <TabsTrigger value="no-visitados" className="text-xs sm:text-sm px-2 py-2 h-auto">No Visitados</TabsTrigger>
-                <TabsTrigger value="vencidos" className="text-xs sm:text-sm px-2 py-2 h-auto">Vencidos</TabsTrigger>
-                <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto">Clientes</TabsTrigger>
-                <TabsTrigger value="cobros" className="text-xs sm:text-sm px-2 py-2 h-auto">Cobros</TabsTrigger>
-                <TabsTrigger value="mora" className="text-xs sm:text-sm px-2 py-2 h-auto">Con Mora</TabsTrigger>
-                <TabsTrigger value="prestamos" className="text-xs sm:text-sm px-2 py-2 h-auto">Préstamos</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-1 h-auto p-1 bg-gray-100 dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36]">
+                <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Resumen</TabsTrigger>
+                <TabsTrigger value="visitados" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Visitados</TabsTrigger>
+                <TabsTrigger value="no-visitados" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">No Visitados</TabsTrigger>
+                <TabsTrigger value="vencidos" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Vencidos</TabsTrigger>
+                <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Clientes</TabsTrigger>
+                <TabsTrigger value="cobros" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Cobros</TabsTrigger>
+                <TabsTrigger value="mora" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Con Mora</TabsTrigger>
+                <TabsTrigger value="prestamos" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">Préstamos</TabsTrigger>
               </TabsList>
 
               {/* TAB RESUMEN */}
@@ -1206,20 +1207,20 @@ export default function InformeClientesClient({ session }: InformeClientesClient
 
                 {/* Sub-pestañas de préstamos */}
                 <Tabs value={activePrestamoTab} onValueChange={setActivePrestamoTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1 h-auto p-1">
-                    <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1 h-auto p-1 bg-gray-100 dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36]">
+                    <TabsTrigger value="nuevos" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">
                       Nuevos ({informe.detalles.nuevosPrestamos.length})
                     </TabsTrigger>
-                    <TabsTrigger value="total" className="text-xs sm:text-sm px-2 py-2 h-auto">
+                    <TabsTrigger value="total" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">
                       Total ({informe.detalles.todosPrestamosTotales?.length || 0})
                     </TabsTrigger>
-                    <TabsTrigger value="cancelados" className="text-xs sm:text-sm px-2 py-2 h-auto">
+                    <TabsTrigger value="cancelados" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">
                       Cancelados ({informe.detalles.prestamosCanceladosLista?.length || 0})
                     </TabsTrigger>
-                    <TabsTrigger value="vencidos" className="text-xs sm:text-sm px-2 py-2 h-auto">
+                    <TabsTrigger value="vencidos" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">
                       Vencidos ({informe.detalles.prestamosVencidos.length})
                     </TabsTrigger>
-                    <TabsTrigger value="mora" className="text-xs sm:text-sm px-2 py-2 h-auto">
+                    <TabsTrigger value="mora" className="text-xs sm:text-sm px-2 py-2 h-auto dark:data-[state=active]:bg-[#1A3330] dark:data-[state=active]:text-white dark:text-gray-300">
                       En Mora ({informe.detalles.prestamosEnMoraLista?.length || 0})
                     </TabsTrigger>
                   </TabsList>

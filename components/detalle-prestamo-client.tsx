@@ -1454,20 +1454,20 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-[#102525] shadow-sm border-b dark:border-[#34766D]">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/listado-general">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="dark:text-[#F4FFFF] dark:hover:bg-[#173333]">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Detalle del Préstamo</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-[#F4FFFF]">Detalle del Préstamo</h1>
               </div>
             </div>
           </div>
@@ -1477,12 +1477,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       <div className="container-mobile py-6">
         <div className="space-y-6">
           {/* Información del cliente */}
-          <Card className="animate-fadeInScale">
+          <Card className="animate-fadeInScale dark:bg-[#102525] dark:border-[#34766D]">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5 text-primary" />
-                  <span>Información del Cliente</span>
+                  <User className="h-5 w-5 text-primary dark:text-[#36E2C2]" />
+                  <span className="dark:text-[#F4FFFF]">Información del Cliente</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   {/* Badge de estado de alerta */}
@@ -1497,7 +1497,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCameraModal(true)}
-                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950 dark:border-blue-800"
                   >
                     <Camera className="h-4 w-4" />
                     <span>Foto</span>
@@ -1507,7 +1507,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             </CardHeader>
             <CardContent>
               <div className="flex items-start space-x-3 sm:space-x-4 w-full">
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex flex-col items-center justify-center flex-shrink-0">
                   {prestamo.cliente.foto ? (
                     <button
                       onClick={abrirImagenModal}
@@ -1521,7 +1521,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       />
                     </button>
                   ) : (
-                    <User className="h-8 w-8 text-gray-400" />
+                    <User className="h-8 w-8 text-gray-400 dark:text-gray-300" />
                   )}
                   {/* Ícono de alerta superpuesto */}
                   <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${estadoAlerta.color}`}>
@@ -1530,36 +1530,36 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 w-full">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate w-full" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate w-full" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
                       {prestamo.cliente.nombre} {prestamo.cliente.apellido}
                     </h3>
                     <Badge
                       variant="outline"
-                      className="text-xs bg-blue-100 text-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0"
+                      className="text-xs bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0 font-semibold"
                     >
                       {getTipoPagoText(prestamo.tipoPago)}
                     </Badge>
                   </div>
                   <div className="space-y-3 text-sm">
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
                       <FileText className="h-4 w-4 mr-2" />
                       <span className="font-medium">Código:</span>
-                      <span className="ml-1">{prestamo.cliente.codigoCliente}</span>
+                      <span className="ml-1 text-gray-900 dark:text-gray-100 font-medium">{prestamo.cliente.codigoCliente}</span>
                     </div>
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
                       <FileText className="h-4 w-4 mr-2" />
                       <span className="font-medium">Documento:</span>
-                      <span className="ml-1">{prestamo.cliente.documento}</span>
+                      <span className="ml-1 text-gray-900 dark:text-gray-100 font-medium">{prestamo.cliente.documento}</span>
                     </div>
 
                     {/* Dirección del Cliente */}
-                    <div className="flex items-start text-gray-600">
+                    <div className="flex items-start text-gray-600 dark:text-gray-300">
                       <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-700 mb-1">Dirección Cliente:</div>
+                        <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección Cliente:</div>
                         <button
                           onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente', prestamo.cliente.mapLink)}
-                          className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full"
+                          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full font-medium"
                           title="Click para abrir en Google Maps"
                         >
                           {prestamo.cliente.direccionCliente}
@@ -1569,13 +1569,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                     {/* Dirección de Cobro (si existe) */}
                     {prestamo.cliente.direccionCobro && (
-                      <div className="flex items-start text-gray-600">
+                      <div className="flex items-start text-gray-600 dark:text-gray-300">
                         <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-orange-500" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-orange-700 mb-1">Dirección Cobro:</div>
+                          <div className="font-medium text-orange-700 dark:text-orange-400 mb-1">Dirección Cobro:</div>
                           <button
                             onClick={() => abrirMapa(prestamo.cliente.direccionCobro!, 'cobro')}
-                            className="text-blue-600 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full"
+                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full font-medium"
                             title="Click para abrir en Google Maps"
                           >
                             {prestamo.cliente.direccionCobro}
@@ -1585,11 +1585,11 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     )}
 
                     {prestamo.cliente.telefono && (
-                      <div className="flex items-center text-gray-600">
+                      <div className="flex items-center text-gray-600 dark:text-gray-300">
                         <Phone className="h-4 w-4 mr-2" />
                         <a
                           href={`tel:${prestamo.cliente.telefono}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
                         >
                           {prestamo.cliente.telefono}
                         </a>
@@ -1648,72 +1648,72 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Tipo de crédito:</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Tipo de crédito:</span>
                     <span className="font-semibold text-right break-words min-w-0">{getTipoCreditoText(prestamo.tipoCredito || 'EFECTIVO')}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Interés (%):</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Interés (%):</span>
                     <span className="font-semibold text-right break-words min-w-0">{prestamo.interes}%</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Interés total:</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Interés total:</span>
                     <span className="font-semibold text-right break-words min-w-0">{formatCurrency(prestamo.interesTotal || interesAmount)}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Tipo de pago:</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Tipo de pago:</span>
                     <span className="font-semibold text-right break-words min-w-0">{getTipoPagoText(prestamo.tipoPago)}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Total cuotas:</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Total cuotas:</span>
                     <span className="font-semibold text-right break-words min-w-0">{prestamo.cuotas}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Cuotas pagadas:</span>
-                    <span className="font-semibold text-green-600 text-right break-words min-w-0">{Number(cuotasPagadas.toFixed(2))}</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Cuotas pagadas:</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400 text-right break-words min-w-0">{Number(cuotasPagadas.toFixed(2))}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Cuotas atrasadas:</span>
-                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Cuotas atrasadas:</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.cuotasAtrasadas > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       {Number(infoExtendida.cuotasAtrasadas.toFixed(2))}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Cuotas pendientes:</span>
-                    <span className="font-semibold text-orange-600 text-right break-words min-w-0">{infoExtendida.cuotasPendientes}</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Cuotas pendientes:</span>
+                    <span className="font-semibold text-orange-600 dark:text-orange-400 text-right break-words min-w-0">{Number(infoExtendida.cuotasPendientes.toFixed(2))}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Días vencidos:</span>
-                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Días vencidos:</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.diasVencidos > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       {infoExtendida.diasVencidos}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Valor en atraso(s):</span>
-                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.valorEnAtrasos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Valor en atraso(s):</span>
+                    <span className={`font-semibold text-right break-words min-w-0 ${infoExtendida.valorEnAtrasos > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       {formatCurrency(infoExtendida.valorEnAtrasos)}
                     </span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Días transcurridos:</span>
-                    <span className="font-semibold text-blue-600 text-right break-words min-w-0">{infoExtendida.diasTranscurridos}</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Días transcurridos:</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400 text-right break-words min-w-0">{infoExtendida.diasTranscurridos}</span>
                   </div>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-gray-600 shrink-0">Días de gracia:</span>
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Días de gracia:</span>
                     <span className="font-semibold text-right break-words min-w-0">{infoExtendida.diasGracia}</span>
                   </div>
                 </div>
               </div>
 
               {/* Información adicional */}
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-3 w-full">
-                <h4 className="font-semibold text-gray-900 mb-2">Información Adicional</h4>
+              <div className="bg-gray-50 dark:bg-[#173333] border dark:border-[#34766D] rounded-lg p-3 sm:p-4 space-y-3 w-full">
+                <h4 className="font-semibold text-gray-900 dark:text-[#F4FFFF] mb-2">Información Adicional</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-start text-sm gap-2">
-                      <span className="text-gray-600 shrink-0">Último pago:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Último pago:</span>
                       <span className="font-medium text-right break-words min-w-0">
                         {infoExtendida.ultimoPago
                           ? `${formatCurrency(infoExtendida.ultimoPago.monto)} - ${formatDateLocal(infoExtendida.ultimoPago.fecha)}`
@@ -1722,7 +1722,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       </span>
                     </div>
                     <div className="flex justify-between items-start text-sm gap-2 mt-2">
-                      <span className="text-gray-600 shrink-0">Fecha próximo pago:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Fecha próximo pago:</span>
                       <span className="font-medium text-right break-words min-w-0">
                         {infoExtendida.fechaProximoPago
                           ? formatDateLocal(infoExtendida.fechaProximoPago)
@@ -1731,21 +1731,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       </span>
                     </div>
                     <div className="flex justify-between items-start text-sm gap-2 mt-2">
-                      <span className="text-gray-600 shrink-0">Mora crédito:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Mora crédito:</span>
                       <span className="font-medium text-right break-words min-w-0">{prestamo.moraCredito || 0}%</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-start text-sm gap-2">
-                      <span className="text-gray-600 shrink-0">Fecha inicio:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Fecha inicio:</span>
                       <span className="font-medium text-right break-words min-w-0">{formatDate(String(prestamo.fechaInicio))}</span>
                     </div>
                     <div className="flex justify-between items-start text-sm gap-2 mt-2">
-                      <span className="text-gray-600 shrink-0">Fecha fin:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Fecha fin:</span>
                       <span className="font-medium text-right break-words min-w-0">{formatDate(String(prestamo.fechaFin))}</span>
                     </div>
                     <div className="flex justify-between items-start text-sm gap-2 mt-2">
-                      <span className="text-gray-600 shrink-0">Creado por:</span>
+                      <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Creado por:</span>
                       <span className="font-medium text-right break-words min-w-0">
                         {prestamo.usuario?.firstName && prestamo.usuario?.lastName
                           ? `${prestamo.usuario.firstName} ${prestamo.usuario.lastName}`

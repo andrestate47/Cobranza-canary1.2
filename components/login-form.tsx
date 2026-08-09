@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, User, Lock, Eye, EyeOff } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck } from "lucide-react"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
@@ -46,7 +46,6 @@ export default function LoginForm() {
           variant: "destructive",
         })
       } else {
-        // Verificar la sesión para obtener información del usuario
         const session = await getSession()
         const userName = session?.user?.firstName || session?.user?.name || "Usuario"
         const userRole = session?.user?.role === 'ADMINISTRADOR' ? 'Administrador' :
@@ -54,7 +53,7 @@ export default function LoginForm() {
 
         toast({
           title: `¡Bienvenido, ${userName}!`,
-          description: `Sesión iniciada como ${userRole}.`,
+          description: `Sesión iniciada con rol ${userRole}.`,
         })
         router.push("/dashboard")
         router.refresh()
@@ -71,101 +70,110 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="animate-fadeInScale shadow-2xl bg-white border-gray-200">
-      <CardHeader className="text-center space-y-2">
-        <div className="mx-auto w-28 h-28 mb-14 relative">
-          <Image
-            src="/logo.png"
-            alt="B.&.D.S.C Logo"
-            width={112}
-            height={112}
-            className="object-contain"
-            priority
-          />
+    <Card className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800/90 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300">
+      <CardHeader className="text-center pt-8 pb-4 space-y-3 relative">
+        {/* Glow halo around logo */}
+        <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 blur-lg opacity-40 animate-pulse" />
+          <div className="relative w-20 h-20 rounded-2xl bg-slate-950/80 border border-slate-700/60 p-2.5 flex items-center justify-center shadow-inner">
+            <Image
+              src="/logo.png"
+              alt="B.&.D.S.C Logo"
+              width={72}
+              height={72}
+              className="object-contain filter drop-shadow-md"
+              priority
+            />
+          </div>
         </div>
-        <CardTitle className="text-2xl font-bold text-black">
-          B.&.D.S.C
-        </CardTitle>
-        <CardDescription className="text-slate-500">
-          Ingresa tus credenciales para acceder al sistema
-        </CardDescription>
+
+        <div className="space-y-1">
+          <CardTitle className="text-2xl font-black text-white tracking-wider">
+            B.&.D.S.C
+          </CardTitle>
+          <CardDescription className="text-slate-400 text-xs font-medium">
+            Sistema de Cobranza & Gestión Financiera
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="px-6 pb-8 space-y-6">
+        {/* Credentials Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-slate-800">
-              Correo electrónico
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-medium text-slate-300">
+              Correo Electrónico
             </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-slate-600" style={{ color: '#475569' }} />
+            <div className="relative group">
+              <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@ejemplo.com"
-                className="pl-10 h-12 text-slate-900 border-slate-300 bg-white placeholder:text-slate-500"
+                className="pl-10 h-11 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl transition-all"
                 required
                 disabled={isLoading}
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-semibold text-slate-800">
+
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-xs font-medium text-slate-300">
               Contraseña
             </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-600" style={{ color: '#475569' }} />
+            <div className="relative group">
+              <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="pl-10 pr-12 h-12 text-slate-900 border-slate-300 bg-white placeholder:text-slate-500"
+                className="pl-10 pr-10 h-11 text-sm bg-slate-950/60 border-slate-800 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl transition-all"
                 required
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 h-4 w-4 text-slate-600 hover:text-slate-800"
-                style={{ color: '#475569' }}
+                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white transition-colors"
                 disabled={isLoading}
+                tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
+
           <Button
             type="submit"
-            className="w-full h-12 text-lg font-semibold btn-primary"
+            className="w-full h-11 mt-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/35 transition-all duration-200"
             disabled={isLoading}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
                 Iniciando sesión...
-              </>
+              </span>
             ) : (
-              "Iniciar Sesión"
+              <span className="flex items-center justify-center gap-2">
+                <UserCheck className="w-4 h-4" />
+                Ingresar al Sistema
+              </span>
             )}
           </Button>
         </form>
 
-        {/* Información de cuentas de demostración */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm font-semibold text-blue-800 mb-2">📝 Cuentas de Demostración</h3>
-          <div className="space-y-1 text-xs text-blue-700">
-            <p><strong>👑 Administrador:</strong> admin@cobranza.com / admin123</p>
-            <p><strong>👤 Supervisor:</strong> supervisor@cobranza.com / supervisor123</p>
-            <p><strong>💼 Cobrador:</strong> cobrador@cobranza.com / cobrador123</p>
-          </div>
-          <p className="text-xs text-blue-600 mt-2 italic">
-            Cada rol tiene diferentes permisos y accesos al sistema
-          </p>
+        {/* Security badge footer */}
+        <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-slate-400 border-t border-slate-800/80">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Acceso exclusivo para personal autorizado</span>
         </div>
       </CardContent>
     </Card>
   )
 }
+
+

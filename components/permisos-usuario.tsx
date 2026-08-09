@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import { useState } from "react"
@@ -102,22 +100,17 @@ const CATEGORIAS_PERMISOS = [
 ]
 
 // Permisos recomendados por rol
-const PERMISOS_POR_ROL = {
-  COBRADOR: [
-    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 
-    'REGISTRAR_COBROS', 'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 
-    'CREAR_CLIENTES', 'EDITAR_CLIENTES', 'VER_REPORTES'
-  ],
+const PERMISOS_POR_ROL: Record<string, string[]> = {
   SUPERVISOR: [
-    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 
-    'REGISTRAR_COBROS', 'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 
-    'CREAR_CLIENTES', 'EDITAR_CLIENTES', 'CREAR_PRESTAMOS', 
-    'EDITAR_PRESTAMOS', 'ELIMINAR_PRESTAMOS', 'REGISTRAR_TRANSFERENCIAS', 
-    'VER_TRANSFERENCIAS', 'VER_REPORTES', 'VER_AUDITORIA', 
-    'REALIZAR_CIERRE_DIA', 'VER_CIERRES_HISTORICOS', 'SINCRONIZAR_DATOS', 
-    'REGISTRAR_INGRESOS'
+    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 'REGISTRAR_COBROS',
+    'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 'CREAR_CLIENTES', 'EDITAR_CLIENTES',
+    'CREAR_PRESTAMOS', 'EDITAR_PRESTAMOS', 'REGISTRAR_TRANSFERENCIAS', 'VER_TRANSFERENCIAS',
+    'VER_REPORTES', 'REALIZAR_CIERRE_DIA', 'VER_CIERRES_HISTORICOS'
   ],
-  ADMINISTRADOR: [] // Los administradores tienen acceso total por defecto
+  COBRADOR: [
+    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 'REGISTRAR_COBROS',
+    'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 'CREAR_CLIENTES', 'CREAR_PRESTAMOS'
+  ]
 }
 
 export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioProps) {
@@ -125,21 +118,20 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const handlePermisoChange = (permiso: string, checked: boolean) => {
-    setPermisos(prev => 
-      checked 
-        ? [...prev, permiso]
-        : prev.filter(p => p !== permiso)
-    )
+  const handlePermisoChange = (key: string, checked: boolean) => {
+    if (checked) {
+      setPermisos(prev => [...prev, key])
+    } else {
+      setPermisos(prev => prev.filter(p => p !== key))
+    }
   }
 
   const aplicarPermisosRecomendados = () => {
     const permisosRecomendados = PERMISOS_POR_ROL[usuario.role] || []
     setPermisos(permisosRecomendados)
-    
     toast({
       title: "Permisos aplicados",
-      description: `Se aplicaron ${permisosRecomendados.length} permisos recomendados para el rol ${usuario.role}`,
+      description: `Se aplicaron los permisos recomendados para ${usuario.role}`,
     })
   }
 
@@ -198,10 +190,10 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'ADMINISTRADOR': return <Badge variant="destructive">Administrador</Badge>
-      case 'SUPERVISOR': return <Badge variant="secondary">Supervisor</Badge>
-      case 'COBRADOR': return <Badge variant="outline">Cobrador</Badge>
-      default: return <Badge variant="outline">{role}</Badge>
+      case 'ADMINISTRADOR': return <Badge className="bg-rose-600 dark:bg-rose-700 text-white">Administrador</Badge>
+      case 'SUPERVISOR': return <Badge className="bg-blue-600 dark:bg-blue-700 text-white">Supervisor</Badge>
+      case 'COBRADOR': return <Badge className="bg-emerald-600 dark:bg-emerald-700 text-white">Cobrador</Badge>
+      default: return <Badge variant="outline" className="dark:border-[#1F3A36] dark:text-gray-200">{role}</Badge>
     }
   }
 
@@ -212,24 +204,24 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
   return (
     <div className="space-y-6">
       {/* Header del usuario */}
-      <Card>
+      <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                usuario.isActive ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'
+                usuario.isActive ? 'bg-emerald-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}>
                 {getRoleIcon(usuario.role)}
               </div>
               <div>
-                <h3 className="text-lg font-semibold">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                   {usuario.name || `${usuario.firstName} ${usuario.lastName}`}
                 </h3>
-                <p className="text-gray-600">{usuario.email}</p>
+                <p className="text-sm text-gray-600 dark:text-emerald-300/80">{usuario.email}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {getRoleBadge(usuario.role)}
                   {!usuario.isActive && (
-                    <Badge variant="outline" className="text-red-600 border-red-600">
+                    <Badge variant="outline" className="text-rose-600 dark:text-rose-400 border-rose-500">
                       Inactivo
                     </Badge>
                   )}
@@ -237,11 +229,11 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
               </div>
             </div>
             
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">
+            <div className="text-left sm:text-right">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {permisosAsignados}/{totalPermisosDisponibles}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {porcentajePermisos}% de permisos asignados
               </div>
             </div>
@@ -250,35 +242,35 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
       </Card>
 
       {/* Acciones rápidas */}
-      <Card>
+      <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+            <Settings className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             Acciones Rápidas
           </CardTitle>
         </CardHeader>
         <CardContent>
           {usuario.role === 'ADMINISTRADOR' ? (
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-blue-50 dark:bg-[#152e2a] p-4 rounded-lg border border-blue-100 dark:border-[#1F3A36]">
               <div className="flex items-center gap-2 mb-2">
-                <Info className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-800 font-medium">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-blue-900 dark:text-blue-200 font-semibold">
                   Los administradores tienen acceso total al sistema
                 </span>
               </div>
-              <p className="text-blue-600 text-sm">
+              <p className="text-blue-700 dark:text-blue-300 text-sm">
                 No necesitan permisos específicos ya que pueden acceder a todas las funcionalidades automáticamente.
               </p>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={aplicarPermisosRecomendados}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
               >
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 Aplicar Permisos Recomendados
               </Button>
               
@@ -286,14 +278,14 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
                 variant="outline"
                 size="sm"
                 onClick={limpiarTodosLosPermisos}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                className="flex items-center gap-2 border-gray-300 dark:border-[#1F3A36] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
               >
                 <XCircle className="h-4 w-4" />
                 Limpiar Todos
               </Button>
               
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Info className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <Info className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>
                   Recomendado para {usuario.role}: {PERMISOS_POR_ROL[usuario.role]?.length || 0} permisos
                 </span>
@@ -307,14 +299,14 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
       {usuario.role !== 'ADMINISTRADOR' && (
         <div className="grid gap-6">
           {CATEGORIAS_PERMISOS.map(categoria => (
-            <Card key={categoria.nombre}>
+            <Card key={categoria.nombre} className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">{categoria.nombre}</CardTitle>
-                    <p className="text-sm text-gray-600">{categoria.descripcion}</p>
+                    <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">{categoria.nombre}</CardTitle>
+                    <p className="text-sm text-gray-500 dark:text-emerald-300/80">{categoria.descripcion}</p>
                   </div>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="dark:border-[#1F3A36] dark:text-gray-300">
                     {categoria.permisos.filter(p => permisos.includes(p.key)).length}/{categoria.permisos.length}
                   </Badge>
                 </div>
@@ -322,20 +314,21 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {categoria.permisos.map(permiso => (
-                    <div key={permiso.key} className="flex items-start space-x-3">
+                    <div key={permiso.key} className="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#152e2a] transition-colors">
                       <Checkbox
                         id={permiso.key}
                         checked={permisos.includes(permiso.key)}
                         onCheckedChange={(checked) => handlePermisoChange(permiso.key, checked as boolean)}
+                        className="mt-0.5 border-gray-300 dark:border-[#1F3A36]"
                       />
-                      <div className="grid gap-1.5 leading-none flex-1">
+                      <div className="grid gap-1 leading-none flex-1">
                         <label
                           htmlFor={permiso.key}
-                          className="text-sm font-medium leading-none cursor-pointer"
+                          className="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer"
                         >
                           {permiso.label}
                         </label>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {permiso.descripcion}
                         </p>
                       </div>
@@ -349,13 +342,21 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
       )}
 
       {/* Botones de acción */}
-      <div className="flex justify-end space-x-3 pt-4 border-t">
-        <Button variant="outline" onClick={onSuccess}>
+      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+        <Button
+          variant="outline"
+          onClick={onSuccess}
+          className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+        >
           Cancelar
         </Button>
         
         {usuario.role !== 'ADMINISTRADOR' && (
-          <Button onClick={handleGuardar} disabled={loading}>
+          <Button
+            onClick={handleGuardar}
+            disabled={loading}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -372,4 +373,3 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
     </div>
   )
 }
-

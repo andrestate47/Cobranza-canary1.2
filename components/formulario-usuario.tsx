@@ -389,24 +389,25 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
   const renderPermissionGroup = (title: string, permissions: typeof PERMISOS_BASICOS) => (
     <div key={title} className="space-y-3">
-      <h4 className="font-semibold text-gray-900">{title}</h4>
+      <h4 className="font-semibold text-gray-900 dark:text-white">{title}</h4>
       <div className="grid grid-cols-1 gap-3">
         {permissions.map(permission => (
-          <div key={permission.key} className="flex items-start space-x-3">
+          <div key={permission.key} className="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#152e2a] transition-colors">
             <Checkbox
               id={permission.key}
               checked={formData.permissions.includes(permission.key)}
               onCheckedChange={(checked) => handlePermissionChange(permission.key, checked as boolean)}
               disabled={formData.role === 'ADMINISTRADOR'}
+              className="mt-0.5 border-gray-300 dark:border-[#1F3A36]"
             />
-            <div className="grid gap-1.5 leading-none">
+            <div className="grid gap-1 leading-none flex-1">
               <label
                 htmlFor={permission.key}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
                 {permission.label}
               </label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {permission.description}
               </p>
             </div>
@@ -419,28 +420,28 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Información básica */}
-      <Card>
+      <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
         <CardHeader>
-          <CardTitle>Información Básica</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white font-bold">Información Básica</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Avatar / Profile Photo */}
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group">
-              <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${profilePhotoPreview ? 'border-primary' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+              <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${profilePhotoPreview ? 'border-emerald-500' : 'border-dashed border-gray-300 dark:border-[#1F3A36] bg-gray-50 dark:bg-[#152e2a]'}`}>
                 {profilePhotoPreview ? (
                   <img src={profilePhotoPreview} alt="Perfil" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="h-10 w-10 text-gray-400" />
+                  <User className="h-10 w-10 text-gray-400 dark:text-gray-500" />
                 )}
               </div>
-              <label htmlFor="profilePhotoInput" className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-sm">
+              <label htmlFor="profilePhotoInput" className="absolute bottom-0 right-0 bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-full cursor-pointer transition-colors shadow-sm">
                 <Upload className="h-4 w-4" />
               </label>
               <input id="profilePhotoInput" type="file" accept="image/*" onChange={handleProfilePhotoChange} className="hidden" />
             </div>
             {profilePhotoPreview && profilePhotoPreview !== usuario?.profilePhoto && (
-               <button type="button" onClick={removeProfilePhoto} className="text-xs text-red-500 mt-2 hover:underline">
+               <button type="button" onClick={removeProfilePhoto} className="text-xs text-rose-500 mt-2 hover:underline">
                  Quitar foto seleccionada
                </button>
             )}
@@ -448,29 +449,31 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">Nombre</Label>
+              <Label htmlFor="firstName" className="text-gray-700 dark:text-gray-200 font-medium">Nombre</Label>
               <Input
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
                 placeholder="Nombre"
                 required
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Apellido</Label>
+              <Label htmlFor="lastName" className="text-gray-700 dark:text-gray-200 font-medium">Apellido</Label>
               <Input
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                 placeholder="Apellido"
                 required
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-gray-700 dark:text-gray-200 font-medium">Email</Label>
             <Input
               id="email"
               type="email"
@@ -478,114 +481,124 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="correo@ejemplo.com"
               required
+              className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="pais">País</Label>
+              <Label htmlFor="pais" className="text-gray-700 dark:text-gray-200 font-medium">País</Label>
               <Input
                 id="pais"
                 value={formData.pais}
                 onChange={(e) => setFormData(prev => ({ ...prev, pais: e.target.value }))}
-                placeholder="Ej: Bolivia"
+                placeholder="Ej: Colombia"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ciudad">Ciudad</Label>
+              <Label htmlFor="ciudad" className="text-gray-700 dark:text-gray-200 font-medium">Ciudad</Label>
               <Input
                 id="ciudad"
                 value={formData.ciudad}
                 onChange={(e) => setFormData(prev => ({ ...prev, ciudad: e.target.value }))}
-                placeholder="Ej: La Paz"
+                placeholder="Ej: Bogotá"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ubicacion">Ubicación</Label>
+              <Label htmlFor="ubicacion" className="text-gray-700 dark:text-gray-200 font-medium">Ubicación</Label>
               <Input
                 id="ubicacion"
                 value={formData.ubicacion}
                 onChange={(e) => setFormData(prev => ({ ...prev, ubicacion: e.target.value }))}
-                placeholder="Ej: Zona Sur"
+                placeholder="Ej: Zona Norte"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           {/* Link de Google Maps */}
           <div className="space-y-2">
-            <Label htmlFor="mapLink">Link de Google Maps (opcional)</Label>
+            <Label htmlFor="mapLink" className="text-gray-700 dark:text-gray-200 font-medium">Link de Google Maps (opcional)</Label>
             <Input
               id="mapLink"
               value={formData.mapLink}
               onChange={(e) => setFormData(prev => ({ ...prev, mapLink: e.target.value }))}
               placeholder="https://maps.app.goo.gl/..."
+              className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Comparte una ubicación desde Google Maps en tu teléfono y pega el link aquí
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
+              <Label htmlFor="phone" className="text-gray-700 dark:text-gray-200 font-medium">Teléfono</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="+1234567890"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phoneReferencial">Teléfono Referencial</Label>
+              <Label htmlFor="phoneReferencial" className="text-gray-700 dark:text-gray-200 font-medium">Teléfono Referencial</Label>
               <Input
                 id="phoneReferencial"
                 type="tel"
                 value={formData.phoneReferencial}
                 onChange={(e) => setFormData(prev => ({ ...prev, phoneReferencial: e.target.value }))}
                 placeholder="+1234567890"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Dirección</Label>
+            <Label htmlFor="address" className="text-gray-700 dark:text-gray-200 font-medium">Dirección</Label>
             <Textarea
               id="address"
               value={formData.address}
               onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Dirección completa"
               rows={2}
+              className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="referenciaFamiliar">Referencia Familiar</Label>
+            <Label htmlFor="referenciaFamiliar" className="text-gray-700 dark:text-gray-200 font-medium">Referencia Familiar</Label>
             <Textarea
               id="referenciaFamiliar"
               value={formData.referenciaFamiliar}
               onChange={(e) => setFormData(prev => ({ ...prev, referenciaFamiliar: e.target.value }))}
               placeholder="Nombre y teléfono del familiar de referencia"
               rows={2}
+              className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="referenciaTrabajo">Referencia de Trabajo</Label>
+            <Label htmlFor="referenciaTrabajo" className="text-gray-700 dark:text-gray-200 font-medium">Referencia de Trabajo</Label>
             <Textarea
               id="referenciaTrabajo"
               value={formData.referenciaTrabajo}
               onChange={(e) => setFormData(prev => ({ ...prev, referenciaTrabajo: e.target.value }))}
               placeholder="Lugar de trabajo y contacto"
               rows={2}
+              className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="documentoIdentificacion">Documento de Identificación</Label>
+            <Label htmlFor="documentoIdentificacion" className="text-gray-700 dark:text-gray-200 font-medium">Documento de Identificación</Label>
             <div className="space-y-2">
               {/* Área de subida de archivo */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-primary transition-colors">
+              <div className="border-2 border-dashed border-gray-300 dark:border-[#1F3A36] bg-gray-50/50 dark:bg-[#152e2a]/50 rounded-lg p-4 hover:border-emerald-500 transition-colors">
                 <input
                   id="documentoIdentificacion"
                   type="file"
@@ -597,11 +610,11 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                   htmlFor="documentoIdentificacion"
                   className="flex flex-col items-center justify-center cursor-pointer"
                 >
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">
+                  <Upload className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
                     Click para subir documento de identificación
                   </span>
-                  <span className="text-xs text-gray-400 mt-1">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     Formatos: JPG, PNG, PDF (Máx. 5MB)
                   </span>
                 </label>
@@ -609,21 +622,21 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
               {/* Preview del archivo */}
               {documentoPreview && (
-                <div className="relative border rounded-lg p-3 bg-gray-50">
+                <div className="relative border border-gray-200 dark:border-[#1F3A36] rounded-lg p-3 bg-gray-50 dark:bg-[#152e2a]">
                   <button
                     type="button"
                     onClick={removeDocumento}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-1 hover:bg-rose-700"
                   >
                     <X className="h-4 w-4" />
                   </button>
                   
                   {documentoPreview === 'pdf' ? (
                     <div className="flex items-center space-x-2">
-                      <FileText className="h-8 w-8 text-red-500" />
+                      <FileText className="h-8 w-8 text-rose-500" />
                       <div>
-                        <p className="text-sm font-medium">Documento PDF</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Documento PDF</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {documentoFile?.name || 'Documento guardado'}
                         </p>
                       </div>
@@ -644,7 +657,7 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password">
+              <Label htmlFor="password" className="text-gray-700 dark:text-gray-200 font-medium">
                 {isEditing ? "Nueva Contraseña (opcional)" : "Contraseña"}
               </Label>
               <div className="relative">
@@ -655,18 +668,19 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="••••••••"
                   required={!isEditing}
+                  className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+              <Label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-200 font-medium">Confirmar Contraseña</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -675,11 +689,12 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                   onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="••••••••"
                   required={!isEditing && !!formData.password}
+                  className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -690,14 +705,14 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
       </Card>
 
       {/* Configuración de rol y permisos */}
-      <Card>
+      <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
         <CardHeader>
-          <CardTitle>Rol y Configuración</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white font-bold">Rol y Configuración</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Rol del Usuario</Label>
+              <Label className="text-gray-700 dark:text-gray-200 font-medium">Rol del Usuario</Label>
               <Select
                 value={formData.role}
                 onValueChange={(value) => {
@@ -708,10 +723,10 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   <SelectItem value="COBRADOR">Cobrador</SelectItem>
                   <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
                   <SelectItem value="ADMINISTRADOR">Administrador</SelectItem>
@@ -721,7 +736,7 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
             {formData.role === 'COBRADOR' && (
               <div className="space-y-2">
-                <Label>Supervisor Asignado</Label>
+                <Label className="text-gray-700 dark:text-gray-200 font-medium">Supervisor Asignado</Label>
                 <Select
                   value={formData.supervisorId || "no-supervisor"}
                   onValueChange={(value) => setFormData(prev => ({ 
@@ -729,10 +744,10 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                     supervisorId: value === "no-supervisor" ? "" : value 
                   }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     <SelectValue placeholder="Seleccionar supervisor" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     <SelectItem value="no-supervisor">Sin supervisor</SelectItem>
                     {supervisores.map(supervisor => (
                       <SelectItem key={supervisor.id} value={supervisor.id}>
@@ -747,7 +762,7 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="timeLimit">Límite de Tiempo (minutos/día)</Label>
+              <Label htmlFor="timeLimit" className="text-gray-700 dark:text-gray-200 font-medium">Límite de Tiempo (minutos/día)</Label>
               <Input
                 id="timeLimit"
                 type="number"
@@ -756,25 +771,27 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
                 value={formData.timeLimit}
                 onChange={(e) => setFormData(prev => ({ ...prev, timeLimit: e.target.value }))}
                 placeholder="480 (8 horas)"
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Dejar vacío para sin límite. Máximo 1440 minutos (24 horas).
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Estado del Usuario</Label>
-              <div className="flex items-center space-x-2">
+              <Label className="text-gray-700 dark:text-gray-200 font-medium">Estado del Usuario</Label>
+              <div className="flex items-center space-x-2 pt-2">
                 <Checkbox
                   id="isActive"
                   checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked as boolean }))}
+                  className="border-gray-300 dark:border-[#1F3A36]"
                 />
-                <label htmlFor="isActive" className="text-sm">
+                <label htmlFor="isActive" className="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer">
                   Usuario activo
                 </label>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Los usuarios inactivos no pueden iniciar sesión.
               </p>
             </div>
@@ -783,15 +800,16 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
       </Card>
 
       {/* Permisos */}
-      <Card>
+      <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Permisos del Usuario</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white font-bold">Permisos del Usuario</CardTitle>
           {formData.role !== 'ADMINISTRADOR' && (
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={aplicarPermisosRecomendados}
+              className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               Aplicar Permisos Recomendados
             </Button>
@@ -799,14 +817,14 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
         </CardHeader>
         <CardContent>
           {formData.role === 'ADMINISTRADOR' ? (
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-blue-50 dark:bg-[#152e2a] p-4 rounded-lg border border-blue-100 dark:border-[#1F3A36]">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-blue-600" />
-                <span className="text-blue-800 font-medium">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-blue-900 dark:text-blue-200 font-semibold">
                   Los administradores tienen acceso total al sistema
                 </span>
               </div>
-              <p className="text-blue-600 text-sm mt-1">
+              <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
                 No necesitan permisos específicos ya que pueden acceder a todas las funcionalidades.
               </p>
             </div>
@@ -822,8 +840,8 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
       </Card>
 
       {/* Botones */}
-      <div className="flex justify-end space-x-2">
-        <Button type="submit" disabled={loading}>
+      <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+        <Button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -839,4 +857,5 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
     </form>
   )
 }
+
 

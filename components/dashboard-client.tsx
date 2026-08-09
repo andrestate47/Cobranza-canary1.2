@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,9 +208,9 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#071313] transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-[#102525] shadow-sm border-b dark:border-[#34766D]">
         <div className="container-mobile">
           <div className="flex items-center justify-between py-4">
             <div className="flex flex-col items-center gap-8">
@@ -230,42 +231,44 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                   />
                 )}
               </div>
-              <h1 className="text-xs font-semibold text-gray-900">B.&.D.S.C</h1>
+              <h1 className="text-xs font-semibold text-gray-900 dark:text-[#F4FFFF]">B.&.D.S.C</h1>
             </div>
 
             <div className="flex items-center space-x-3">
+              <ThemeToggle />
+
               {/* Menu Desktop */}
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 dark:text-[#F4FFFF] dark:hover:bg-[#173333]"
                       onClick={() => { }} // Ensure button is interactive
                     >
                       <User className="h-4 w-4" />
                       <span>{user?.firstName || user?.name || 'Usuario'}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 dark:bg-[#102525] dark:border-[#34766D] dark:text-[#F4FFFF]">
                     <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="dark:bg-[#34766D]" />
                     <DropdownMenuItem asChild>
-                      <Link href="/perfil" className="flex items-center">
+                      <Link href="/perfil" className="flex items-center dark:hover:bg-[#173333]">
                         <User className="mr-2 h-4 w-4" />
                         <span>Mi Perfil</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/configuracion" className="flex items-center">
+                      <Link href="/configuracion" className="flex items-center dark:hover:bg-[#173333]">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Configuración</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="dark:bg-[#34766D]" />
                     <DropdownMenuItem
                       onClick={handleSignOut}
-                      className="text-red-600 focus:text-red-600"
+                      className="text-red-600 focus:text-red-600 dark:hover:bg-[#173333]"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Cerrar Sesión</span>
@@ -280,6 +283,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="dark:text-[#F4FFFF]"
                 >
                   {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
@@ -296,32 +300,31 @@ export default function DashboardClient({ session }: DashboardClientProps) {
             className="fixed inset-0 z-40 md:hidden"
             onClick={() => setShowMobileMenu(false)}
           />
-          <div className="absolute top-[4.5rem] right-4 z-50 md:hidden w-64 bg-white border shadow-2xl rounded-xl animate-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-[4.5rem] right-4 z-50 md:hidden w-64 bg-white dark:bg-[#102525] border dark:border-[#34766D] shadow-2xl rounded-xl animate-in slide-in-from-top-2 duration-200">
             <div className="p-2 space-y-1">
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                <User className="h-6 w-6 text-gray-400" />
+              <div className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-[#173333] rounded-lg">
+                <User className="h-6 w-6 text-gray-400 dark:text-[#9CB7B2]" />
                 <div>
-                  <p className="font-medium text-sm text-gray-900">{user?.firstName} {user?.lastName}</p>
-                  <p className="text-xs text-gray-500">{user?.role}</p>
+                  <p className="font-medium text-sm text-gray-900 dark:text-[#F4FFFF]">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-gray-500 dark:text-[#9CB7B2]">{user?.role}</p>
                 </div>
               </div>
 
               <div className="space-y-0.5 py-1">
-                <Link href="/perfil" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <Link href="/perfil" className="flex items-center px-4 py-1.5 text-sm text-gray-700 dark:text-[#F4FFFF] hover:bg-gray-100 dark:hover:bg-[#173333] rounded-md">
                   <User className="mr-3 h-4 w-4" />
                   Mi Perfil
                 </Link>
-                <Link href="/configuracion" className="flex items-center px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <Link href="/configuracion" className="flex items-center px-4 py-1.5 text-sm text-gray-700 dark:text-[#F4FFFF] hover:bg-gray-100 dark:hover:bg-[#173333] rounded-md">
                   <Settings className="mr-3 h-4 w-4" />
                   Configuración
                 </Link>
-
               </div>
-              <div className="h-px bg-gray-200 my-1" />
+              <div className="h-px bg-gray-200 dark:bg-[#34766D] my-1" />
 
               <Button
                 variant="ghost"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-[#173333]"
                 onClick={handleSignOut}
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -336,21 +339,21 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       <div className="container-mobile py-8">
         {/* Bienvenida */}
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F4FFFF] mb-2">
             ¡Bienvenido, {user?.firstName}!
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-[#9CB7B2]">
             Selecciona una opción para continuar
           </p>
           <div className="mt-3 inline-flex items-center gap-2">
-            {user?.role === 'ADMINISTRADOR' && <Crown className="h-4 w-4 text-red-600" />}
-            {user?.role === 'SUPERVISOR' && <Shield className="h-4 w-4 text-blue-600" />}
-            {user?.role === 'COBRADOR' && <User className="h-4 w-4 text-green-600" />}
+            {user?.role === 'ADMINISTRADOR' && <Crown className="h-4 w-4 text-red-600 dark:text-[#FF5C5C]" />}
+            {user?.role === 'SUPERVISOR' && <Shield className="h-4 w-4 text-blue-600 dark:text-[#36E2C2]" />}
+            {user?.role === 'COBRADOR' && <User className="h-4 w-4 text-green-600 dark:text-[#36E2C2]" />}
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${user?.role === 'ADMINISTRADOR'
-              ? 'bg-red-100 text-red-800'
+              ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-[#FF5C5C]'
               : user?.role === 'SUPERVISOR'
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-green-100 text-green-800'
+                ? 'bg-blue-100 text-blue-800 dark:bg-teal-950/60 dark:text-[#36E2C2]'
+                : 'bg-green-100 text-green-800 dark:bg-teal-950/60 dark:text-[#36E2C2]'
               }`}>
               {user?.role === 'ADMINISTRADOR' ? 'Administrador' :
                 user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'}
@@ -369,17 +372,17 @@ export default function DashboardClient({ session }: DashboardClientProps) {
                 className="group transform hover:scale-105 transition-all duration-200"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <Card className="h-full card-shadow hover:card-shadow-hover transition-all duration-200 animate-fadeInScale">
+                <Card className="h-full card-shadow hover:card-shadow-hover transition-all duration-200 animate-fadeInScale dark:bg-[#102525] dark:border-[#34766D]">
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center space-y-4">
                       <div className={`w-16 h-16 ${item.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
                         <Icon className="h-8 w-8 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-[#F4FFFF] mb-1">
                           {item.title}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-[#9CB7B2]">
                           {item.description}
                         </p>
                       </div>

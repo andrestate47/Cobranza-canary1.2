@@ -411,12 +411,12 @@ export default function GestionRutas() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-12">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] transition-colors p-4">
+        <div className="container-mobile">
+          <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando gestión de rutas...</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Cargando gestión de rutas...</p>
             </div>
           </div>
         </div>
@@ -426,34 +426,47 @@ export default function GestionRutas() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
+          <div className="container-mobile">
+            <div className="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between md:h-16 md:py-0">
+              <div className="flex items-center space-x-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push("/dashboard")}
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
                   Volver
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Gestión de Rutas</h1>
-                  <p className="text-sm text-gray-500">Administra rutas y asigna cobradores</p>
+                  <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                    Gestión de Rutas
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-emerald-300/80">
+                    Administra rutas y asigna cobradores
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 self-start md:self-auto">
                 <Button 
-                  variant="outline" 
+                  variant="outline"
+                  size="sm"
                   onClick={abrirModalAsignarClientes} 
                   disabled={saving}
+                  className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                 >
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 mr-2 text-emerald-600 dark:text-emerald-400" />
                   Asignar Clientes
                 </Button>
-                <Button onClick={abrirModalNuevaRuta} disabled={saving}>
+                <Button 
+                  size="sm"
+                  onClick={abrirModalNuevaRuta} 
+                  disabled={saving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva Ruta
                 </Button>
@@ -462,68 +475,68 @@ export default function GestionRutas() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto p-4 space-y-6">
+        <div className="container-mobile py-6 space-y-6">
           {/* Resumen */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Rutas</CardTitle>
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">Total Rutas</CardTitle>
+                <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{rutas.length}</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{rutas.length}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cobradores Asignados</CardTitle>
-                <UserCheck className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">Cobradores Asignados</CardTitle>
+                <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                   {cobradores.filter(c => c.rutaId).length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cobradores Sin Ruta</CardTitle>
-                <Users className="h-4 w-4 text-orange-600" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">Cobradores Sin Ruta</CardTitle>
+                <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                   {cobradores.filter(c => !c.rutaId).length}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Cobradores</CardTitle>
-                <Users className="h-4 w-4 text-blue-600" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">Total Cobradores</CardTitle>
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{cobradores.length}</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{cobradores.length}</div>
               </CardContent>
             </Card>
           </div>
 
           {/* Lista de Rutas */}
-          <Card>
+          <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
             <CardHeader>
-              <CardTitle>Rutas Disponibles</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">Rutas Disponibles</CardTitle>
+              <CardDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
                 Gestiona las rutas de cobranza y sus cobradores asignados
               </CardDescription>
             </CardHeader>
             <CardContent>
               {rutas.length === 0 ? (
                 <div className="text-center py-12">
-                  <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">No hay rutas creadas</p>
-                  <Button onClick={abrirModalNuevaRuta} disabled={saving}>
+                  <MapPin className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">No hay rutas creadas</p>
+                  <Button onClick={abrirModalNuevaRuta} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                     <Plus className="h-4 w-4 mr-2" />
                     Crear Primera Ruta
                   </Button>
@@ -533,36 +546,37 @@ export default function GestionRutas() {
                   {rutas.map((ruta) => (
                     <div
                       key={ruta.id}
-                      className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      className="p-4 bg-gray-50 dark:bg-[#152e2a] rounded-xl border border-gray-200 dark:border-[#1F3A36]"
                     >
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <div
-                              className="w-4 h-4 rounded-full"
+                              className="w-4 h-4 rounded-full flex-shrink-0"
                               style={{ backgroundColor: ruta.color || "#3B82F6" }}
                             />
-                            <h3 className="font-semibold text-lg text-gray-900">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
                               Ruta {ruta.numero} - {ruta.nombre}
                             </h3>
                           </div>
                           {ruta.descripcion && (
-                            <p className="text-sm text-gray-600 mb-2">{ruta.descripcion}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{ruta.descripcion}</p>
                           )}
-                          <div className="flex gap-4 text-sm text-gray-500">
+                          <div className="flex gap-4 text-xs font-medium text-gray-500 dark:text-emerald-300/80">
                             <span>{ruta._count.usuarios} cobradores</span>
                             <span>•</span>
                             <span>{ruta._count.clientes} clientes</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => abrirModalAsignarCobrador(ruta)}
                             disabled={saving}
+                            className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                           >
-                            <UserCheck className="h-4 w-4 mr-1" />
+                            <UserCheck className="h-4 w-4 mr-1 text-emerald-600 dark:text-emerald-400" />
                             Asignar Cobrador
                           </Button>
                           <Button
@@ -570,36 +584,38 @@ export default function GestionRutas() {
                             size="sm"
                             onClick={() => abrirModalEditarRuta(ruta)}
                             disabled={saving}
+                            className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => confirmarEliminarRuta(ruta)}
                             disabled={saving}
+                            className="border-gray-300 dark:border-[#1F3A36] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
 
                       {/* Cobradores asignados */}
                       {ruta.usuarios.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <p className="text-sm font-medium text-gray-700 mb-2">
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
                             Cobradores Asignados:
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {ruta.usuarios.map((usuario) => (
                               <div
                                 key={usuario.id}
-                                className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-300"
+                                className="flex items-center gap-2 bg-white dark:bg-[#0E1F1C] px-3 py-1 rounded-full border border-gray-300 dark:border-[#1F3A36]"
                               >
-                                <span className="text-sm">{usuario.name || usuario.email}</span>
+                                <span className="text-xs font-medium text-gray-900 dark:text-white">{usuario.name || usuario.email}</span>
                                 <button
                                   onClick={() => desasignarCobrador(usuario.id)}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="text-rose-600 hover:text-rose-700 text-sm font-bold"
                                   disabled={saving}
                                 >
                                   ×
@@ -612,32 +628,32 @@ export default function GestionRutas() {
 
                       {/* Clientes asignados */}
                       {ruta.clientes.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <p className="text-sm font-medium text-gray-700 mb-2">
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
                             Clientes Asignados ({ruta.clientes.length}):
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
                             {ruta.clientes.map((cliente) => (
                               <div
                                 key={cliente.id}
-                                className="flex items-start justify-between gap-2 bg-white p-3 rounded-lg border border-gray-300 hover:border-blue-400 transition-colors"
+                                className="flex items-start justify-between gap-2 bg-white dark:bg-[#0E1F1C] p-3 rounded-lg border border-gray-300 dark:border-[#1F3A36] hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm text-gray-900 truncate">
+                                  <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
                                     {cliente.nombre} {cliente.apellido}
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-gray-500 dark:text-emerald-300/80">
                                     Código: {cliente.codigoCliente}
                                   </div>
                                   {cliente.telefono && (
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
                                       Tel: {cliente.telefono}
                                     </div>
                                   )}
                                 </div>
                                 <button
                                   onClick={() => desasignarCliente(cliente.id)}
-                                  className="text-red-600 hover:text-red-700 flex-shrink-0"
+                                  className="text-rose-600 hover:text-rose-700 font-bold text-base flex-shrink-0"
                                   disabled={saving}
                                   title="Desasignar cliente"
                                 >
@@ -657,10 +673,10 @@ export default function GestionRutas() {
 
           {/* Cobradores Sin Asignar */}
           {cobradores.filter(c => !c.rutaId).length > 0 && (
-            <Card>
+            <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
               <CardHeader>
-                <CardTitle>Cobradores Sin Ruta Asignada</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">Cobradores Sin Ruta Asignada</CardTitle>
+                <CardDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
                   Estos cobradores no tienen una ruta asignada
                 </CardDescription>
               </CardHeader>
@@ -669,13 +685,13 @@ export default function GestionRutas() {
                   {cobradores.filter(c => !c.rutaId).map((cobrador) => (
                     <div
                       key={cobrador.id}
-                      className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200"
+                      className="flex items-center justify-between p-3 bg-amber-50/60 dark:bg-[#152e2a] rounded-lg border border-amber-200 dark:border-[#1F3A36]"
                     >
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-semibold text-gray-900 dark:text-white">
                           {cobrador.name || cobrador.email}
                         </div>
-                        <div className="text-sm text-gray-500">{cobrador.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-emerald-300/80">{cobrador.email}</div>
                       </div>
                       <Button
                         variant="outline"
@@ -686,6 +702,7 @@ export default function GestionRutas() {
                           setModalCobradorAbierto(true)
                         }}
                         disabled={saving}
+                        className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                       >
                         Asignar a Ruta
                       </Button>
@@ -700,20 +717,20 @@ export default function GestionRutas() {
 
       {/* Modal: Crear/Editar Ruta */}
       <Dialog open={modalRutaAbierto} onOpenChange={setModalRutaAbierto}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
+          <DialogHeader className="border-b border-gray-200 dark:border-[#1F3A36] pb-3">
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
               {formularioRuta.id ? "Editar Ruta" : "Nueva Ruta"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
               {formularioRuta.id 
                 ? "Modifica los datos de la ruta" 
                 : "Crea una nueva ruta de cobranza"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <div>
-              <Label htmlFor="numero">Número de Ruta *</Label>
+              <Label htmlFor="numero" className="text-gray-700 dark:text-gray-200 font-semibold">Número de Ruta *</Label>
               <Input
                 id="numero"
                 type="text"
@@ -721,10 +738,11 @@ export default function GestionRutas() {
                 onChange={(e) => setFormularioRuta({...formularioRuta, numero: e.target.value})}
                 placeholder="Ej: 001"
                 disabled={saving}
+                className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div>
-              <Label htmlFor="nombre">Nombre *</Label>
+              <Label htmlFor="nombre" className="text-gray-700 dark:text-gray-200 font-semibold">Nombre *</Label>
               <Input
                 id="nombre"
                 type="text"
@@ -732,10 +750,11 @@ export default function GestionRutas() {
                 onChange={(e) => setFormularioRuta({...formularioRuta, nombre: e.target.value})}
                 placeholder="Ej: Ruta Centro"
                 disabled={saving}
+                className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div>
-              <Label htmlFor="descripcion">Descripción</Label>
+              <Label htmlFor="descripcion" className="text-gray-700 dark:text-gray-200 font-semibold">Descripción</Label>
               <Textarea
                 id="descripcion"
                 value={formularioRuta.descripcion}
@@ -743,10 +762,11 @@ export default function GestionRutas() {
                 placeholder="Descripción de la ruta (opcional)"
                 disabled={saving}
                 rows={3}
+                className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
             <div>
-              <Label htmlFor="color">Color</Label>
+              <Label htmlFor="color" className="text-gray-700 dark:text-gray-200 font-semibold">Color</Label>
               <div className="flex gap-2 mt-2">
                 {COLORES_PREDEFINIDOS.map((colorItem) => (
                   <button
@@ -755,8 +775,8 @@ export default function GestionRutas() {
                     onClick={() => setFormularioRuta({...formularioRuta, color: colorItem.valor})}
                     className={`w-8 h-8 rounded-full border-2 transition-all ${
                       formularioRuta.color === colorItem.valor 
-                        ? "border-gray-900 scale-110" 
-                        : "border-gray-300"
+                        ? "border-gray-900 dark:border-white scale-110" 
+                        : "border-gray-300 dark:border-[#1F3A36]"
                     }`}
                     style={{ backgroundColor: colorItem.valor }}
                     disabled={saving}
@@ -766,15 +786,16 @@ export default function GestionRutas() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
             <Button
               variant="outline"
               onClick={() => setModalRutaAbierto(false)}
               disabled={saving}
+              className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               Cancelar
             </Button>
-            <Button onClick={guardarRuta} disabled={saving}>
+            <Button onClick={guardarRuta} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </DialogFooter>
@@ -783,28 +804,28 @@ export default function GestionRutas() {
 
       {/* Modal: Asignar Cobrador */}
       <Dialog open={modalCobradorAbierto} onOpenChange={setModalCobradorAbierto}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Asignar Cobrador a Ruta</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
+          <DialogHeader className="border-b border-gray-200 dark:border-[#1F3A36] pb-3">
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Asignar Cobrador a Ruta</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
               {rutaSeleccionada 
                 ? `Selecciona un cobrador para asignar a ${rutaSeleccionada.nombre}` 
                 : "Selecciona una ruta para el cobrador"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             {!rutaSeleccionada && (
               <div>
-                <Label htmlFor="ruta-select">Ruta</Label>
+                <Label htmlFor="ruta-select" className="text-gray-700 dark:text-gray-200 font-semibold">Ruta</Label>
                 <Select
                   value={rutaParaAsignar}
                   onValueChange={setRutaParaAsignar}
                   disabled={saving}
                 >
-                  <SelectTrigger id="ruta-select">
+                  <SelectTrigger id="ruta-select" className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     <SelectValue placeholder="Selecciona una ruta" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     {rutas.map((ruta) => (
                       <SelectItem key={ruta.id} value={ruta.id}>
                         Ruta {ruta.numero} - {ruta.nombre}
@@ -815,16 +836,16 @@ export default function GestionRutas() {
               </div>
             )}
             <div>
-              <Label htmlFor="cobrador-select">Cobrador</Label>
+              <Label htmlFor="cobrador-select" className="text-gray-700 dark:text-gray-200 font-semibold">Cobrador</Label>
               <Select
                 value={cobradorSeleccionado}
                 onValueChange={setCobradorSeleccionado}
                 disabled={saving}
               >
-                <SelectTrigger id="cobrador-select">
+                <SelectTrigger id="cobrador-select" className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   <SelectValue placeholder="Selecciona un cobrador" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   {cobradores
                     .filter(c => !rutaSeleccionada || !c.rutaId || c.rutaId !== rutaSeleccionada.id)
                     .map((cobrador) => (
@@ -837,11 +858,12 @@ export default function GestionRutas() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
             <Button
               variant="outline"
               onClick={() => setModalCobradorAbierto(false)}
               disabled={saving}
+              className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               Cancelar
             </Button>
@@ -872,6 +894,7 @@ export default function GestionRutas() {
                 }
               }} 
               disabled={saving || !cobradorSeleccionado || (!rutaSeleccionada && !rutaParaAsignar)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
             >
               {saving ? "Asignando..." : "Asignar"}
             </Button>
@@ -881,25 +904,25 @@ export default function GestionRutas() {
 
       {/* Modal: Asignar Clientes */}
       <Dialog open={modalClientesAbierto} onOpenChange={setModalClientesAbierto}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Asignar Clientes a Ruta</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
+          <DialogHeader className="border-b border-gray-200 dark:border-[#1F3A36] pb-3">
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Asignar Clientes a Ruta</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
               Selecciona los clientes sin ruta asignada y la ruta a la que deseas asignarlos
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <div>
-              <Label htmlFor="ruta-clientes">Ruta Destino</Label>
+              <Label htmlFor="ruta-clientes" className="text-gray-700 dark:text-gray-200 font-semibold">Ruta Destino</Label>
               <Select
                 value={rutaParaClientes}
                 onValueChange={setRutaParaClientes}
                 disabled={saving}
               >
-                <SelectTrigger id="ruta-clientes">
+                <SelectTrigger id="ruta-clientes" className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   <SelectValue placeholder="Selecciona una ruta" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   {rutas.map((ruta) => (
                     <SelectItem key={ruta.id} value={ruta.id}>
                       Ruta {ruta.numero} - {ruta.nombre}
@@ -911,7 +934,7 @@ export default function GestionRutas() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Clientes Sin Ruta ({clientes.filter(c => !c.rutaId).length})</Label>
+                <Label className="text-gray-700 dark:text-gray-200 font-semibold">Clientes Sin Ruta ({clientes.filter(c => !c.rutaId).length})</Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -919,6 +942,7 @@ export default function GestionRutas() {
                     size="sm"
                     onClick={seleccionarTodosClientes}
                     disabled={saving}
+                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                   >
                     Seleccionar Todos
                   </Button>
@@ -928,35 +952,36 @@ export default function GestionRutas() {
                     size="sm"
                     onClick={deseleccionarTodosClientes}
                     disabled={saving}
+                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                   >
                     Deseleccionar
                   </Button>
                 </div>
               </div>
-              <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+              <div className="border border-gray-200 dark:border-[#1F3A36] rounded-lg max-h-[400px] overflow-y-auto bg-white dark:bg-[#152e2a]">
                 {clientes.filter(c => !c.rutaId).length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                     No hay clientes sin ruta asignada
                   </div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="divide-y divide-gray-100 dark:divide-[#1F3A36]">
                     {clientes.filter(c => !c.rutaId).map((cliente) => (
                       <label
                         key={cliente.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#0E1F1C] cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={clientesSeleccionados.includes(cliente.id)}
                           onChange={() => toggleClienteSeleccionado(cliente.id)}
                           disabled={saving}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300 dark:border-[#1F3A36]"
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
                             {cliente.nombre} {cliente.apellido}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-emerald-300/80">
                             Código: {cliente.codigoCliente} • Doc: {cliente.documento}
                           </div>
                         </div>
@@ -966,23 +991,25 @@ export default function GestionRutas() {
                 )}
               </div>
               {clientesSeleccionados.length > 0 && (
-                <div className="mt-2 text-sm text-blue-600">
+                <div className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                   {clientesSeleccionados.length} cliente(s) seleccionado(s)
                 </div>
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
             <Button
               variant="outline"
               onClick={() => setModalClientesAbierto(false)}
               disabled={saving}
+              className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               Cancelar
             </Button>
             <Button 
               onClick={asignarClientes} 
               disabled={saving || clientesSeleccionados.length === 0 || !rutaParaClientes}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
             >
               {saving ? "Asignando..." : `Asignar ${clientesSeleccionados.length} Cliente(s)`}
             </Button>
@@ -992,21 +1019,26 @@ export default function GestionRutas() {
 
       {/* Alert: Eliminar Ruta */}
       <AlertDialog open={alertEliminarAbierto} onOpenChange={setAlertEliminarAbierto}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará la ruta <strong>{rutaSeleccionada?.nombre}</strong>.
+            <AlertDialogTitle className="text-xl font-bold text-gray-900 dark:text-white">¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
+              Esta acción eliminará la ruta <strong className="text-gray-900 dark:text-white">{rutaSeleccionada?.nombre}</strong>.
               Los cobradores y clientes asignados serán desasociados de esta ruta.
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+            <AlertDialogCancel 
+              disabled={saving}
+              className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+            >
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={eliminarRuta}
               disabled={saving}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-medium"
             >
               {saving ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>

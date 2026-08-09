@@ -650,41 +650,42 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm mb-6">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
+                  <ArrowLeft className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Nuevo Préstamo</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Nuevo Préstamo</h1>
+                <p className="text-xs text-gray-500 dark:text-emerald-300/80">Registra un préstamo para un cliente existente o nuevo</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container-mobile py-6">
+      <div className="container-mobile py-4">
         <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Plus className="h-5 w-5 text-primary" />
+          <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+            <CardHeader className="border-b border-gray-100 dark:border-[#1F3A36] pb-4">
+              <CardTitle className="flex items-center space-x-2 text-xl font-bold text-gray-900 dark:text-white">
+                <Plus className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <span>Crear Nuevo Préstamo</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Selección de cliente */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="cliente">Cliente *</Label>
+                    <Label htmlFor="cliente" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Cliente *</Label>
                     <Button
                       type="button"
                       variant="outline"
@@ -695,9 +696,9 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           resetFormularioCliente()
                         }
                       }}
-                      className="text-xs"
+                      className="text-xs border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                     >
-                      <Plus className="h-3 w-3 mr-1" />
+                      <Plus className="h-3 w-3 mr-1 text-emerald-600 dark:text-emerald-400" />
                       Nuevo Cliente
                     </Button>
                   </div>
@@ -705,10 +706,10 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                   {!mostrarFormularioCliente ? (
                     <>
                       <Select value={clienteId} onValueChange={setClienteId}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                           <SelectValue placeholder="Seleccionar cliente..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                           {clientes.map(cliente => (
                             <SelectItem key={cliente.id} value={cliente.id}>
                               {cliente.codigoCliente} - {cliente.nombre} {cliente.apellido}
@@ -717,73 +718,73 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                         </SelectContent>
                       </Select>
                       {selectedCliente && (
-                        <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm space-y-1">
-                          <div className="flex items-center justify-between mb-2">
+                        <div className="mt-3 p-4 bg-gray-50 dark:bg-[#152e2a] rounded-xl border border-gray-200 dark:border-[#1F3A36] text-sm space-y-1.5">
+                          <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-[#1F3A36]">
                             <div className="flex items-center space-x-2">
-                              <User className="h-4 w-4 text-gray-400" />
-                              <span className="font-medium">{selectedCliente.nombre} {selectedCliente.apellido}</span>
+                              <User className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <span className="font-bold text-gray-900 dark:text-white">{selectedCliente.nombre} {selectedCliente.apellido}</span>
                             </div>
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditarCliente(selectedCliente)}
-                              className="text-xs h-6 px-2"
+                              className="text-xs h-7 px-2 border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                               disabled={loading || creandoCliente}
                             >
                               ✏️ Editar
                             </Button>
                           </div>
-                          <p className="text-gray-600">Código: {selectedCliente.codigoCliente}</p>
-                          <p className="text-gray-600">Documento: {selectedCliente.documento}</p>
-                          <p className="text-gray-600">Dirección: {selectedCliente.direccionCliente}</p>
+                          <p className="text-gray-600 dark:text-emerald-300/80">Código: <strong className="text-gray-900 dark:text-white">{selectedCliente.codigoCliente}</strong></p>
+                          <p className="text-gray-600 dark:text-emerald-300/80">Documento: <strong className="text-gray-900 dark:text-white">{selectedCliente.documento}</strong></p>
+                          <p className="text-gray-600 dark:text-emerald-300/80">Dirección: <strong className="text-gray-900 dark:text-white">{selectedCliente.direccionCliente}</strong></p>
                           {selectedCliente.direccionCobro && (
-                            <p className="text-orange-600">Dir. Cobro: {selectedCliente.direccionCobro}</p>
+                            <p className="text-amber-600 dark:text-amber-400">Dir. Cobro: {selectedCliente.direccionCobro}</p>
                           )}
                           {selectedCliente.telefono && (
-                            <p className="text-gray-600">Teléfono: {selectedCliente.telefono}</p>
+                            <p className="text-gray-600 dark:text-emerald-300/80">Teléfono: <strong className="text-gray-900 dark:text-white">{selectedCliente.telefono}</strong></p>
                           )}
                           {selectedCliente.pais && (
-                            <p className="text-gray-600">País: {selectedCliente.pais}</p>
+                            <p className="text-gray-600 dark:text-emerald-300/80">País: <strong className="text-gray-900 dark:text-white">{selectedCliente.pais}</strong></p>
                           )}
                           {selectedCliente.ciudad && (
-                            <p className="text-gray-600">Ciudad: {selectedCliente.ciudad}</p>
+                            <p className="text-gray-600 dark:text-emerald-300/80">Ciudad: <strong className="text-gray-900 dark:text-white">{selectedCliente.ciudad}</strong></p>
                           )}
                           {selectedCliente.referenciasPersonales && (
-                            <p className="text-gray-600">Referencias: {selectedCliente.referenciasPersonales}</p>
+                            <p className="text-gray-600 dark:text-emerald-300/80">Referencias: <strong className="text-gray-900 dark:text-white">{selectedCliente.referenciasPersonales}</strong></p>
                           )}
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="border rounded-lg p-4 bg-blue-50 space-y-4">
-                      <h3 className="font-medium text-blue-900 mb-3">
+                    <div className="border border-blue-200 dark:border-[#1F3A36] rounded-xl p-4 bg-blue-50/60 dark:bg-[#152e2a] space-y-4">
+                      <h3 className="font-bold text-blue-900 dark:text-blue-200 mb-3">
                         {editandoCliente ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
                       </h3>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="codigoCliente" className="text-sm">Código Cliente</Label>
+                          <Label htmlFor="codigoCliente" className="text-sm font-medium text-gray-700 dark:text-gray-200">Código Cliente</Label>
                           <Input
                             id="codigoCliente"
                             type="text"
                             value={nuevoCliente.codigoCliente}
                             onChange={(e) => handleNuevoClienteChange('codigoCliente', e.target.value.toUpperCase())}
                             placeholder="CL001 (automático si vacío)"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
 
                         <div>
-                          <Label htmlFor="documento" className="text-sm">Documento *</Label>
+                          <Label htmlFor="documento" className="text-sm font-medium text-gray-700 dark:text-gray-200">Documento *</Label>
                           <Input
                             id="documento"
                             type="text"
                             value={nuevoCliente.documento}
                             onChange={(e) => handleNuevoClienteChange('documento', e.target.value)}
                             placeholder="12345678"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
@@ -791,79 +792,79 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="nombre" className="text-sm">Nombre *</Label>
+                          <Label htmlFor="nombre" className="text-sm font-medium text-gray-700 dark:text-gray-200">Nombre *</Label>
                           <Input
                             id="nombre"
                             type="text"
                             value={nuevoCliente.nombre}
                             onChange={(e) => handleNuevoClienteChange('nombre', e.target.value)}
                             placeholder="María"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
 
                         <div>
-                          <Label htmlFor="apellido" className="text-sm">Apellido *</Label>
+                          <Label htmlFor="apellido" className="text-sm font-medium text-gray-700 dark:text-gray-200">Apellido *</Label>
                           <Input
                             id="apellido"
                             type="text"
                             value={nuevoCliente.apellido}
                             onChange={(e) => handleNuevoClienteChange('apellido', e.target.value)}
                             placeholder="García"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="direccionCliente" className="text-sm">Dirección Cliente *</Label>
+                        <Label htmlFor="direccionCliente" className="text-sm font-medium text-gray-700 dark:text-gray-200">Dirección Cliente *</Label>
                         <Input
                           id="direccionCliente"
                           type="text"
                           value={nuevoCliente.direccionCliente}
                           onChange={(e) => handleNuevoClienteChange('direccionCliente', e.target.value)}
                           placeholder="Calle 123 #45-67, Barrio Centro, Ciudad"
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="direccionCobro" className="text-sm">Dirección de Cobro</Label>
+                        <Label htmlFor="direccionCobro" className="text-sm font-medium text-gray-700 dark:text-gray-200">Dirección de Cobro</Label>
                         <Input
                           id="direccionCobro"
                           type="text"
                           value={nuevoCliente.direccionCobro}
                           onChange={(e) => handleNuevoClienteChange('direccionCobro', e.target.value)}
                           placeholder="Carrera 15 #23-45, Oficina, Ciudad (opcional)"
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="telefono" className="text-sm">Teléfono</Label>
+                        <Label htmlFor="telefono" className="text-sm font-medium text-gray-700 dark:text-gray-200">Teléfono</Label>
                         <Input
                           id="telefono"
                           type="text"
                           value={nuevoCliente.telefono}
                           onChange={(e) => handleNuevoClienteChange('telefono', e.target.value)}
                           placeholder="3001234567"
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="referenciasPersonales" className="text-sm">Referencias Personales</Label>
+                        <Label htmlFor="referenciasPersonales" className="text-sm font-medium text-gray-700 dark:text-gray-200">Referencias Personales</Label>
                         <Textarea
                           id="referenciasPersonales"
                           value={nuevoCliente.referenciasPersonales}
                           onChange={(e) => handleNuevoClienteChange('referenciasPersonales', e.target.value)}
                           placeholder="Nombres y contactos de referencias personales del cliente..."
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                           rows={3}
                         />
@@ -871,57 +872,57 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="pais" className="text-sm">País</Label>
+                          <Label htmlFor="pais" className="text-sm font-medium text-gray-700 dark:text-gray-200">País</Label>
                           <Input
                             id="pais"
                             type="text"
                             value={nuevoCliente.pais}
                             onChange={(e) => handleNuevoClienteChange('pais', e.target.value)}
                             placeholder="Colombia"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
 
                         <div>
-                          <Label htmlFor="ciudad" className="text-sm">Ciudad</Label>
+                          <Label htmlFor="ciudad" className="text-sm font-medium text-gray-700 dark:text-gray-200">Ciudad</Label>
                           <Input
                             id="ciudad"
                             type="text"
                             value={nuevoCliente.ciudad}
                             onChange={(e) => handleNuevoClienteChange('ciudad', e.target.value)}
                             placeholder="Bogotá"
-                            className="mt-1"
+                            className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={creandoCliente}
                           />
                         </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="ubicacion" className="text-sm">Ubicación</Label>
+                        <Label htmlFor="ubicacion" className="text-sm font-medium text-gray-700 dark:text-gray-200">Ubicación</Label>
                         <Input
                           id="ubicacion"
                           type="text"
                           value={nuevoCliente.ubicacion}
                           onChange={(e) => handleNuevoClienteChange('ubicacion', e.target.value)}
                           placeholder="Ej: Zona Sur, cerca del mercado"
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="mapLink" className="text-sm">Link de Google Maps (opcional)</Label>
+                        <Label htmlFor="mapLink" className="text-sm font-medium text-gray-700 dark:text-gray-200">Link de Google Maps (opcional)</Label>
                         <Input
                           id="mapLink"
                           type="text"
                           value={nuevoCliente.mapLink}
                           onChange={(e) => handleNuevoClienteChange('mapLink', e.target.value)}
                           placeholder="https://maps.app.goo.gl/..."
-                          className="mt-1"
+                          className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                           disabled={creandoCliente}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           💡 Comparte una ubicación desde Google Maps en tu teléfono y pega el link aquí
                         </p>
                       </div>
@@ -933,6 +934,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           size="sm"
                           onClick={cancelarEdicion}
                           disabled={creandoCliente}
+                          className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                         >
                           Cancelar
                         </Button>
@@ -941,6 +943,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           size="sm"
                           onClick={editandoCliente ? handleActualizarCliente : handleCrearCliente}
                           disabled={creandoCliente || !nuevoCliente.documento || !nuevoCliente.nombre || !nuevoCliente.apellido || !nuevoCliente.direccionCliente}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                         >
                           {creandoCliente ? (
                             <>
@@ -958,16 +961,16 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                 {/* Monto */}
                 <div>
-                  <Label htmlFor="monto">Monto del préstamo *</Label>
+                  <Label htmlFor="monto" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Monto del préstamo *</Label>
                   <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                     <Input
                       id="monto"
                       type="text"
                       value={monto}
                       onChange={(e) => handleMontoChange(e.target.value)}
                       placeholder="Ej: 20.000 o 20000"
-                      className="pl-10"
+                      className="pl-10 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                       required
                       disabled={loading}
                     />
@@ -976,16 +979,16 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                 {/* Interés */}
                 <div>
-                  <Label htmlFor="interes">Interés (%) *</Label>
+                  <Label htmlFor="interes" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Interés (%) *</Label>
                   <div className="relative mt-1">
-                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                     <Input
                       id="interes"
                       type="text"
                       value={interes}
                       onChange={(e) => handleInteresChange(e.target.value)}
                       placeholder="Ej: 15 o 15,5"
-                      className="pl-10 !bg-white"
+                      className="pl-10 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                       required
                       disabled={loading}
                     />
@@ -995,12 +998,12 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 {/* Tipo de crédito y configuraciones adicionales */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="tipoCredito">Tipo de crédito *</Label>
+                    <Label htmlFor="tipoCredito" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tipo de crédito *</Label>
                     <Select value={tipoCredito} onValueChange={setTipoCredito}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                         <SelectItem value="EFECTIVO">Efectivo</SelectItem>
                         <SelectItem value="TRANSFERENCIA">Transferencia</SelectItem>
                       </SelectContent>
@@ -1008,24 +1011,24 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                   </div>
 
                   <div>
-                    <Label htmlFor="diasGracia">Días de gracia</Label>
+                    <Label htmlFor="diasGracia" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Días de gracia</Label>
                     <Input
                       id="diasGracia"
                       type="number"
                       value={diasGracia}
                       onChange={(e) => setDiasGracia(e.target.value)}
                       placeholder="0"
-                      className="mt-1"
+                      className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                       disabled={loading}
                       min="0"
                     />
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Días antes de considerar morosidad
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="moraCredito">Mora crédito (%)</Label>
+                    <Label htmlFor="moraCredito" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Mora crédito (%)</Label>
                     <Input
                       id="moraCredito"
                       type="number"
@@ -1033,26 +1036,26 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                       value={moraCredito}
                       onChange={(e) => setMoraCredito(e.target.value)}
                       placeholder="0"
-                      className="mt-1"
+                      className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                       disabled={loading}
                       min="0"
                     />
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Porcentaje por días vencidos
                     </div>
                   </div>
                 </div>
 
                 {/* Microseguro */}
-                <div className="border rounded-lg p-4 bg-purple-50">
-                  <h3 className="font-medium text-purple-900 mb-3 flex items-center">
+                <div className="border border-purple-200 dark:border-[#1F3A36] rounded-xl p-4 bg-purple-50/60 dark:bg-[#152e2a]">
+                  <h3 className="font-bold text-purple-900 dark:text-purple-300 mb-3 flex items-center">
                     <Receipt className="h-4 w-4 mr-2" />
                     Micro seguro
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="microseguroTipo">Tipo de microseguro</Label>
+                      <Label htmlFor="microseguroTipo" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tipo de microseguro</Label>
                       <Select
                         value={microseguroTipo}
                         onValueChange={(value) => {
@@ -1062,10 +1065,10 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           }
                         }}
                       >
-                        <SelectTrigger className="mt-1 bg-white">
+                        <SelectTrigger className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                           <SelectItem value="NINGUNO">Sin microseguro</SelectItem>
                           <SelectItem value="MONTO_FIJO">Monto fijo</SelectItem>
                           <SelectItem value="PORCENTAJE">Porcentaje del préstamo</SelectItem>
@@ -1076,23 +1079,23 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                     {microseguroTipo !== 'NINGUNO' && (
                       <div>
-                        <Label htmlFor="microseguroValor">
+                        <Label htmlFor="microseguroValor" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                           {microseguroTipo === 'PORCENTAJE' ? 'Porcentaje (%)' : 
                            microseguroTipo === 'DEVOLUCION' ? 'Monto a devolver' : 'Monto del microseguro'}
                         </Label>
                         <div className="relative mt-1">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                           <Input
                             id="microseguroValor"
                             type="text"
                             value={microseguroValor}
                             onChange={(e) => handleMicroseguroValorChange(e.target.value)}
                             placeholder={microseguroTipo === 'MONTO_FIJO' || microseguroTipo === 'DEVOLUCION' ? 'Ej: 5000' : 'Ej: 2.5'}
-                            className="pl-10 bg-white"
+                            className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                             disabled={loading}
                           />
                         </div>
-                        <div className="text-xs text-purple-600 mt-1">
+                        <div className="text-xs text-purple-700 dark:text-purple-300 mt-1">
                           {microseguroTipo === 'MONTO_FIJO'
                             ? 'Monto fijo a cobrar por el microseguro'
                             : microseguroTipo === 'DEVOLUCION'
@@ -1105,10 +1108,10 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                   </div>
 
                   {microseguroTipo !== 'NINGUNO' && microseguroTotal > 0 && (
-                    <div className="mt-3 p-3 bg-purple-100 rounded-lg">
+                    <div className="mt-3 p-3 bg-purple-100 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/50">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-purple-700 font-medium">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Total del microseguro:'}</span>
-                        <span className="text-lg font-bold text-purple-900">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
+                        <span className="text-sm text-purple-800 dark:text-purple-300 font-semibold">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Total del microseguro:'}</span>
+                        <span className="text-lg font-bold text-purple-900 dark:text-purple-200">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
                       </div>
                     </div>
                   )}
@@ -1117,12 +1120,12 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 {/* Tipo de pago y cuotas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="tipoPago">Tipo de pago *</Label>
+                    <Label htmlFor="tipoPago" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tipo de pago *</Label>
                     <Select value={tipoPago} onValueChange={setTipoPago}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                         <SelectItem value="DIARIO">Diario</SelectItem>
                         <SelectItem value="SEMANAL">Semanal</SelectItem>
                         <SelectItem value="LUNES_A_VIERNES">Lunes a Viernes</SelectItem>
@@ -1140,14 +1143,14 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                   </div>
 
                   <div>
-                    <Label htmlFor="cuotas">Número de cuotas *</Label>
+                    <Label htmlFor="cuotas" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Número de cuotas *</Label>
                     <Input
                       id="cuotas"
                       type="text"
                       value={cuotas}
                       onChange={(e) => handleCuotasChange(e.target.value)}
                       placeholder="0"
-                      className="mt-1"
+                      className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                       required
                       disabled={loading}
                     />
@@ -1156,9 +1159,9 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                 {/* Fecha de inicio */}
                 <div>
-                  <Label htmlFor="fechaInicio">Fecha de inicio *</Label>
+                  <Label htmlFor="fechaInicio" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Fecha de inicio *</Label>
                   <div className="relative mt-1">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                     <Input
                       id="fechaInicio"
                       type="date"
@@ -1173,7 +1176,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                           console.log('showPicker not supported', error)
                         }
                       }}
-                      className="pl-10 !bg-white cursor-pointer"
+                      className="pl-10 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white cursor-pointer"
                       required
                       disabled={loading}
                     />
@@ -1182,57 +1185,57 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                 {/* Observaciones */}
                 <div>
-                  <Label htmlFor="observaciones">Observaciones</Label>
+                  <Label htmlFor="observaciones" className="text-sm font-semibold text-gray-700 dark:text-gray-200">Observaciones</Label>
                   <Textarea
                     id="observaciones"
                     value={observaciones}
                     onChange={(e) => setObservaciones(e.target.value)}
                     placeholder="Observaciones opcionales..."
-                    className="mt-1"
+                    className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                     disabled={loading}
                   />
                 </div>
 
                 {/* Resumen de cálculos */}
                 {(monto && interes && cuotas) && (
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-900 mb-3">Resumen del préstamo</h3>
+                  <div className="bg-blue-50/60 dark:bg-[#152e2a] border border-blue-200 dark:border-[#1F3A36] rounded-xl p-4">
+                    <h3 className="font-bold text-blue-900 dark:text-blue-200 mb-3">Resumen del préstamo</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-blue-700">Monto prestado:</span>
-                        <span className="font-semibold">{formatCurrency(parseSpanishNumber(monto))}</span>
+                        <span className="text-gray-600 dark:text-emerald-300/80">Monto prestado:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(parseSpanishNumber(monto))}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-blue-700">Interés ({interes}%):</span>
-                        <span className="font-semibold">{formatCurrency((parseSpanishNumber(monto) * parseSpanishNumber(interes)) / 100)}</span>
+                        <span className="text-gray-600 dark:text-emerald-300/80">Interés ({interes}%):</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency((parseSpanishNumber(monto) * parseSpanishNumber(interes)) / 100)}</span>
                       </div>
                       {microseguroTipo !== 'NINGUNO' && microseguroTotal > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-purple-700">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Microseguro:'}</span>
-                          <span className="font-semibold">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
+                          <span className="text-purple-700 dark:text-purple-300">{microseguroTipo === 'DEVOLUCION' ? 'Devolución de seguro:' : 'Microseguro:'}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{microseguroTipo === 'DEVOLUCION' ? '-' : ''}{formatCurrency(microseguroTotal)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between border-t border-blue-200 pt-2">
-                        <span className="text-blue-700 font-medium">Total a pagar:</span>
-                        <span className="font-bold text-lg">{formatCurrency(montoTotal)}</span>
+                      <div className="flex justify-between border-t border-blue-200 dark:border-[#1F3A36] pt-2">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">Total a pagar:</span>
+                        <span className="font-bold text-lg text-gray-900 dark:text-white">{formatCurrency(montoTotal)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-blue-700 font-medium">Valor por cuota:</span>
-                        <span className="font-bold text-lg text-green-600">{formatCurrency(valorCuota)}</span>
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">Valor por cuota:</span>
+                        <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">{formatCurrency(valorCuota)}</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-end space-x-3 pt-6">
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-[#1F3A36]">
                   <Link href="/dashboard">
-                    <Button variant="outline" disabled={loading}>
+                    <Button variant="outline" disabled={loading} className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
                       Cancelar
                     </Button>
                   </Link>
                   <Button
                     type="submit"
-                    className="btn-primary"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
                     disabled={loading || mostrarFormularioCliente || !clienteId || !monto || !interes || !cuotas}
                   >
                     {loading ? (
@@ -1253,44 +1256,44 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
       {/* Modal de Préstamo Creado */}
       <Dialog open={modalPrestamoAbierto} onOpenChange={handleCerrarModal}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 text-green-600">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
+          <DialogHeader className="border-b border-gray-200 dark:border-[#1F3A36] pb-3">
+            <DialogTitle className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400">
               <Check className="h-5 w-5" />
               <span>✅ Préstamo Creado Exitosamente</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
               {prestamoCreado ? 'Revisa los detalles del préstamo y cierra cuando termines' : 'Preparando información...'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             {prestamoCreado ? (
               <>
-                <div ref={boletaRef} className="bg-white">
+                <div ref={boletaRef} className="bg-white dark:bg-[#0E1F1C] p-2 rounded-xl">
                   <div className="max-w-md mx-auto space-y-4">
                     {/* Información del Cliente */}
-                    <Card className="shadow-sm">
+                    <Card className="bg-white dark:bg-[#152e2a] border border-gray-200 dark:border-[#1F3A36] shadow-sm">
                       <CardContent className="p-4">
                         <div className="flex items-center mb-3">
-                          <User className="h-5 w-5 text-blue-600 mr-2" />
-                          <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
+                          <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2" />
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Información del Cliente</h3>
                         </div>
 
                         <div className="space-y-2">
-                          <h4 className="text-xl font-bold text-gray-900">
+                          <h4 className="text-xl font-bold text-gray-900 dark:text-white">
                             {prestamoCreado.cliente.nombre} {prestamoCreado.cliente.apellido}
                           </h4>
-                          <div className="flex items-center text-gray-600">
-                            <CreditCard className="h-4 w-4 mr-2" />
+                          <div className="flex items-center text-gray-600 dark:text-gray-300">
+                            <CreditCard className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                             <span>Cédula: {prestamoCreado.cliente.cedula}</span>
                           </div>
-                          <div className="flex items-center text-gray-600">
-                            <User className="h-4 w-4 mr-2" />
+                          <div className="flex items-center text-gray-600 dark:text-gray-300">
+                            <User className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500" />
                             <span>{prestamoCreado.cliente.direccion}</span>
                           </div>
                           {prestamoCreado.cliente.telefono && (
-                            <div className="flex items-center text-blue-600">
+                            <div className="flex items-center text-emerald-600 dark:text-emerald-400">
                               <span className="text-sm font-medium">{prestamoCreado.cliente.telefono}</span>
                             </div>
                           )}
@@ -1299,14 +1302,14 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                     </Card>
 
                     {/* Información del Préstamo */}
-                    <Card className="shadow-sm">
+                    <Card className="bg-white dark:bg-[#152e2a] border border-gray-200 dark:border-[#1F3A36] shadow-sm">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center">
-                            <DollarSign className="h-5 w-5 text-blue-600 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900">Información del Préstamo</h3>
+                            <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2" />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Información del Préstamo</h3>
                           </div>
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-full font-semibold">
                             {prestamoCreado.estado}
                           </span>
                         </div>
@@ -1314,72 +1317,72 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                         {/* Montos principales */}
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <p className="text-2xl font-bold text-blue-600">
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                               {formatCurrencyModal(prestamoCreado.monto)}
                             </p>
-                            <p className="text-sm text-gray-500">Monto Prestado</p>
+                            <p className="text-xs text-gray-500 dark:text-emerald-300/80 font-medium">Monto Prestado</p>
                           </div>
                           <div>
-                            <p className="text-2xl font-bold text-green-600">
+                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                               $ 0
                             </p>
-                            <p className="text-sm text-gray-500">Total Pagado</p>
+                            <p className="text-xs text-gray-500 dark:text-emerald-300/80 font-medium">Total Pagado</p>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <p className="text-2xl font-bold text-red-600">
+                            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">
                               {formatCurrencyModal(prestamoCreado.monto + (prestamoCreado.monto * prestamoCreado.interes / 100))}
                             </p>
-                            <p className="text-sm text-gray-500">Saldo Pendiente</p>
+                            <p className="text-xs text-gray-500 dark:text-emerald-300/80 font-medium">Saldo Pendiente</p>
                           </div>
                           <div>
-                            <p className="text-2xl font-bold text-purple-600">
+                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                               {formatCurrencyModal(prestamoCreado.valorCuota)}
                             </p>
-                            <p className="text-sm text-gray-500">Valor Cuota</p>
+                            <p className="text-xs text-gray-500 dark:text-emerald-300/80 font-medium">Valor Cuota</p>
                           </div>
                         </div>
 
-                        <Separator className="my-3" />
+                        <Separator className="my-3 border-gray-200 dark:border-[#1F3A36]" />
 
                         {/* Detalles del préstamo */}
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Tipo de pago:</span>
-                            <span className="font-medium">Diario</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Tipo de pago:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">Diario</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Total cuotas:</span>
-                            <span className="font-medium">{prestamoCreado.cuotas}</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Total cuotas:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{prestamoCreado.cuotas}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Cuotas pagadas:</span>
-                            <span className="font-medium">0</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Cuotas pagadas:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">0</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Fecha inicio:</span>
-                            <span className="font-medium">{formatDateModal(prestamoCreado.fechaInicio)}</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Fecha inicio:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{formatDateModal(prestamoCreado.fechaInicio)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Fecha fin:</span>
-                            <span className="font-medium">{formatDateModal(prestamoCreado.fechaFin)}</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Fecha fin:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{formatDateModal(prestamoCreado.fechaFin)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Monto total:</span>
-                            <span className="font-medium">{formatCurrencyModal(prestamoCreado.monto + (prestamoCreado.monto * prestamoCreado.interes / 100))}</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Monto total:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{formatCurrencyModal(prestamoCreado.monto + (prestamoCreado.monto * prestamoCreado.interes / 100))}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Progreso del préstamo:</span>
-                            <span className="font-medium">0.0%</span>
+                            <span className="text-gray-600 dark:text-emerald-300/80">Progreso del préstamo:</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">0.0%</span>
                           </div>
                         </div>
 
                         {/* ID del préstamo */}
-                        <div className="mt-4 bg-blue-50 rounded-lg p-3 text-center">
-                          <p className="text-xs text-gray-600 mb-1">ID del Préstamo</p>
-                          <p className="text-lg font-mono font-bold text-blue-600">
+                        <div className="mt-4 bg-blue-50/70 dark:bg-[#0E1F1C] border border-blue-200 dark:border-[#1F3A36] rounded-xl p-3 text-center">
+                          <p className="text-xs text-gray-600 dark:text-emerald-300/80 mb-1">ID del Préstamo</p>
+                          <p className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400">
                             PREST-{prestamoCreado.id.slice(-6).toUpperCase()}
                           </p>
                         </div>
@@ -1389,49 +1392,49 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
                 </div>
 
                 {/* Mensaje de éxito */}
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200 text-center">
-                  <div className="text-green-600 mb-2">
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 rounded-xl p-4 border border-emerald-200 dark:border-emerald-900/50 text-center">
+                  <div className="text-emerald-600 dark:text-emerald-400 mb-2">
                     <Check className="h-8 w-8 mx-auto mb-2" />
-                    <h3 className="font-semibold text-green-800">¡Préstamo Registrado Exitosamente!</h3>
-                    <p className="text-sm text-green-600">El préstamo ha sido creado y está activo</p>
+                    <h3 className="font-bold text-emerald-800 dark:text-emerald-300">¡Préstamo Registrado Exitosamente!</h3>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-400">El préstamo ha sido creado y está activo</p>
                   </div>
                 </div>
 
                 {/* Botones de acción */}
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 pt-2 border-t border-gray-200 dark:border-[#1F3A36]">
                   {/* Botón de compartir desplegable */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex-1">
+                      <Button variant="outline" className="flex-1 border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
                         <Share2 className="mr-2 h-4 w-4" />
                         Compartir
                         <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuContent align="start" className="w-48 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                       <DropdownMenuItem
                         onClick={() => console.log('WhatsApp préstamo - Por implementar')}
-                        className="flex items-center space-x-2 py-3"
+                        className="flex items-center space-x-2 py-3 hover:bg-gray-100 dark:hover:bg-[#152e2a]"
                       >
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
                           <MessageCircle className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-medium">WhatsApp</span>
-                          <span className="text-xs text-gray-500">Enviar información</span>
+                          <span className="font-medium text-gray-900 dark:text-white">WhatsApp</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Enviar información</span>
                         </div>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
                         onClick={handleDescargarPrestamo}
-                        className="flex items-center space-x-2 py-3"
+                        className="flex items-center space-x-2 py-3 hover:bg-gray-100 dark:hover:bg-[#152e2a]"
                       >
                         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                           <Share2 className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-medium">Descargar PNG</span>
-                          <span className="text-xs text-gray-500">Guardar como imagen</span>
+                          <span className="font-medium text-gray-900 dark:text-white">Descargar PNG</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Guardar como imagen</span>
                         </div>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -1439,7 +1442,7 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                   <Button
                     onClick={handleCerrarModal}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     size="lg"
                   >
                     ✅ Cerrar y Continuar
@@ -1448,8 +1451,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
               </>
             ) : (
               <div className="text-center py-8">
-                <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-600">Preparando información del préstamo...</p>
+                <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Preparando información del préstamo...</p>
               </div>
             )}
           </div>

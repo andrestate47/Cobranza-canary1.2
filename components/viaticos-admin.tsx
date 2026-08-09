@@ -271,180 +271,343 @@ export function ViaticosAdmin() {
   const totalEgresos = totalGastosCobradores + totalEgresosGenerales
 
   return (
-    <div className="space-y-6">
-      {/* Header con botón volver */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Gestión de Viáticos</h1>
-            <p className="text-sm text-muted-foreground">Control de montos iniciales, ingresos y egresos</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 mr-2">
-            <Label htmlFor="fecha" className="text-sm text-gray-500 hidden sm:inline-block">Fecha:</Label>
-            <div className="relative">
-              <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                id="fecha"
-                type="date"
-                value={fechaSeleccionada}
-                onChange={(e) => setFechaSeleccionada(e.target.value)}
-                className="pl-9 h-9 w-[140px] sm:w-[160px]"
-              />
-            </div>
-            {fechaSeleccionada && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setFechaSeleccionada("")}
-                className="text-xs text-muted-foreground px-2 h-9"
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm mb-6">
+        <div className="container-mobile">
+          <div className="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between md:h-16 md:py-0">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/dashboard')}
+                className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
               >
-                Limpiar
+                <ArrowLeft className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+                Volver
               </Button>
-            )}
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Viáticos / Caja Cobradores</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 self-start md:self-auto">
+              <div className="relative">
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <Input
+                  id="fecha"
+                  type="date"
+                  value={fechaSeleccionada}
+                  onChange={(e) => setFechaSeleccionada(e.target.value)}
+                  className="pl-9 h-9 w-[150px] bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              {fechaSeleccionada && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFechaSeleccionada("")}
+                  className="text-xs text-gray-500 dark:text-gray-400 px-2 h-9"
+                >
+                  Limpiar
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={loading}
+                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchData}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
         </div>
       </div>
 
-      {/* Tarjetas de Resumen */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Caja Central (Admin) */}
-        <Card className="border-l-4 border-l-blue-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">
-              Caja Central (Admin)
-            </CardTitle>
-            <Banknote className="h-5 w-5 text-blue-600 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-xl font-bold text-blue-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
-              {formatCurrency(saldoCajaAdmin)}
+      <div className="container-mobile space-y-6">
+        {/* Tarjetas de Resumen */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Caja Central (Admin) */}
+          <Card className="border-l-4 border-l-blue-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Caja Central (Admin)
+              </CardTitle>
+              <Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400 leading-tight">
+                {formatCurrency(saldoCajaAdmin)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
+                Dinero físico del administrador.
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Caja en Cobradores */}
+          <Card className="border-l-4 border-l-purple-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                En Cobradores (Viáticos)
+              </CardTitle>
+              <Users className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="text-xl md:text-2xl font-bold text-purple-600 dark:text-purple-400 leading-tight">
+                {formatCurrency(totalViaticos)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
+                Efectivo activo en manos de los cobradores.
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Fondo Consolidado */}
+          <Card className={`border-l-4 ${saldoConsolidado >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'} bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Fondo Total Consolidado
+              </CardTitle>
+              <DollarSign className={`h-5 w-5 ${saldoConsolidado >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} flex-shrink-0`} />
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className={`text-xl md:text-2xl font-bold ${saldoConsolidado >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} leading-tight`}>
+                {formatCurrency(saldoConsolidado)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
+                Dinero total disponible en el sistema.
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Egresos Totales */}
+          <Card className="border-l-4 border-l-amber-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Egresos Totales (Gastos)
+              </CardTitle>
+              <TrendingDown className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                {formatCurrency(totalEgresos)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
+                Salidas reales de efectivo de la empresa.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Acciones Rápidas */}
+        <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-gray-900 dark:text-white">Acciones Rápidas</CardTitle>
+                <CardDescription className="text-gray-500 dark:text-gray-400">
+                  Registra ingresos y egresos para cobradores
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={loading}
+                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
             </div>
-            <div className="text-xs text-muted-foreground mt-2 space-y-1">
-              <p>Dinero físico del administrador.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button 
+                onClick={abrirDialogIngreso}
+                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium shadow-sm"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Registrar Ingreso
+              </Button>
+              <Button 
+                onClick={abrirDialogEgreso}
+                className="bg-rose-600 hover:bg-rose-700 dark:bg-rose-600 dark:hover:bg-rose-700 text-white font-medium shadow-sm"
+              >
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Registrar Egreso
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Caja en Cobradores */}
-        <Card className="border-l-4 border-l-purple-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">
-              En Cobradores (Viáticos)
-            </CardTitle>
-            <Users className="h-5 w-5 text-purple-600 flex-shrink-0" />
+        {/* Tabs para Cobradores y Movimientos */}
+        <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white">Detalle de Viáticos</CardTitle>
           </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-xl font-bold text-purple-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
-              {formatCurrency(totalViaticos)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-2 space-y-1">
-              <p>Efectivo activo en manos de los cobradores para gastos de ruta.</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Fondo Consolidado */}
-        <Card className={`border-l-4 ${saldoConsolidado >= 0 ? 'border-l-green-500' : 'border-l-red-500'} shadow-sm`}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">
-              Fondo Total Consolidado
-            </CardTitle>
-            <DollarSign className={`h-5 w-5 ${saldoConsolidado >= 0 ? 'text-green-600' : 'text-red-600'} flex-shrink-0`} />
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className={`text-xl font-bold ${saldoConsolidado >= 0 ? 'text-green-600' : 'text-red-600'} break-words whitespace-normal overflow-wrap-anywhere leading-tight`}>
-              {formatCurrency(saldoConsolidado)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-2 space-y-1">
-              <p>Dinero total disponible en el sistema (Caja + Cobradores).</p>
-            </div>
-          </CardContent>
-        </Card>
+          <CardContent>
+            <Tabs defaultValue="cobradores" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-[#152e2a]">
+                <TabsTrigger value="cobradores" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white">
+                  <Users className="h-4 w-4 mr-2" />
+                  Cobradores
+                </TabsTrigger>
+                <TabsTrigger value="movimientos" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white">
+                  <History className="h-4 w-4 mr-2" />
+                  Historial
+                </TabsTrigger>
+              </TabsList>
 
-        {/* Egresos Totales */}
-        <Card className="border-l-4 border-l-amber-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">
-              Egresos Totales (Gastos)
-            </CardTitle>
-            <TrendingDown className="h-5 w-5 text-amber-600 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="text-xl font-bold text-amber-600 break-words whitespace-normal overflow-wrap-anywhere leading-tight">
-              {formatCurrency(totalEgresos)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-2 space-y-1">
-              <p>Salidas reales de efectivo de la empresa (gastos definitivos).</p>
-            </div>
+              <TabsContent value="cobradores" className="space-y-4 mt-4">
+                <ScrollArea className="h-[400px] pr-4">
+                  {loading ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                      <p>Cargando cobradores...</p>
+                    </div>
+                  ) : cobradores.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>No hay cobradores registrados</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {cobradores.map((cobrador) => (
+                        <div
+                          key={cobrador.id}
+                          className="border border-gray-200 dark:border-[#1F3A36] rounded-lg p-4 flex items-center justify-between bg-white dark:bg-[#152e2a] hover:bg-gray-50 dark:hover:bg-[#1A3330] transition-colors"
+                        >
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{cobrador.nombre}</p>
+                            {cobrador.numeroRuta && (
+                              <p className="text-sm text-gray-500 dark:text-emerald-300/80">Ruta {cobrador.numeroRuta}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xl font-bold ${
+                              cobrador.saldoActual > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-gray-500"
+                            }`}>
+                              {formatCurrency(cobrador.saldoActual)}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Saldo actual</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="movimientos" className="space-y-4 mt-4">
+                <ScrollArea className="h-[400px] pr-4">
+                  {loading ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                      <p>Cargando movimientos...</p>
+                    </div>
+                  ) : movimientos.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>No hay movimientos registrados</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {movimientos.map((mov) => {
+                        const isApertura = mov.tipo === "APERTURA_CAJA"
+                        const isEgresoGeneral = mov.tipo === "EGRESO_GENERAL"
+                        const isIngreso = mov.tipo === "ENTREGA" || isApertura
+                        const borderColor = isApertura ? "border-blue-500" : isIngreso ? "border-emerald-500" : "border-rose-500"
+                        const montoColor = isApertura ? "text-blue-600 dark:text-blue-400" : isIngreso ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        
+                        return (
+                          <div
+                            key={mov.id}
+                            className={`border-l-4 ${borderColor} border-gray-200 dark:border-y-[#1F3A36] dark:border-r-[#1F3A36] rounded-lg p-4 bg-white dark:bg-[#152e2a] shadow-sm hover:shadow-md transition-shadow relative`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 dark:text-white">
+                                  {isApertura ? "Monto Inicial de Caja" : isEgresoGeneral ? "Egreso General" : mov.cobrador}
+                                </p>
+                                <Badge variant={getTipoBadge(mov.tipo)} className="mt-1 dark:bg-[#1F3A36] dark:text-emerald-200 border-none">
+                                  {getTipoLabel(mov.tipo)}
+                                </Badge>
+                              </div>
+                              <div className="text-right flex items-start gap-2">
+                                <span className={`text-base font-bold ${montoColor} leading-tight`}>
+                                  {isIngreso ? "+" : "-"}{formatCurrency(mov.monto).replace(/^[^\d-]+/, '')}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => confirmarEliminarMovimiento(mov.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 h-8 w-8 p-0 flex-shrink-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            {!isApertura && !isEgresoGeneral && (
+                              <div className="text-sm space-y-1 mt-3">
+                                <div className="flex items-center gap-2 text-gray-600 dark:text-emerald-300/80 flex-wrap">
+                                  <span className="font-medium">Saldo:</span>
+                                  <span>{formatCurrency(mov.saldoAnterior)}</span>
+                                  <span>→</span>
+                                  <span className="font-semibold">{formatCurrency(mov.saldoNuevo)}</span>
+                                </div>
+                                <p className="text-gray-500 dark:text-gray-400">
+                                  {format(new Date(mov.fecha), "PPp", { locale: es })}
+                                </p>
+                                {mov.asignadoPor && (
+                                  <p className="text-gray-500 dark:text-gray-400">
+                                    Por: {mov.asignadoPor}
+                                  </p>
+                                )}
+                                {mov.observaciones && (
+                                  <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
+                                    "{mov.observaciones}"
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {(isApertura || isEgresoGeneral) && (
+                              <div className="text-sm space-y-1 mt-3">
+                                <p className="text-gray-500 dark:text-gray-400">
+                                  {format(new Date(mov.fecha), "PPp", { locale: es })}
+                                </p>
+                                {mov.asignadoPor && (
+                                  <p className="text-gray-500 dark:text-gray-400">
+                                    Registrado por: {mov.asignadoPor}
+                                  </p>
+                                )}
+                                {mov.observaciones && (
+                                  <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
+                                    "{mov.observaciones}"
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
-
-      {/* Acciones Rápidas */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Acciones Rápidas</CardTitle>
-              <CardDescription>
-                Registra ingresos y egresos para cobradores
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchData}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Button 
-              onClick={abrirDialogIngreso}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Registrar Ingreso
-            </Button>
-            <Button 
-              onClick={abrirDialogEgreso}
-              variant="destructive"
-            >
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Registrar Egreso
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Dialog para Ingreso/Egreso */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-white">
               {esMontoInicial 
                 ? "Registrar Monto Inicial" 
                 : esEgresoGeneral
@@ -453,7 +616,7 @@ export function ViaticosAdmin() {
                     ? "Registrar Ingreso" 
                     : "Registrar Egreso"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-500 dark:text-gray-400">
               {esMontoInicial 
                 ? "Ingresa el monto con el que inicias la caja del día"
                 : esEgresoGeneral
@@ -465,7 +628,7 @@ export function ViaticosAdmin() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             {dialogTipo === "INGRESO" && !esMontoInicial && (
-              <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 rounded-md">
                 <Button
                   type="button"
                   variant="outline"
@@ -476,34 +639,34 @@ export function ViaticosAdmin() {
                   <Banknote className="h-4 w-4 mr-2" />
                   Monto Inicial
                 </Button>
-                <span className="flex items-center text-sm text-gray-600">
-                  ¿Necesitas registrar el monto inicial del día?
+                <span className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-blue-200">
+                  ¿Registrar monto inicial del día?
                 </span>
               </div>
             )}
 
             {dialogTipo === "EGRESO" && !esEgresoGeneral && (
-              <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 rounded-md">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEsEgresoGeneral(true)}
-                  className="flex-1 bg-red-600 text-white hover:bg-red-700 hover:text-white border-red-600"
+                  className="flex-1 bg-rose-600 text-white hover:bg-rose-700 hover:text-white border-rose-600"
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
                   Egreso General
                 </Button>
-                <span className="flex items-center text-sm text-gray-600">
-                  ¿Es un gasto que no está asociado a un cobrador?
+                <span className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-rose-200">
+                  ¿Gasto no asociado a cobrador?
                 </span>
               </div>
             )}
 
             {esMontoInicial && (
-              <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md items-center">
-                <Banknote className="h-5 w-5 text-blue-600" />
-                <span className="flex-1 text-sm font-medium text-blue-900">
+              <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 rounded-md items-center">
+                <Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span className="flex-1 text-sm font-medium text-blue-900 dark:text-blue-200">
                   Registrando Monto Inicial de Caja
                 </span>
                 <Button
@@ -511,7 +674,7 @@ export function ViaticosAdmin() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setEsMontoInicial(false)}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700"
                 >
                   Cambiar a ingreso normal
                 </Button>
@@ -519,9 +682,9 @@ export function ViaticosAdmin() {
             )}
 
             {esEgresoGeneral && (
-              <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-md items-center">
-                <DollarSign className="h-5 w-5 text-red-600" />
-                <span className="flex-1 text-sm font-medium text-red-900">
+              <div className="flex gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 rounded-md items-center">
+                <DollarSign className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                <span className="flex-1 text-sm font-medium text-rose-900 dark:text-rose-200">
                   Registrando Egreso General
                 </span>
                 <Button
@@ -529,7 +692,7 @@ export function ViaticosAdmin() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setEsEgresoGeneral(false)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-rose-600 dark:text-rose-400 hover:text-rose-700"
                 >
                   Cambiar a egreso normal
                 </Button>
@@ -538,14 +701,14 @@ export function ViaticosAdmin() {
 
             {!esMontoInicial && !esEgresoGeneral && (
               <div>
-                <Label htmlFor="cobrador">Cobrador</Label>
+                <Label htmlFor="cobrador" className="text-gray-700 dark:text-gray-200 font-semibold">Cobrador</Label>
                 <Select value={selectedCobrador} onValueChange={setSelectedCobrador}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     <SelectValue placeholder="Seleccionar cobrador" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                     {cobradores.map((cobrador) => (
-                      <SelectItem key={cobrador.id} value={cobrador.id}>
+                      <SelectItem key={cobrador.id} value={cobrador.id} className="dark:focus:bg-[#152e2a] dark:focus:text-white">
                         {cobrador.nombre} {cobrador.numeroRuta ? `(Ruta ${cobrador.numeroRuta})` : ""} - Saldo: {formatCurrency(cobrador.saldoActual)}
                       </SelectItem>
                     ))}
@@ -555,52 +718,52 @@ export function ViaticosAdmin() {
             )}
 
             <div>
-              <Label htmlFor="monto">Monto</Label>
+              <Label htmlFor="monto" className="text-gray-700 dark:text-gray-200 font-semibold">Monto</Label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500">$</span>
                 <Input
                   id="monto"
                   type="text"
                   placeholder="5000000 o 5000000.50"
                   value={monto}
                   onChange={(e) => {
-                    // Solo permitir números, punto y coma
                     const value = e.target.value.replace(/[^\d.,]/g, '')
                     setMonto(value)
                   }}
-                  className="pl-7"
+                  className="pl-7 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
                   required
                 />
               </div>
-              <p className="text-xs text-blue-600 mt-1 font-medium">
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
                 💡 Ingresa solo números (sin separadores): 5000000 para cinco millones
               </p>
             </div>
 
             <div>
-              <Label htmlFor="observaciones">Observaciones (opcional)</Label>
+              <Label htmlFor="observaciones" className="text-gray-700 dark:text-gray-200 font-semibold">Observaciones (opcional)</Label>
               <Textarea
                 id="observaciones"
                 placeholder="Notas adicionales..."
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
                 rows={3}
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
+                className="dark:bg-[#152e2a] dark:text-gray-200 dark:border-[#1F3A36]"
               >
                 Cancelar
               </Button>
               <Button 
                 type="submit" 
                 disabled={submitting}
-                className={esMontoInicial ? "bg-blue-600 hover:bg-blue-700" : dialogTipo === "INGRESO" ? "bg-green-600 hover:bg-green-700" : ""}
-                variant={dialogTipo === "EGRESO" && !esMontoInicial && !esEgresoGeneral ? "destructive" : "default"}
+                className={esMontoInicial ? "bg-blue-600 hover:bg-blue-700" : dialogTipo === "INGRESO" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}
               >
                 {submitting 
                   ? "Guardando..." 
@@ -617,184 +780,27 @@ export function ViaticosAdmin() {
 
       {/* Alert Dialog para Confirmar Eliminación */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-white">¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 dark:text-gray-300">
               Esta acción no se puede deshacer. El movimiento será eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMovimientoAEliminar(null)}>
+            <AlertDialogCancel onClick={() => setMovimientoAEliminar(null)} className="dark:bg-[#152e2a] dark:text-gray-200 dark:border-[#1F3A36]">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={eliminarMovimiento}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-rose-600 hover:bg-rose-700 text-white"
             >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Tabs para Cobradores y Movimientos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalle de Viáticos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="cobradores" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="cobradores">
-                <Users className="h-4 w-4 mr-2" />
-                Cobradores
-              </TabsTrigger>
-              <TabsTrigger value="movimientos">
-                <History className="h-4 w-4 mr-2" />
-                Historial
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="cobradores" className="space-y-4">
-              <ScrollArea className="h-[400px] pr-4">
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                    <p>Cargando cobradores...</p>
-                  </div>
-                ) : cobradores.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No hay cobradores registrados</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {cobradores.map((cobrador) => (
-                      <div
-                        key={cobrador.id}
-                        className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                      >
-                        <div>
-                          <p className="font-semibold text-gray-900">{cobrador.nombre}</p>
-                          {cobrador.numeroRuta && (
-                            <p className="text-sm text-gray-500">Ruta {cobrador.numeroRuta}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-xl font-bold ${
-                            cobrador.saldoActual > 0 ? "text-green-600" : "text-gray-400"
-                          }`}>
-                            {formatCurrency(cobrador.saldoActual)}
-                          </p>
-                          <p className="text-xs text-gray-500">Saldo actual</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="movimientos" className="space-y-4">
-              <ScrollArea className="h-[400px] pr-4">
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                    <p>Cargando movimientos...</p>
-                  </div>
-                ) : movimientos.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No hay movimientos registrados</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {movimientos.map((mov) => {
-                      const isApertura = mov.tipo === "APERTURA_CAJA"
-                      const isEgresoGeneral = mov.tipo === "EGRESO_GENERAL"
-                      const isIngreso = mov.tipo === "ENTREGA" || isApertura
-                      const borderColor = isApertura ? "border-blue-500" : isIngreso ? "border-green-500" : "border-red-500"
-                      const montoColor = isApertura ? "text-blue-600" : isIngreso ? "text-green-600" : "text-red-600"
-                      
-                      return (
-                        <div
-                          key={mov.id}
-                          className={`border-l-4 ${borderColor} rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow relative`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-900">
-                                {isApertura ? "Monto Inicial de Caja" : isEgresoGeneral ? "Egreso General" : mov.cobrador}
-                              </p>
-                              <Badge variant={getTipoBadge(mov.tipo)} className="mt-1">
-                                {getTipoLabel(mov.tipo)}
-                              </Badge>
-                            </div>
-                            <div className="text-right flex items-start gap-2">
-                              <span className={`text-base font-bold ${montoColor} break-words whitespace-normal overflow-wrap-anywhere leading-tight`}>
-                                {isIngreso ? "+" : "-"}{formatCurrency(mov.monto).replace(/^[^\d-]+/, '')}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => confirmarEliminarMovimiento(mov.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 flex-shrink-0"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          {!isApertura && !isEgresoGeneral && (
-                            <div className="text-sm space-y-1 mt-3">
-                              <div className="flex items-center gap-2 text-gray-600 flex-wrap">
-                                <span className="font-medium">Saldo:</span>
-                                <span className="break-words">{formatCurrency(mov.saldoAnterior)}</span>
-                                <span>→</span>
-                                <span className="font-semibold break-words">{formatCurrency(mov.saldoNuevo)}</span>
-                              </div>
-                              <p className="text-gray-500">
-                                {format(new Date(mov.fecha), "PPp", { locale: es })}
-                              </p>
-                              {mov.asignadoPor && (
-                                <p className="text-gray-500">
-                                  Por: {mov.asignadoPor}
-                                </p>
-                              )}
-                              {mov.observaciones && (
-                                <p className="text-gray-700 mt-2 p-2 bg-gray-50 rounded italic">
-                                  "{mov.observaciones}"
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {(isApertura || isEgresoGeneral) && (
-                            <div className="text-sm space-y-1 mt-3">
-                              <p className="text-gray-500">
-                                {format(new Date(mov.fecha), "PPp", { locale: es })}
-                              </p>
-                              {mov.asignadoPor && (
-                                <p className="text-gray-500">
-                                  Registrado por: {mov.asignadoPor}
-                                </p>
-                              )}
-                              {mov.observaciones && (
-                                <p className="text-gray-700 mt-2 p-2 bg-gray-50 rounded italic">
-                                  "{mov.observaciones}"
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
     </div>
   )
 }
+

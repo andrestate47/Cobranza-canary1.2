@@ -294,7 +294,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] transition-colors">
         <div className="container-mobile py-4">
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -305,26 +305,27 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Informes del Día</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Informes del Día</h1>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fetchInforme(fechaSeleccionada, cobradorSeleccionado)}
+              className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualizar
@@ -337,33 +338,33 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
         {/* Selectores de fecha y cobrador */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="fecha">Fecha del informe</Label>
+            <Label htmlFor="fecha" className="text-gray-700 dark:text-gray-200 font-semibold mb-1 block">Fecha del informe</Label>
             <Input
               id="fecha"
               type="date"
               value={fechaSeleccionada}
               onChange={(e) => setFechaSeleccionada(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] dark:text-white"
             />
           </div>
 
           {/* Selector de cobrador (solo para administradores) */}
           {session.user.role === 'ADMINISTRADOR' && (
             <div>
-              <Label htmlFor="cobrador" className="font-bold text-gray-900 dark:text-gray-100">Cobrador</Label>
+              <Label htmlFor="cobrador" className="text-gray-700 dark:text-gray-200 font-semibold mb-1 block">Cobrador</Label>
               <Select
                 value={cobradorSeleccionado || ""}
                 onValueChange={(value) => setCobradorSeleccionado(value)}
               >
-                <SelectTrigger className="mt-1 font-bold text-gray-900 dark:text-gray-100 border-gray-400">
+                <SelectTrigger className="mt-1 font-semibold text-gray-900 dark:text-white bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36]">
                   <SelectValue placeholder="Seleccione un cobrador" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos" className="font-bold text-gray-900 dark:text-gray-100">
+                <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] dark:text-white">
+                  <SelectItem value="todos" className="font-semibold text-gray-900 dark:text-white">
                     -- Todos --
                   </SelectItem>
                   {cobradores.map((cobrador) => (
-                    <SelectItem key={cobrador.id} value={cobrador.id} className="font-bold text-gray-900 dark:text-gray-100">
+                    <SelectItem key={cobrador.id} value={cobrador.id} className="font-semibold text-gray-900 dark:text-white">
                       {cobrador.firstName} {cobrador.lastName}
                       {cobrador.numeroRuta && ` - Ruta ${cobrador.numeroRuta}`}
                     </SelectItem>
@@ -378,45 +379,43 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
           <div className="space-y-6">
             {/* Header del informe */}
             <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 {formatDate(informe.fecha)}
               </h2>
               <div className="flex flex-col items-center space-y-2">
                 <div className="flex items-center space-x-2">
                   {informe.cerrado ? (
-                    <Badge variant="default" className="bg-green-500">
+                    <Badge variant="default" className="bg-green-500 dark:bg-emerald-600 text-white">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Día Cerrado
                     </Badge>
                   ) : (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="bg-gray-200 dark:bg-[#1A3330] text-gray-800 dark:text-gray-200">
                       <Calendar className="h-3 w-3 mr-1" />
                       Día Abierto
                     </Badge>
                   )}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
                   <strong>Cobrador:</strong> {informe.nombreCobrador} | <strong>Ruta:</strong> {informe.numeroRuta} - {informe.nombreRuta}
                 </div>
               </div>
             </div>
 
-
-
             {/* Alerta de Cierres Atrasados */}
             {informe.diasSinCerrar && informe.diasSinCerrar > 0 && !informe.cerrado && (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-md animate-fadeIn">
+              <div className="bg-yellow-50 dark:bg-amber-950/40 border-l-4 border-yellow-400 dark:border-amber-500 p-4 mb-4 rounded-r-md animate-fadeIn">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 w-5 text-yellow-400 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800">
+                    <h3 className="text-sm font-medium text-yellow-800 dark:text-amber-200">
                       Recordatorio amistoso: Cierres de caja pendientes
                     </h3>
-                    <div className="mt-1 text-sm text-yellow-700">
+                    <div className="mt-1 text-sm text-yellow-700 dark:text-amber-300">
                       <p>
                         Parece que hay un salto de <strong>{informe.diasSinCerrar} {informe.diasSinCerrar === 1 ? 'día' : 'días'}</strong> desde el último cierre.
                         No te preocupes, el sistema ha calculado los saldos intermedios correctamente, pero te recomendamos hacer los cierres diarios para mantener tus cuentas súper organizadas.
@@ -430,16 +429,16 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
             {/* Tarjetas de resumen principal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Meta de Cobro Hoy */}
-              <Card className="animate-fadeInScale border-blue-200 bg-blue-50/30">
+              <Card className="animate-fadeInScale border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/40">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-semibold text-blue-900">Cobro Esperado Hoy</CardTitle>
-                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <CardTitle className="text-sm font-semibold text-blue-900 dark:text-blue-200">Cobro Esperado Hoy</CardTitle>
+                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-700">
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                     {formatCurrency(informe.expectativaCobroHoy)}
                   </div>
-                  <p className="text-xs text-blue-600/80 mt-1">
+                  <p className="text-xs text-blue-600/80 dark:text-blue-300/80 mt-1">
                     Meta a recoger según cuotas programadas
                   </p>
                 </CardContent>
@@ -610,7 +609,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
 
             {/* Resumen de Clientes y Créditos */}
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Resumen de Clientes y Créditos</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Resumen de Clientes y Créditos</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card className="animate-fadeInScale">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -686,7 +685,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
 
             {/* Resumen de Préstamos */}
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Préstamos</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Préstamos</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="animate-fadeInScale">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

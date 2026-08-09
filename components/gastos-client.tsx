@@ -230,7 +230,7 @@ export default function GastosClient({ session }: GastosClientProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] transition-colors">
         <div className="container-mobile py-4">
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -241,20 +241,24 @@ export default function GastosClient({ session }: GastosClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">
           <div className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between md:h-16 md:py-0">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Gastos</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Gastos</h1>
               </div>
             </div>
             <div className="flex items-center space-x-2 self-start md:self-auto">
@@ -262,6 +266,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={fetchGastos}
+                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar
@@ -284,32 +289,32 @@ export default function GastosClient({ session }: GastosClientProps) {
         <div className="mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <Input
                 placeholder="Buscar por concepto, usuario u observaciones..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             <div className="relative">
-              <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <Input
                 type="date"
                 value={fechaFiltro}
                 onChange={(e) => setFechaFiltro(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
               {filteredGastos.length} resultado{filteredGastos.length !== 1 ? 's' : ''}
             </div>
 
             {filteredGastos.length > 0 && (
-              <div className="text-lg font-semibold text-red-600">
+              <div className="text-lg font-bold text-red-600 dark:text-red-400">
                 Total: {formatCurrency(getTotalGastos())}
               </div>
             )}
@@ -321,30 +326,30 @@ export default function GastosClient({ session }: GastosClientProps) {
           {filteredGastos.slice(0, visibleCount).map((gasto, index) => (
             <Card
               key={gasto.id}
-              className="list-item animate-fadeInScale"
+              className="list-item animate-fadeInScale bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] transition-all"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-start space-x-3">
-                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                        <Receipt className="h-6 w-6 text-red-600" />
+                      <div className="w-12 h-12 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center border border-transparent dark:border-red-900/30 flex-shrink-0">
+                        <Receipt className="h-6 w-6 text-red-600 dark:text-red-400" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg truncate">
                           {gasto.concepto}
                         </h3>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <User className="h-3 w-3 mr-1" />
-                          {gasto.usuario.nombre}
+                        <div className="flex items-center text-sm text-gray-500 dark:text-emerald-300/80 mt-1">
+                          <User className="h-3.5 w-3.5 mr-1 text-gray-400 dark:text-emerald-400/60 flex-shrink-0" />
+                          <span className="truncate">{gasto.usuario.nombre}</span>
                         </div>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {formatDateTime(gasto.fecha)}
+                        <div className="flex items-center text-sm text-gray-500 dark:text-emerald-300/80 mt-1">
+                          <Calendar className="h-3.5 w-3.5 mr-1 text-gray-400 dark:text-emerald-400/60 flex-shrink-0" />
+                          <span>{formatDateTime(gasto.fecha)}</span>
                         </div>
                         {gasto.observaciones && (
-                          <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                          <p className="text-sm text-gray-600 dark:text-emerald-200/90 mt-2 bg-gray-50 dark:bg-[#152e2a] border border-gray-100 dark:border-[#1F3A36] p-2 rounded-md">
                             {gasto.observaciones}
                           </p>
                         )}
@@ -352,7 +357,7 @@ export default function GastosClient({ session }: GastosClientProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="mt-2"
+                            className="mt-2 text-gray-700 dark:text-emerald-300 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#152e2a]"
                             onClick={() => handleVerComprobante(gasto.id)}
                           >
                             <FileText className="h-4 w-4 mr-2" />
@@ -364,23 +369,20 @@ export default function GastosClient({ session }: GastosClientProps) {
                     </div>
                   </div>
 
-
-
-                  <div className="text-right flex flex-col items-end gap-2">
-                    <div className="text-2xl font-bold text-red-600">
+                  <div className="text-right flex flex-col items-end gap-2 ml-3">
+                    <div className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
                       {formatCurrency(gasto.monto)}
                     </div>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 md:h-9 md:w-auto md:px-3"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/40 h-8 w-8 p-0 md:h-9 md:w-auto md:px-3"
                       onClick={() => confirmarEliminacion(gasto.id, gasto.concepto)}
                     >
                       <Trash2 className="h-4 w-4 md:mr-2" />
                       <span className="hidden md:inline">Eliminar</span>
                     </Button>
-
                   </div>
                 </div>
               </CardContent>
@@ -388,7 +390,7 @@ export default function GastosClient({ session }: GastosClientProps) {
           ))}
 
           {visibleCount < filteredGastos.length && (
-            <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
+            <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500 dark:text-gray-400">
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               Cargando más gastos...
             </div>
@@ -396,11 +398,11 @@ export default function GastosClient({ session }: GastosClientProps) {
 
           {filteredGastos.length === 0 && (
             <div className="text-center py-12">
-              <Receipt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Receipt className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No hay gastos registrados
               </h3>
-              <p className="text-gray-500 mb-6">
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {fechaFiltro || searchTerm
                   ? "No se encontraron gastos que coincidan con los filtros"
                   : "Comienza registrando tu primer gasto"
@@ -439,23 +441,23 @@ export default function GastosClient({ session }: GastosClientProps) {
       }
 
       <AlertDialog open={!!gastoAEliminar} onOpenChange={(open) => !open && setGastoAEliminar(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar gasto?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Estás a punto de eliminar el gasto <strong>"{gastoAEliminar?.concepto}"</strong>.
+            <AlertDialogTitle className="text-gray-900 dark:text-white">¿Eliminar gasto?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 dark:text-gray-300">
+              Estás a punto de eliminar el gasto <strong className="text-gray-900 dark:text-white">"{gastoAEliminar?.concepto}"</strong>.
               <br /><br />
-              <span className="text-red-600 font-semibold">Esta acción no se puede deshacer.</span>
+              <span className="text-red-600 dark:text-red-400 font-semibold">Esta acción no se puede deshacer.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={eliminandoGasto}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={eliminandoGasto} className="dark:bg-[#152e2a] dark:text-gray-200 dark:border-[#1F3A36]">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
                 hacerEliminacion()
               }}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 dark:bg-red-600 dark:hover:bg-red-700"
               disabled={eliminandoGasto}
             >
               {eliminandoGasto ? "Eliminando..." : "Eliminar"}
@@ -463,6 +465,7 @@ export default function GastosClient({ session }: GastosClientProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div >
+    </div>
   )
 }
+

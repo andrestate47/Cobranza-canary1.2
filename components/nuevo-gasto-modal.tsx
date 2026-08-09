@@ -248,27 +248,27 @@ export default function NuevoGastoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-md rounded-lg">
+      <DialogContent className="w-[95vw] max-w-md rounded-lg bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Receipt className="h-5 w-5 text-red-600" />
+          <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-white">
+            <Receipt className="h-5 w-5 text-red-600 dark:text-red-400" />
             <span>Nuevo Gasto</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-500 dark:text-gray-400">
             Registra un nuevo gasto en el sistema
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="concepto">Concepto del gasto *</Label>
+            <Label htmlFor="concepto" className="text-gray-700 dark:text-gray-200 font-semibold">Concepto del gasto *</Label>
             <Input
               id="concepto"
               type="text"
               value={concepto}
               onChange={(e) => setConcepto(e.target.value)}
               placeholder="Ej: Combustible, Almuerzo, Papelería..."
-              className="mt-1"
+              className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
               required
               disabled={loading}
               maxLength={100}
@@ -276,16 +276,16 @@ export default function NuevoGastoModal({
           </div>
 
           <div>
-            <Label htmlFor="monto">Monto *</Label>
+            <Label htmlFor="monto" className="text-gray-700 dark:text-gray-200 font-semibold">Monto *</Label>
             <div className="relative mt-1">
-              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <Input
                 id="monto"
                 type="text"
                 value={monto}
                 onChange={(e) => handleMontoChange(e.target.value)}
                 placeholder="0"
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 required
                 disabled={loading}
               />
@@ -293,13 +293,13 @@ export default function NuevoGastoModal({
           </div>
 
           <div>
-            <Label htmlFor="observaciones">Observaciones</Label>
+            <Label htmlFor="observaciones" className="text-gray-700 dark:text-gray-200 font-semibold">Observaciones</Label>
             <Textarea
               id="observaciones"
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
               placeholder="Detalles adicionales del gasto..."
-              className="mt-1"
+              className="mt-1 bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
               disabled={loading}
               maxLength={255}
             />
@@ -307,14 +307,14 @@ export default function NuevoGastoModal({
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <Label htmlFor="foto">Foto de la boleta o factura</Label>
+              <Label htmlFor="foto" className="text-gray-700 dark:text-gray-200 font-semibold">Foto de la boleta o factura</Label>
               {!foto && (
                 <Button 
                   type="button" 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowCameraModal(true)}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                  className="text-blue-600 dark:text-emerald-400 border-blue-200 dark:border-[#1F3A36] hover:bg-blue-50 dark:hover:bg-[#152e2a] h-8"
                   disabled={loading}
                 >
                   <Camera className="h-4 w-4 mr-2" />
@@ -326,21 +326,21 @@ export default function NuevoGastoModal({
               {!foto ? (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary cursor-pointer transition-colors"
+                  className="border-2 border-dashed border-gray-300 dark:border-[#1F3A36] rounded-lg p-6 text-center hover:border-primary dark:hover:border-primary cursor-pointer transition-colors bg-gray-50/50 dark:bg-[#152e2a]/50"
                 >
-                  <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600 mb-1">
+                  <Upload className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                     Haz clic para subir una foto
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     JPG, PNG, WEBP o PDF (máx. 5MB)
                   </p>
                 </div>
               ) : (
-                <div className="border border-gray-300 rounded-lg p-4">
+                <div className="border border-gray-300 dark:border-[#1F3A36] rounded-lg p-4 bg-gray-50 dark:bg-[#152e2a]">
                   {previewUrl ? (
                     <div className="relative">
-                      <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-2">
+                      <div className="relative aspect-video bg-gray-100 dark:bg-[#0E1F1C] rounded-lg overflow-hidden mb-2">
                         <Image
                           src={previewUrl}
                           alt="Preview"
@@ -349,7 +349,7 @@ export default function NuevoGastoModal({
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center text-sm text-gray-600">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                           <ImageIcon className="h-4 w-4 mr-2" />
                           <span className="truncate max-w-[200px]">{typeof foto === 'string' ? 'Foto capturada.jpg' : foto.name}</span>
                         </div>
@@ -359,14 +359,15 @@ export default function NuevoGastoModal({
                           size="sm"
                           onClick={handleRemoveFile}
                           disabled={loading}
+                          className="hover:bg-red-50 dark:hover:bg-red-950/40"
                         >
-                          <X className="h-4 w-4 text-red-600" />
+                          <X className="h-4 w-4 text-red-600 dark:text-red-400" />
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Receipt className="h-4 w-4 mr-2" />
                         <span className="truncate max-w-[200px]">{typeof foto === 'string' ? 'Archivo cargado' : foto.name}</span>
                       </div>
@@ -376,8 +377,9 @@ export default function NuevoGastoModal({
                         size="sm"
                         onClick={handleRemoveFile}
                         disabled={loading}
+                        className="hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
-                        <X className="h-4 w-4 text-red-600" />
+                        <X className="h-4 w-4 text-red-600 dark:text-red-400" />
                       </Button>
                     </div>
                   )}
@@ -401,6 +403,7 @@ export default function NuevoGastoModal({
               variant="outline"
               onClick={handleClose}
               disabled={loading}
+              className="dark:bg-[#152e2a] dark:text-gray-200 dark:border-[#1F3A36]"
             >
               Cancelar
             </Button>
@@ -421,6 +424,7 @@ export default function NuevoGastoModal({
           </div>
         </form>
       </DialogContent>
+
 
       <CameraModal
         isOpen={showCameraModal}

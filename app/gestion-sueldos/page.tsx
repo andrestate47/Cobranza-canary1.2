@@ -1,4 +1,3 @@
-
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
@@ -23,7 +22,7 @@ export default async function GestionSueldosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200">
       <GestionSueldosClient />
     </div>
   )

@@ -216,7 +216,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] transition-colors">
         <div className="container-mobile py-4">
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -227,20 +227,20 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Volver
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Cierres del Día</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Cierres del Día</h1>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -248,12 +248,13 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={fetchCierres}
+                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
               >
                 <RefreshCw className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Actualizar</span>
               </Button>
               <Link href="/informes-dia">
-                <Button className="btn-primary" size="sm">
+                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-sm">
                   <Eye className="h-4 w-4 md:mr-2" />
                   <span className="hidden md:inline">Ver Informe Hoy</span>
                   <span className="md:hidden">Informe</span>
@@ -271,10 +272,10 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
             <Card className="animate-fadeInScale">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Días</CardTitle>
-                <Calendar className="h-4 w-4 text-blue-600" />
+                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {cierres.length}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -286,10 +287,10 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
             <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Cobrado</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {formatCurrency(cierres.reduce((sum, c) => sum + c.totalCobrado, 0))}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -301,10 +302,10 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
             <Card className="animate-fadeInScale" style={{ animationDelay: '0.2s' }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Prestado</CardTitle>
-                <TrendingDown className="h-4 w-4 text-blue-600" />
+                <TrendingDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {formatCurrency(cierres.reduce((sum, c) => sum + c.totalPrestado, 0))}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -316,10 +317,10 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
             <Card className="animate-fadeInScale" style={{ animationDelay: '0.3s' }}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Último Saldo</CardTitle>
-                <Wallet className="h-4 w-4 text-purple-600" />
+                <Wallet className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${cierres[0]?.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
+                <div className={`text-2xl font-bold ${cierres[0]?.saldoEfectivo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                   {formatCurrency(cierres[0]?.saldoEfectivo || 0)}
                 </div>
@@ -334,10 +335,10 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
         {/* Lista de cierres */}
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Historial de Cierres
             </h2>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {cierres.length} cierre{cierres.length !== 1 ? 's' : ''}
             </div>
           </div>
@@ -351,14 +352,14 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                       {formatDate(cierre.fecha)}
                     </h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <User className="h-3 w-3" />
                       <span>Cerrado por {cierre.usuario.nombre}</span>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {formatDateTime(cierre.createdAt)}
                     </div>
                   </div>
@@ -368,7 +369,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                          className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
                           onClick={() => handleDeleteClick(cierre)}
                           title="Eliminar cierre"
                         >
@@ -378,16 +379,16 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950"
                           onClick={() => handleEditClick(cierre)}
                           title="Editar cierre"
                         >
-                          <Pencil className="h-4 w-4 text-blue-500" />
+                          <Pencil className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                           <span className="sr-only">Editar</span>
                         </Button>
                       </>
                     )}
-                    <Badge variant="default" className="bg-green-500">
+                    <Badge variant="default" className="bg-green-500 dark:bg-emerald-600 text-white">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Cerrado
                     </Badge>
@@ -396,46 +397,46 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
 
                 {/* Métricas del día */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-green-600">
+                  <div className="text-center p-3 bg-green-50 dark:bg-emerald-950/60 border border-green-200 dark:border-emerald-800/80 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
+                    <div className="text-lg font-bold text-green-700 dark:text-green-300">
                       {formatCurrency(cierre.totalCobrado)}
                     </div>
-                    <div className="text-xs text-gray-500">Cobrado</div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Cobrado</div>
                   </div>
 
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <TrendingDown className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-blue-600">
+                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 rounded-lg">
+                    <TrendingDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
                       {formatCurrency(cierre.totalPrestado)}
                     </div>
-                    <div className="text-xs text-gray-500">Prestado</div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Prestado</div>
                   </div>
 
-                  <div className="text-center p-3 bg-red-50 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-red-600">
+                  <div className="text-center p-3 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/80 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400 mx-auto mb-1" />
+                    <div className="text-lg font-bold text-red-700 dark:text-red-300">
                       {formatCurrency(cierre.totalGastos)}
                     </div>
-                    <div className="text-xs text-gray-500">Gastos</div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Gastos</div>
                   </div>
 
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <Wallet className="h-5 w-5 text-purple-600 mx-auto mb-1" />
-                    <div className={`text-lg font-bold ${cierre.saldoEfectivo >= 0 ? 'text-green-600' : 'text-red-600'
+                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/80 rounded-lg">
+                    <Wallet className="h-5 w-5 text-purple-600 dark:text-purple-400 mx-auto mb-1" />
+                    <div className={`text-lg font-bold ${cierre.saldoEfectivo >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
                       }`}>
                       {formatCurrency(cierre.saldoEfectivo)}
                     </div>
-                    <div className="text-xs text-gray-500">Saldo Final</div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Saldo Final</div>
                   </div>
                 </div>
 
                 {cierre.observaciones && (
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-sm font-medium text-gray-700 mb-1">
+                  <div className="bg-gray-50 dark:bg-[#173333] border dark:border-[#34766D] rounded-lg p-3">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                       Observaciones:
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                       {cierre.observaciones}
                     </div>
                   </div>
@@ -443,7 +444,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
 
                 <div className="flex justify-end mt-4">
                   <Link href={`/informes-dia?fecha=${cierre.fecha.split('T')[0]}`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330] font-semibold">
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Detalle
                     </Button>
