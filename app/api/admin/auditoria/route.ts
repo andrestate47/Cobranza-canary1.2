@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const where: Prisma.RegistroAuditoriaWhereInput = {
+    const where: any = {
       accion: 'ELIMINAR' // Solo mostrar eliminaciones
     }
 
     if (entidad) {
-      where.entidad = entidad as Prisma.EnumTipoEntidadFilter
+      where.entidad = entidad
     }
 
     if (usuarioId) {
