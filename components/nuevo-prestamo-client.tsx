@@ -3,8 +3,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Session } from "next-auth"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import BuscadorCliente from "@/components/buscador-cliente"
 import {
   ArrowLeft,
   Plus,
@@ -85,6 +86,7 @@ interface NuevoPrestamoClientProps {
 
 export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const boletaRef = useRef<HTMLDivElement>(null)
 
@@ -103,6 +105,19 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
   // Formulario
   const [clienteId, setClienteId] = useState("")
+
+  // Preseleccionar cliente si viene en la URL
+  const preselectedClienteId = searchParams ? (searchParams.get('clienteId') || searchParams.get('cliente')) : null
+  useEffect(() => {
+    if (preselectedClienteId && clientes.length > 0) {
+      const clienteExistente = clientes.find(
+        c => c.id === preselectedClienteId || c.codigoCliente === preselectedClienteId || c.documento === preselectedClienteId
+      )
+      if (clienteExistente) {
+        setClienteId(clienteExistente.id)
+      }
+    }
+  }, [preselectedClienteId, clientes])
 
   // Formulario nuevo cliente
   const [nuevoCliente, setNuevoCliente] = useState({
@@ -705,18 +720,24 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
 
                   {!mostrarFormularioCliente ? (
                     <>
-                      <Select value={clienteId} onValueChange={setClienteId}>
-                        <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
-                          <SelectValue placeholder="Seleccionar cliente..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
-                          {clientes.map(cliente => (
-                            <SelectItem key={cliente.id} value={cliente.id}>
-                              {cliente.codigoCliente} - {cliente.nombre} {cliente.apellido}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <BuscadorCliente
+                        clientes={clientes}
+                        clienteSeleccionadoId={clienteId}
+                        onSelectCliente={setClienteId}
+                        onCrearNuevoConTexto={(texto) => {
+                          const esNumero = /^\d+$/.test(texto.trim())
+                          setMostrarFormularioCliente(true)
+                          if (esNumero) {
+                            setNuevoCliente(prev => ({ ...prev, documento: texto.trim() }))
+                          } else {
+                            const partes = texto.trim().split(" ")
+                            const nombre = partes[0] || ""
+                            const apellido = partes.slice(1).join(" ") || ""
+                            setNuevoCliente(prev => ({ ...prev, nombre, apellido }))
+                          }
+                        }}
+                        loading={loadingClientes}
+                      />
                       {selectedCliente && (
                         <div className="mt-3 p-4 bg-gray-50 dark:bg-[#152e2a] rounded-xl border border-gray-200 dark:border-[#1F3A36] text-sm space-y-1.5">
                           <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-[#1F3A36]">

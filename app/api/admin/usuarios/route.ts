@@ -1,17 +1,16 @@
-
-
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/permissions"
+import { requireUserManagementPermission, ROLE_PERMISSIONS } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
+import { Permission } from "@prisma/client"
 import bcryptjs from "bcryptjs"
 import { uploadFile } from "@/lib/s3"
 
 export const dynamic = "force-dynamic"
 
-// GET - Obtener todos los usuarios (solo administradores)
+// GET - Obtener todos los usuarios
 export async function GET(request: NextRequest) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const usuarios = await prisma.user.findMany({
       include: {
@@ -63,8 +62,6 @@ export async function GET(request: NextRequest) {
       supervisados: usuario.supervisados,
       documentoIdentificacion: usuario.documentoIdentificacion,
       profilePhoto: usuario.profilePhoto,
-      permissions: usuario.permissions.map(p => p.permission),
-      // Campos de contacto y ubicación
       phone: usuario.phone,
       phoneReferencial: usuario.phoneReferencial,
       address: usuario.address,
@@ -74,28 +71,25 @@ export async function GET(request: NextRequest) {
       mapLink: usuario.mapLink,
       referenciaFamiliar: usuario.referenciaFamiliar,
       referenciaTrabajo: usuario.referenciaTrabajo,
-      stats: {
-        prestamos: usuario._count.prestamos,
-        pagos: usuario._count.pagos,
-        gastos: usuario._count.gastos
-      }
+      permissions: usuario.permissions.map(p => p.permission),
+      stats: usuario._count
     }))
 
     return NextResponse.json(usuariosFormateados)
   } catch (error: unknown) {
-    console.error("Error getting users:", error)
+    console.error("Error fetching users:", error)
     const msg = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') ? 401 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') ? 403 : 500 }
     )
   }
 }
 
-// POST - Crear nuevo usuario (solo administradores)
+// POST - Crear nuevo usuario
 export async function POST(request: NextRequest) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const contentType = request.headers.get('content-type') || ''
     let body: any
@@ -229,12 +223,16 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Asignar permisos si se proporcionaron
-    if (permissions.length > 0) {
+    // Permisos a asignar: los indicados o por defecto del rol
+    const effectivePermissions = (Array.isArray(permissions) && permissions.length > 0)
+      ? permissions
+      : (ROLE_PERMISSIONS[role] || [])
+
+    if (effectivePermissions.length > 0) {
       await prisma.userPermission.createMany({
-        data: permissions.map((permission: string) => ({
+        data: effectivePermissions.map((permission: string) => ({
           userId: nuevoUsuario.id,
-          permission
+          permission: permission as Permission
         })),
         skipDuplicates: true
       })

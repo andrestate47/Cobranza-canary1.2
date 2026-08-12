@@ -74,6 +74,30 @@ interface SessionWithUser {
 }
 
 /**
+ * Obtener lista efectiva de permisos del usuario
+ */
+export function getUserEffectivePermissions(session: SessionWithUser | null): Permission[] {
+  if (!session?.user) return []
+  if (session.user.role === 'ADMINISTRADOR') {
+    return [
+      'SINCRONIZAR_DATOS', 'REGISTRAR_COBROS', 'MAPA_CLIENTES', 'REGISTRAR_GASTOS',
+      'REGISTRAR_INGRESOS', 'VER_REPORTES', 'VER_DASHBOARD', 'VER_LISTADO_GENERAL',
+      'VER_DETALLES_PRESTAMO', 'CREAR_CLIENTES', 'EDITAR_CLIENTES', 'CREAR_PRESTAMOS',
+      'EDITAR_PRESTAMOS', 'ELIMINAR_PRESTAMOS', 'REGISTRAR_TRANSFERENCIAS',
+      'VER_TRANSFERENCIAS', 'GESTIONAR_USUARIOS', 'VER_AUDITORIA',
+      'CONFIGURAR_SISTEMA', 'GESTIONAR_PERMISOS', 'REALIZAR_CIERRE_DIA', 'VER_CIERRES_HISTORICOS'
+    ]
+  }
+
+  if (session.user.permissions && Array.isArray(session.user.permissions) && session.user.permissions.length > 0) {
+    return session.user.permissions as Permission[]
+  }
+
+  const role = session.user.role || ""
+  return ROLE_PERMISSIONS[role] || []
+}
+
+/**
  * Verificar si un usuario tiene un permiso específico
  */
 export function hasPermission(session: SessionWithUser | null, permission: Permission): boolean {
@@ -82,8 +106,8 @@ export function hasPermission(session: SessionWithUser | null, permission: Permi
   // Los administradores tienen acceso total
   if (session.user.role === 'ADMINISTRADOR') return true
   
-  // Verificar permisos específicos del usuario
-  return session.user.permissions?.includes(permission) || false
+  const effective = getUserEffectivePermissions(session)
+  return effective.includes(permission)
 }
 
 /**
@@ -95,10 +119,8 @@ export function hasAnyPermission(session: SessionWithUser | null, permissions: P
   // Los administradores tienen acceso total
   if (session.user.role === 'ADMINISTRADOR') return true
   
-  // Verificar si tiene al menos uno de los permisos
-  return permissions.some(permission => 
-    session.user?.permissions?.includes(permission)
-  )
+  const effective = getUserEffectivePermissions(session)
+  return permissions.some(permission => effective.includes(permission))
 }
 
 /**
@@ -110,10 +132,8 @@ export function hasAllPermissions(session: SessionWithUser | null, permissions: 
   // Los administradores tienen acceso total
   if (session.user.role === 'ADMINISTRADOR') return true
   
-  // Verificar si tiene todos los permisos
-  return permissions.every(permission => 
-    session.user?.permissions?.includes(permission)
-  )
+  const effective = getUserEffectivePermissions(session)
+  return permissions.every(permission => effective.includes(permission))
 }
 
 /**
@@ -248,6 +268,31 @@ export async function requireRole(minRole: 'COBRADOR' | 'SUPERVISOR' | 'ADMINIST
 
   if (userLevel < requiredLevel) {
     throw new Error(`Rol insuficiente. Requerido: ${minRole}`)
+  }
+
+  return session
+}
+
+/**
+ * Middleware para verificar acceso a gestión de usuarios o permisos
+ */
+export async function requireUserManagementPermission() {
+  const session = await getServerSession(authOptions)
+  
+  if (!session || !session.user) {
+    throw new Error('No autenticado')
+  }
+
+  if (!session.user.isActive) {
+    throw new Error('Usuario desactivado')
+  }
+
+  const isAllowed = session.user.role === 'ADMINISTRADOR' ||
+    hasPermission(session as SessionWithUser, 'GESTIONAR_USUARIOS') ||
+    hasPermission(session as SessionWithUser, 'GESTIONAR_PERMISOS')
+
+  if (!isAllowed) {
+    throw new Error('No tienes permiso para gestionar usuarios')
   }
 
   return session

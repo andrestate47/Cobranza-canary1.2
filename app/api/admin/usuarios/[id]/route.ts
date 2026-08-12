@@ -1,8 +1,7 @@
-
-
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/permissions"
+import { requireUserManagementPermission } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
+import { Permission } from "@prisma/client"
 import bcryptjs from "bcryptjs"
 import { uploadFile, deleteFile } from "@/lib/s3"
 
@@ -14,7 +13,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const usuario = await prisma.user.findUnique({
       where: { id: params.id },
@@ -69,16 +68,25 @@ export async function GET(
       supervisados: usuario.supervisados,
       documentoIdentificacion: usuario.documentoIdentificacion,
       profilePhoto: usuario.profilePhoto,
+      phone: usuario.phone,
+      phoneReferencial: usuario.phoneReferencial,
+      address: usuario.address,
+      pais: usuario.pais,
+      ciudad: usuario.ciudad,
+      ubicacion: usuario.ubicacion,
+      mapLink: usuario.mapLink,
+      referenciaFamiliar: usuario.referenciaFamiliar,
+      referenciaTrabajo: usuario.referenciaTrabajo,
       permissions: usuario.permissions.map(p => p.permission),
       timeUsage: usuario.timeUsage
     })
 
   } catch (error: unknown) {
+    console.error("Error fetching user:", error)
     const msg = error instanceof Error ? error.message : "Error interno del servidor"
-    console.error("Error getting user:", error)
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') ? 401 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') ? 403 : 500 }
     )
   }
 }
@@ -89,7 +97,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const contentType = request.headers.get('content-type') || ''
     let body: any
@@ -145,23 +153,8 @@ export async function PUT(
       mapLink,
       referenciaFamiliar,
       referenciaTrabajo,
-      permissions = []
+      permissions
     } = body
-
-    // Validaciones
-    if (!email) {
-      return NextResponse.json(
-        { error: "Email es obligatorio" },
-        { status: 400 }
-      )
-    }
-
-    if (role && !['ADMINISTRADOR', 'SUPERVISOR', 'COBRADOR'].includes(role)) {
-      return NextResponse.json(
-        { error: "Rol inválido" },
-        { status: 400 }
-      )
-    }
 
     // Verificar si el usuario existe
     const usuarioExistente = await prisma.user.findUnique({
@@ -175,8 +168,8 @@ export async function PUT(
       )
     }
 
-    // Verificar si el email ya existe (excepto el usuario actual)
-    if (email !== usuarioExistente.email) {
+    // Validaciones si se envía email o role
+    if (email && email !== usuarioExistente.email) {
       const emailExistente = await prisma.user.findUnique({
         where: { email }
       })
@@ -189,10 +182,16 @@ export async function PUT(
       }
     }
 
+    if (role && !['ADMINISTRADOR', 'SUPERVISOR', 'COBRADOR'].includes(role)) {
+      return NextResponse.json(
+        { error: "Rol inválido" },
+        { status: 400 }
+      )
+    }
+
     // Subir archivo del documento si existe
     let documentoUrl = usuarioExistente.documentoIdentificacion
     if (documentoFile && documentoFile.size > 0) {
-      // Eliminar archivo anterior si existe
       if (usuarioExistente.documentoIdentificacion) {
         try {
           await deleteFile(usuarioExistente.documentoIdentificacion)
@@ -214,55 +213,63 @@ export async function PUT(
       profilePhotoUrl = `data:${mimeType};base64,${buffer.toString('base64')}`
     }
 
-    // Preparar datos de actualización con valores correctamente procesados
-    const updateData: any = {
-      email: email?.trim() || usuarioExistente.email,
-      firstName: firstName?.trim() || null,
-      lastName: lastName?.trim() || null,
-      name: name?.trim() || `${firstName?.trim() || ''} ${lastName?.trim() || ''}`.trim() || null,
-      role: role || usuarioExistente.role,
-      isActive: isActive !== undefined ? (typeof isActive === 'boolean' ? isActive : isActive === 'true') : usuarioExistente.isActive,
-      timeLimit: timeLimit && !isNaN(Number(timeLimit)) ? Number(timeLimit) : null,
-      supervisorId: supervisorId?.trim() || null,
-      phone: phone?.trim() || null,
-      phoneReferencial: phoneReferencial?.trim() || null,
-      address: address?.trim() || null,
-      pais: pais?.trim() || null,
-      ciudad: ciudad?.trim() || null,
-      ubicacion: ubicacion?.trim() || null,
-      mapLink: mapLink?.trim() || null,
-      referenciaFamiliar: referenciaFamiliar?.trim() || null,
-      referenciaTrabajo: referenciaTrabajo?.trim() || null,
-      documentoIdentificacion: documentoUrl,
-      profilePhoto: profilePhotoUrl
+    // Preparar objeto de actualización solo con los campos proporcionados
+    const updateData: any = {}
+
+    if (email !== undefined) updateData.email = email.trim()
+    if (firstName !== undefined) updateData.firstName = firstName?.trim() || null
+    if (lastName !== undefined) updateData.lastName = lastName?.trim() || null
+    
+    if (name !== undefined) {
+      updateData.name = name?.trim() || null
+    } else if (firstName !== undefined || lastName !== undefined) {
+      const fName = firstName !== undefined ? firstName?.trim() : usuarioExistente.firstName
+      const lName = lastName !== undefined ? lastName?.trim() : usuarioExistente.lastName
+      updateData.name = `${fName || ''} ${lName || ''}`.trim() || null
     }
 
-    // Si se proporciona contraseña, encriptarla
+    if (role !== undefined) updateData.role = role
+    if (isActive !== undefined) updateData.isActive = typeof isActive === 'boolean' ? isActive : isActive === 'true'
+    if (timeLimit !== undefined) updateData.timeLimit = timeLimit && !isNaN(Number(timeLimit)) ? Number(timeLimit) : null
+    if (supervisorId !== undefined) updateData.supervisorId = supervisorId?.trim() || null
+    if (phone !== undefined) updateData.phone = phone?.trim() || null
+    if (phoneReferencial !== undefined) updateData.phoneReferencial = phoneReferencial?.trim() || null
+    if (address !== undefined) updateData.address = address?.trim() || null
+    if (pais !== undefined) updateData.pais = pais?.trim() || null
+    if (ciudad !== undefined) updateData.ciudad = ciudad?.trim() || null
+    if (ubicacion !== undefined) updateData.ubicacion = ubicacion?.trim() || null
+    if (mapLink !== undefined) updateData.mapLink = mapLink?.trim() || null
+    if (referenciaFamiliar !== undefined) updateData.referenciaFamiliar = referenciaFamiliar?.trim() || null
+    if (referenciaTrabajo !== undefined) updateData.referenciaTrabajo = referenciaTrabajo?.trim() || null
+    if (documentoFile && documentoFile.size > 0) updateData.documentoIdentificacion = documentoUrl
+    if (profilePhotoFile && profilePhotoFile.size > 0) updateData.profilePhoto = profilePhotoUrl
+
     if (password) {
       updateData.password = await bcryptjs.hash(password, 12)
     }
 
-    // Actualizar usuario
-    await prisma.user.update({
-      where: { id: params.id },
-      data: updateData
-    })
-
-    // Actualizar permisos
-    // Primero eliminar permisos existentes
-    await prisma.userPermission.deleteMany({
-      where: { userId: params.id }
-    })
-
-    // Luego agregar nuevos permisos
-    if (permissions.length > 0) {
-      await prisma.userPermission.createMany({
-        data: permissions.map((permission: string) => ({
-          userId: params.id,
-          permission
-        })),
-        skipDuplicates: true
+    if (Object.keys(updateData).length > 0) {
+      await prisma.user.update({
+        where: { id: params.id },
+        data: updateData
       })
+    }
+
+    // Actualizar permisos si se especificaron
+    if (permissions !== undefined) {
+      await prisma.userPermission.deleteMany({
+        where: { userId: params.id }
+      })
+
+      if (Array.isArray(permissions) && permissions.length > 0) {
+        await prisma.userPermission.createMany({
+          data: permissions.map((permission: string) => ({
+            userId: params.id,
+            permission: permission as Permission
+          })),
+          skipDuplicates: true
+        })
+      }
     }
 
     // Obtener usuario actualizado
@@ -305,7 +312,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const usuario = await prisma.user.findUnique({
       where: { id: params.id },

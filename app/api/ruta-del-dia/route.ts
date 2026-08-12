@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
+import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -11,23 +11,24 @@ function getCuotasEsperadas(tipoPago: string, fechaInicio: Date, fechaEvaluar: D
   const inicio = new Date(fechaInicio)
   const evaluar = new Date(fechaEvaluar)
   
-  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
-  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
-  
-  if (evaluarUTC < inicioUTC) return 0
-  
-  let expected = 0
-  let currentUTC = inicioUTC
-  
-  // Contamos cuántos días de cobro válidos hay desde el inicio hasta la fecha a evaluar
-  while (currentUTC <= evaluarUTC) {
-    const d = new Date(currentUTC)
-    if (esDiaDePago(tipoPago, inicio, d)) {
-      expected++
-    }
-    currentUTC += 1000 * 60 * 60 * 24
+  if (evaluar < inicio) return 0
+
+  if (tipoPago === 'SEMANAL') {
+    const diffMs = evaluar.getTime() - inicio.getTime()
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
   }
-  return expected
+  if (tipoPago === 'CATORCENAL' || tipoPago === 'QUINCENAL') {
+    const days = tipoPago === 'QUINCENAL' ? 15 : 14
+    const diffMs = evaluar.getTime() - inicio.getTime()
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24 * days))
+  }
+  if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
+    const months = (evaluar.getUTCFullYear() - inicio.getUTCFullYear()) * 12 + (evaluar.getUTCMonth() - inicio.getUTCMonth())
+    return Math.max(0, months)
+  }
+
+  // DIARIO, LUNES_A_SABADO, LUNES_A_VIERNES
+  return countDiasHabiles(inicio, evaluar, tipoPago)
 }
 
 export async function GET(request: NextRequest) {
