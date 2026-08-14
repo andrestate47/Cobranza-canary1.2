@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requirePermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -199,8 +200,6 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-import { requirePermission } from "@/lib/permissions"
 
 export async function POST(request: NextRequest) {
   try {
