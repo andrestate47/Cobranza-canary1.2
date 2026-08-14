@@ -1,60 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { getBucketConfig, createS3Client } from '@/lib/aws-config'
-
-// Función para subir archivo a S3
-const uploadFile = async (buffer: Buffer, fileName: string) => {
-  const { bucketName, folderPrefix } = getBucketConfig()
-  const s3Client = createS3Client()
-  
-  const key = `${folderPrefix}system-logo/${Date.now()}-${fileName}`
-  
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-    Body: buffer,
-    ContentType: getContentType(fileName)
-  })
-  
-  await s3Client.send(command)
-  return key // Retornar la clave S3 completa
-}
-
-// Función para eliminar archivo de S3
-const deleteFile = async (key: string) => {
-  const { bucketName } = getBucketConfig()
-  const s3Client = createS3Client()
-  
-  const command = new DeleteObjectCommand({
-    Bucket: bucketName,
-    Key: key
-  })
-  
-  await s3Client.send(command)
-}
-
-// Función para obtener el tipo de contenido basado en la extensión del archivo
-const getContentType = (fileName: string): string => {
-  const ext = fileName.split('.').pop()?.toLowerCase()
-  
-  switch (ext) {
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg'
-    case 'png':
-      return 'image/png'
-    case 'gif':
-      return 'image/gif'
-    case 'webp':
-      return 'image/webp'
-    default:
-      return 'image/jpeg'
-  }
-}
+import { uploadFile, deleteFile } from '@/lib/s3'
 
 export async function POST(request: NextRequest) {
   try {
@@ -104,31 +52,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Obtener config actual para eliminar logo anterior si existe
-    let config = await prisma.configuracion.findFirst()
+    // Obtener config actual para guardar la clave del logo anterior
+    const configActual = await prisma.configuracion.findFirst()
+    const oldLogoUrl = configActual?.logoUrl
 
     // Convertir archivo a buffer
     const buffer = Buffer.from(await file.arrayBuffer())
     
-    // Subir nueva foto a S3
-    const newPhotoKey = await uploadFile(buffer, file.name)
+    // Subir nueva foto usando lib/s3
+    const newPhotoKey = await uploadFile(buffer, file.name, 'system-logo')
 
     // Actualizar config con nueva foto
-    if (config) {
+    if (configActual) {
       await prisma.configuracion.update({
-        where: { id: config.id },
+        where: { id: configActual.id },
         data: { logoUrl: newPhotoKey }
       })
     } else {
-      config = await prisma.configuracion.create({
+      await prisma.configuracion.create({
         data: { logoUrl: newPhotoKey }
       })
     }
 
     // Eliminar foto anterior si existía
-    if (config?.logoUrl) {
+    if (oldLogoUrl) {
       try {
-        await deleteFile(config.logoUrl)
+        await deleteFile(oldLogoUrl)
       } catch (deleteError) {
         console.warn('No se pudo eliminar el logo anterior:', deleteError)
       }
@@ -141,10 +90,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error al subir logo:', error)
-    fs.writeFileSync('error_log.txt', String(error) + '\n' + (error instanceof Error ? error.stack : ''))
     return NextResponse.json(
       { error: 'Error interno del servidor', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
 }
+

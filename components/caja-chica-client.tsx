@@ -543,6 +543,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   type="date"
                   value={filtroFechaInicio}
                   onChange={(e) => setFiltroFechaInicio(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  className="cursor-pointer"
                 />
               </div>
               <div>
@@ -551,6 +553,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   type="date"
                   value={filtroFechaFin}
                   onChange={(e) => setFiltroFechaFin(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  className="cursor-pointer"
                 />
               </div>
               <div>

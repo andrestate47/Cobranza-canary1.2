@@ -90,13 +90,14 @@ export function CajaChicaCobrador() {
             <div className="flex items-center gap-2 mr-2">
               <Label htmlFor="fecha-cobrador" className="text-sm text-gray-500 hidden sm:inline-block">Fecha:</Label>
               <div className="relative">
-                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 pointer-events-none z-10" />
                 <Input
                   id="fecha-cobrador"
                   type="date"
                   value={fechaSeleccionada}
                   onChange={(e) => setFechaSeleccionada(e.target.value)}
-                  className="pl-9 h-9 w-[140px] sm:w-[160px]"
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  className="pl-9 h-9 w-[140px] sm:w-[160px] cursor-pointer"
                 />
               </div>
               {fechaSeleccionada && (

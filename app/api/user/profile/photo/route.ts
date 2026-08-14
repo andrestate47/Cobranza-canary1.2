@@ -3,58 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { getBucketConfig, createS3Client } from '@/lib/aws-config'
+import { uploadFile, deleteFile } from '@/lib/s3'
 
-// Función para subir archivo a S3
-const uploadFile = async (buffer: Buffer, fileName: string) => {
-  const { bucketName, folderPrefix } = getBucketConfig()
-  const s3Client = createS3Client()
-  
-  const key = `${folderPrefix}profile-photos/${Date.now()}-${fileName}`
-  
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-    Body: buffer,
-    ContentType: getContentType(fileName)
-  })
-  
-  await s3Client.send(command)
-  return key // Retornar la clave S3 completa
-}
-
-// Función para eliminar archivo de S3
-const deleteFile = async (key: string) => {
-  const { bucketName } = getBucketConfig()
-  const s3Client = createS3Client()
-  
-  const command = new DeleteObjectCommand({
-    Bucket: bucketName,
-    Key: key
-  })
-  
-  await s3Client.send(command)
-}
-
-// Función para obtener el tipo de contenido basado en la extensión del archivo
-const getContentType = (fileName: string): string => {
-  const ext = fileName.split('.').pop()?.toLowerCase()
-  
-  switch (ext) {
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg'
-    case 'png':
-      return 'image/png'
-    case 'gif':
-      return 'image/gif'
-    case 'webp':
-      return 'image/webp'
-    default:
-      return 'image/jpeg'
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -102,8 +52,8 @@ export async function POST(request: NextRequest) {
     // Convertir archivo a buffer
     const buffer = Buffer.from(await file.arrayBuffer())
     
-    // Subir nueva foto a S3
-    const newPhotoKey = await uploadFile(buffer, file.name)
+    // Subir nueva foto
+    const newPhotoKey = await uploadFile(buffer, file.name, 'profile-photos')
 
     // Actualizar usuario con nueva foto
     await prisma.user.update({

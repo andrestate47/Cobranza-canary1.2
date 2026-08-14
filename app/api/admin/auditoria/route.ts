@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Obtener información de usuarios
-    const usuarioIds = [...new Set(registros.map(r => r.usuarioId))]
+    const usuarioIds = [...new Set(registros.map((r: any) => r.usuarioId))]
     const usuarios = await prisma.user.findMany({
       where: { id: { in: usuarioIds } },
       select: {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     const usuariosMap = new Map(usuarios.map(u => [u.id, u]))
 
-    const registrosConUsuario = registros.map(r => ({
+    const registrosConUsuario = registros.map((r: any) => ({
       ...r,
       usuario: usuariosMap.get(r.usuarioId),
       detalles: r.detalles ? JSON.parse(r.detalles) : null

@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
+import { getEcuadorDayRange } from "@/lib/date-utils"
 
 // GET /api/caja-chica/todos - Obtener cobradores y movimientos (solo admin/supervisor)
 export async function GET(request: NextRequest) {
@@ -97,17 +98,11 @@ export async function GET(request: NextRequest) {
     let dateFilter = {}
     let limit = 50
     if (fechaParam) {
-      const startOfDay = new Date(fechaParam + 'T00:00:00.000Z')
-      const endOfDay = new Date(fechaParam + 'T23:59:59.999Z')
-      
-      // Ajuste para zona horaria de Ecuador (-5 horas)
-      startOfDay.setHours(startOfDay.getHours() + 5)
-      endOfDay.setHours(endOfDay.getHours() + 5)
-      
+      const { inicio, fin } = getEcuadorDayRange(fechaParam)
       dateFilter = {
         fecha: {
-          gte: startOfDay,
-          lte: endOfDay,
+          gte: inicio,
+          lte: fin,
         }
       }
       limit = 500 // Más límite si se busca un día específico

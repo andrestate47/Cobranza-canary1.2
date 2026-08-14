@@ -68,8 +68,9 @@ export function ViaticosAdmin() {
     totalGastosCobradores: 0
   })
 
-  // Date Filter
+  // Date Filter & Tabs
   const [fechaSeleccionada, setFechaSeleccionada] = useState("")
+  const [activeTab, setActiveTab] = useState("cobradores")
 
   const fetchData = async () => {
     try {
@@ -293,13 +294,18 @@ export function ViaticosAdmin() {
 
             <div className="flex items-center space-x-2 self-start md:self-auto">
               <div className="relative">
-                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none z-10" />
                 <Input
                   id="fecha"
                   type="date"
                   value={fechaSeleccionada}
-                  onChange={(e) => setFechaSeleccionada(e.target.value)}
-                  className="pl-9 h-9 w-[150px] bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white text-sm"
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setFechaSeleccionada(val)
+                    if (val) setActiveTab("movimientos")
+                  }}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  className="pl-9 h-9 w-[150px] bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white text-sm cursor-pointer"
                 />
               </div>
               {fechaSeleccionada && (
@@ -450,15 +456,20 @@ export function ViaticosAdmin() {
             <CardTitle className="text-gray-900 dark:text-white">Detalle de Viáticos</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="cobradores" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-[#152e2a]">
                 <TabsTrigger value="cobradores" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white">
                   <Users className="h-4 w-4 mr-2" />
                   Cobradores
                 </TabsTrigger>
-                <TabsTrigger value="movimientos" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white">
-                  <History className="h-4 w-4 mr-2" />
-                  Historial
+                <TabsTrigger value="movimientos" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white flex items-center justify-center gap-1.5">
+                  <History className="h-4 w-4" />
+                  <span>Historial</span>
+                  {fechaSeleccionada && (
+                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                      Filtrado
+                    </Badge>
+                  )}
                 </TabsTrigger>
               </TabsList>
 

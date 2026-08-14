@@ -344,9 +344,9 @@ export default function GestionRutas() {
     }
   }
 
-  function abrirModalAsignarClientes() {
+  function abrirModalAsignarClientes(ruta?: Ruta) {
     setClientesSeleccionados([])
-    setRutaParaClientes("")
+    setRutaParaClientes(ruta?.id || "")
     setModalClientesAbierto(true)
   }
 
@@ -569,6 +569,16 @@ export default function GestionRutas() {
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => abrirModalAsignarClientes(ruta)}
+                            disabled={saving}
+                            className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+                          >
+                            <Users className="h-4 w-4 mr-1 text-emerald-600 dark:text-emerald-400" />
+                            + Clientes
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -904,23 +914,24 @@ export default function GestionRutas() {
 
       {/* Modal: Asignar Clientes */}
       <Dialog open={modalClientesAbierto} onOpenChange={setModalClientesAbierto}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
-          <DialogHeader className="border-b border-gray-200 dark:border-[#1F3A36] pb-3">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white flex flex-col p-0 gap-0 overflow-hidden shadow-xl">
+          <DialogHeader className="p-5 pb-4 border-b border-gray-200 dark:border-[#1F3A36] flex-shrink-0">
             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Asignar Clientes a Ruta</DialogTitle>
             <DialogDescription className="text-sm text-gray-500 dark:text-emerald-300/80">
               Selecciona los clientes sin ruta asignada y la ruta a la que deseas asignarlos
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
+
+          <div className="p-5 space-y-4 overflow-y-auto flex-1 max-h-[calc(90vh-130px)]">
             <div>
-              <Label htmlFor="ruta-clientes" className="text-gray-700 dark:text-gray-200 font-semibold">Ruta Destino</Label>
+              <Label htmlFor="ruta-clientes" className="text-gray-700 dark:text-gray-200 font-semibold mb-1 block">Ruta Destino *</Label>
               <Select
                 value={rutaParaClientes}
                 onValueChange={setRutaParaClientes}
                 disabled={saving}
               >
                 <SelectTrigger id="ruta-clientes" className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">
-                  <SelectValue placeholder="Selecciona una ruta" />
+                  <SelectValue placeholder="Selecciona una ruta de destino" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] text-gray-900 dark:text-white">
                   {rutas.map((ruta) => (
@@ -933,7 +944,7 @@ export default function GestionRutas() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <Label className="text-gray-700 dark:text-gray-200 font-semibold">Clientes Sin Ruta ({clientes.filter(c => !c.rutaId).length})</Label>
                 <div className="flex gap-2">
                   <Button
@@ -941,8 +952,8 @@ export default function GestionRutas() {
                     variant="outline"
                     size="sm"
                     onClick={seleccionarTodosClientes}
-                    disabled={saving}
-                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+                    disabled={saving || clientes.filter(c => !c.rutaId).length === 0}
+                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 text-xs hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                   >
                     Seleccionar Todos
                   </Button>
@@ -951,53 +962,72 @@ export default function GestionRutas() {
                     variant="outline"
                     size="sm"
                     onClick={deseleccionarTodosClientes}
-                    disabled={saving}
-                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1A3330]"
+                    disabled={saving || clientesSeleccionados.length === 0}
+                    className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 text-xs hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                   >
                     Deseleccionar
                   </Button>
                 </div>
               </div>
-              <div className="border border-gray-200 dark:border-[#1F3A36] rounded-lg max-h-[400px] overflow-y-auto bg-white dark:bg-[#152e2a]">
+              <div className="border border-gray-200 dark:border-[#1F3A36] rounded-lg max-h-[280px] overflow-y-auto bg-white dark:bg-[#152e2a]">
                 {clientes.filter(c => !c.rutaId).length === 0 ? (
                   <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                     No hay clientes sin ruta asignada
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100 dark:divide-[#1F3A36]">
-                    {clientes.filter(c => !c.rutaId).map((cliente) => (
-                      <label
-                        key={cliente.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#0E1F1C] cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={clientesSeleccionados.includes(cliente.id)}
-                          onChange={() => toggleClienteSeleccionado(cliente.id)}
-                          disabled={saving}
-                          className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300 dark:border-[#1F3A36]"
-                        />
-                        <div className="flex-1">
-                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                            {cliente.nombre} {cliente.apellido}
+                    {clientes.filter(c => !c.rutaId).map((cliente) => {
+                      const isChecked = clientesSeleccionados.includes(cliente.id)
+                      return (
+                        <label
+                          key={cliente.id}
+                          className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'bg-emerald-50/80 dark:bg-emerald-950/40'
+                              : 'hover:bg-gray-50 dark:hover:bg-[#0E1F1C]'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleClienteSeleccionado(cliente.id)}
+                            disabled={saving}
+                            className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300 dark:border-[#1F3A36] cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                              {cliente.nombre} {cliente.apellido}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-emerald-300/80">
+                              Código: {cliente.codigoCliente} • Doc: {cliente.documento}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-emerald-300/80">
-                            Código: {cliente.codigoCliente} • Doc: {cliente.documento}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      )
+                    })}
                   </div>
                 )}
               </div>
-              {clientesSeleccionados.length > 0 && (
-                <div className="mt-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                  {clientesSeleccionados.length} cliente(s) seleccionado(s)
-                </div>
-              )}
+              <div className="mt-2 text-xs flex flex-wrap items-center justify-between gap-2">
+                {clientesSeleccionados.length > 0 ? (
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    ✓ {clientesSeleccionados.length} cliente(s) seleccionado(s)
+                  </span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Marca las casillas de los clientes que deseas asignar.
+                  </span>
+                )}
+                {clientesSeleccionados.length > 0 && !rutaParaClientes && (
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold animate-pulse">
+                    ⚠️ Selecciona una Ruta Destino arriba para poder guardar.
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <DialogFooter className="pt-4 border-t border-gray-200 dark:border-[#1F3A36]">
+
+          <DialogFooter className="p-4 bg-gray-50 dark:bg-[#152e2a] border-t border-gray-200 dark:border-[#1F3A36] flex-shrink-0 flex items-center justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setModalClientesAbierto(false)}
@@ -1009,9 +1039,13 @@ export default function GestionRutas() {
             <Button 
               onClick={asignarClientes} 
               disabled={saving || clientesSeleccionados.length === 0 || !rutaParaClientes}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
             >
-              {saving ? "Asignando..." : `Asignar ${clientesSeleccionados.length} Cliente(s)`}
+              {saving 
+                ? "Asignando..." 
+                : clientesSeleccionados.length > 0
+                  ? `Asignar ${clientesSeleccionados.length} Cliente(s)`
+                  : "Asignar Clientes"}
             </Button>
           </DialogFooter>
         </DialogContent>
