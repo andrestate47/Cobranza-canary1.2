@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log("POST /api/prestamos - Iniciando creación de préstamo")
 
-    await requirePermission('CREAR_PRESTAMOS')
+    const session = await requirePermission('CREAR_PRESTAMOS')
 
     console.log("Sesión válida - Usuario:", session.user.email, "ID:", session.user.id)
 

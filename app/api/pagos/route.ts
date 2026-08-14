@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 === API PAGOS POST INICIADO ===')
 
-    await requirePermission('REGISTRAR_COBROS')
+    const session = await requirePermission('REGISTRAR_COBROS')
 
     let body
     try {

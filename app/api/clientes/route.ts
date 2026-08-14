@@ -80,13 +80,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log("POST /api/clientes - Iniciando creación de cliente")
     
-    await requirePermission('CREAR_CLIENTES')
-
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      console.log("Error: No hay sesión válida")
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('CREAR_CLIENTES')
 
     console.log("Sesión válida:", session.user?.email)
 

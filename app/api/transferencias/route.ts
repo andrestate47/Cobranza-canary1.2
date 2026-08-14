@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission('REGISTRAR_COBROS')
+    const session = await requirePermission('REGISTRAR_COBROS')
 
     const body = await request.json()
     const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fotoMiniatura, fecha, metodoPago } = body
