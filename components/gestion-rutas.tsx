@@ -454,7 +454,7 @@ export default function GestionRutas() {
                 <Button 
                   variant="outline"
                   size="sm"
-                  onClick={abrirModalAsignarClientes} 
+                  onClick={() => abrirModalAsignarClientes()} 
                   disabled={saving}
                   className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                 >
