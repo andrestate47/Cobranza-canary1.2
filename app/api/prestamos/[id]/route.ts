@@ -14,7 +14,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requirePermission('EDITAR_PRESTAMOS')
+    const session = await requirePermission('EDITAR_PRESTAMOS')
 
     const prestamoId = params.id
     const body = await request.json()
