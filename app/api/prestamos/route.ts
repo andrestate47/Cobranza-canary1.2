@@ -200,16 +200,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
+import { requirePermission } from "@/lib/permissions"
+
 export async function POST(request: NextRequest) {
   try {
     console.log("POST /api/prestamos - Iniciando creación de préstamo")
 
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      console.log("Error: No hay sesión válida o ID de usuario")
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    await requirePermission('CREAR_PRESTAMOS')
 
     console.log("Sesión válida - Usuario:", session.user.email, "ID:", session.user.id)
 

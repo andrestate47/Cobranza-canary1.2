@@ -7,21 +7,15 @@ import { Decimal } from "@prisma/client/runtime/library"
 import { Prisma } from "@prisma/client"
 import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
 
+import { requirePermission } from "@/lib/permissions"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 === API PAGOS POST INICIADO ===')
 
-    const session = await getServerSession(authOptions)
-    console.log('🔐 Sesión válida:', !!session)
-    console.log('🔐 Usuario ID:', session?.user?.id)
-    console.log('🔐 Usuario rol:', session?.user?.role)
-
-    if (!session) {
-      console.log('❌ No hay sesión válida')
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    await requirePermission('REGISTRAR_COBROS')
 
     let body
     try {

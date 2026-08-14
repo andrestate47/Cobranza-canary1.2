@@ -89,7 +89,7 @@ export function getUserEffectivePermissions(session: SessionWithUser | null): Pe
     ]
   }
 
-  if (session.user.permissions && Array.isArray(session.user.permissions) && session.user.permissions.length > 0) {
+  if (session.user.permissions !== undefined && Array.isArray(session.user.permissions)) {
     return session.user.permissions as Permission[]
   }
 
@@ -220,7 +220,7 @@ export async function recordTimeUsage(userId: string, minutes: number = 1): Prom
 export async function requirePermission(permission: Permission) {
   const session = await getServerSession(authOptions)
   
-  if (!session) {
+  if (!session?.user) {
     throw new Error('No autenticado')
   }
 
@@ -228,8 +228,23 @@ export async function requirePermission(permission: Permission) {
     throw new Error('Usuario desactivado')
   }
 
-  if (!hasPermission(session as SessionWithUser, permission)) {
-    throw new Error(`Permiso requerido: ${permission}`)
+  if (session.user.role !== 'ADMINISTRADOR') {
+    // Consultar permisos actualizados desde la base de datos para efecto inmediato
+    const dbPermissions = await prisma.userPermission.findMany({
+      where: { userId: session.user.id },
+      select: { permission: true }
+    })
+
+    const permList = dbPermissions.map((p: { permission: string }) => p.permission as Permission)
+    
+    // Si la tabla contiene registros para el usuario, esa es su lista explícita de permisos
+    const effectivePerms = dbPermissions.length > 0
+      ? permList
+      : (ROLE_PERMISSIONS[session.user.role || ""] || [])
+
+    if (!effectivePerms.includes(permission)) {
+      throw new Error(`No tienes permiso para realizar esta acción (${permission})`)
+    }
   }
 
   // Verificar límite de tiempo para cobradores

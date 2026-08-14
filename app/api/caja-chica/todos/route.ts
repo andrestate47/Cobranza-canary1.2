@@ -94,10 +94,23 @@ export async function GET(request: NextRequest) {
       totalGastosCobradores
     }
 
+    const fechaInicioParam = url.searchParams.get("fechaInicio")
+    const fechaFinParam = url.searchParams.get("fechaFin")
+
     // Obtener movimientos para el historial (filtrado por fecha o ultimos 50)
-    let dateFilter = {}
+    let dateFilter: any = {}
     let limit = 50
-    if (fechaParam) {
+    if (fechaInicioParam || fechaFinParam) {
+      const inicio = fechaInicioParam ? getEcuadorDayRange(fechaInicioParam).inicio : undefined
+      const fin = fechaFinParam ? getEcuadorDayRange(fechaFinParam).fin : undefined
+      dateFilter = {
+        fecha: {
+          ...(inicio ? { gte: inicio } : {}),
+          ...(fin ? { lte: fin } : {}),
+        }
+      }
+      limit = 500
+    } else if (fechaParam) {
       const { inicio, fin } = getEcuadorDayRange(fechaParam)
       dateFilter = {
         fecha: {

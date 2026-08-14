@@ -6,17 +6,15 @@ import { authOptions } from "@/lib/auth"
 import { registrarEliminacion } from "@/lib/auditoria"
 import { TipoEntidad } from "@prisma/client"
 
+import { requirePermission } from "@/lib/permissions"
+
 // PUT /api/prestamos/[id] - Editar préstamo
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    await requirePermission('EDITAR_PRESTAMOS')
 
     const prestamoId = params.id
     const body = await request.json()
@@ -202,11 +200,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('ELIMINAR_PRESTAMOS')
 
     const prestamoId = params.id
 

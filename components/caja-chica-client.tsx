@@ -96,7 +96,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const [asignarData, setAsignarData] = useState({
     cobradorId: "",
     monto: "",
-    descripcion: ""
+    descripcion: "",
+    fecha: ""
   })
 
   useEffect(() => {
@@ -104,12 +105,19 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
     if (!isCobrador) {
       cargarCobradores()
     }
-  }, [])
+  }, [filtroFechaInicio, filtroFechaFin])
 
   const cargarDatos = async () => {
     try {
       setLoading(true)
-      const endpoint = isCobrador ? "/api/caja-chica" : "/api/caja-chica/todos"
+      const params = new URLSearchParams()
+      if (filtroFechaInicio) params.append("fechaInicio", filtroFechaInicio)
+      if (filtroFechaFin) params.append("fechaFin", filtroFechaFin)
+      const queryStr = params.toString() ? `?${params.toString()}` : ""
+
+      const endpoint = isCobrador 
+        ? `/api/caja-chica${queryStr}` 
+        : `/api/caja-chica/todos${queryStr}`
       const response = await fetch(endpoint)
       
       if (!response.ok) throw new Error("Error al cargar datos")
@@ -118,9 +126,9 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       
       if (isCobrador) {
         setBalance(data.balance)
-        setMovimientos(data.movimientos)
+        setMovimientos(data.movimientos || [])
       } else {
-        setMovimientos(data)
+        setMovimientos(data.movimientosRecientes || (Array.isArray(data) ? data : []))
       }
     } catch (error) {
       toast({
@@ -162,6 +170,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
           tipo: "ENTREGADO",
           monto: parseFloat(asignarData.monto),
           descripcion: asignarData.descripcion,
+          fecha: asignarData.fecha || undefined,
           cobradorId: asignarData.cobradorId
         })
       })
@@ -174,7 +183,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       })
 
       setOpenAsignarDialog(false)
-      setAsignarData({ cobradorId: "", monto: "", descripcion: "" })
+      setAsignarData({ cobradorId: "", monto: "", descripcion: "", fecha: "" })
       cargarDatos()
     } catch (error) {
       toast({
@@ -189,7 +198,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const [tipoMovimiento, setTipoMovimiento] = useState<"GASTO" | "INGRESO" | "EGRESO">("GASTO")
   const [movimientoData, setMovimientoData] = useState({
     monto: "",
-    descripcion: ""
+    descripcion: "",
+    fecha: ""
   })
 
   const handleRegistrarMovimiento = async () => {
@@ -210,6 +220,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
           tipo: tipoMovimiento,
           monto: parseFloat(movimientoData.monto),
           descripcion: movimientoData.descripcion,
+          fecha: movimientoData.fecha || undefined,
           cobradorId: user?.id
         })
       })
@@ -222,7 +233,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       })
 
       setOpenMovimientoDialog(false)
-      setMovimientoData({ monto: "", descripcion: "" })
+      setMovimientoData({ monto: "", descripcion: "", fecha: "" })
       cargarDatos()
     } catch (error) {
       toast({
@@ -394,6 +405,16 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   />
                 </div>
                 <div>
+                  <Label>Fecha de asignación (Opcional - hoy por defecto)</Label>
+                  <Input
+                    type="date"
+                    value={asignarData.fecha}
+                    onChange={(e) => setAsignarData({...asignarData, fecha: e.target.value})}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="cursor-pointer"
+                  />
+                </div>
+                <div>
                   <Label>Descripción</Label>
                   <Textarea
                     value={asignarData.descripcion}
@@ -451,6 +472,16 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                     value={movimientoData.monto}
                     onChange={(e) => setMovimientoData({...movimientoData, monto: e.target.value})}
                     placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label>Fecha del movimiento (Opcional - hoy por defecto)</Label>
+                  <Input
+                    type="date"
+                    value={movimientoData.fecha}
+                    onChange={(e) => setMovimientoData({...movimientoData, fecha: e.target.value})}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="cursor-pointer"
                   />
                 </div>
                 <div>
@@ -526,37 +557,37 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         </Card>
       </div>
 
-      {/* Filtros (solo para supervisores/admin) */}
-      {!isCobrador && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-5">
-              <div>
-                <Label>Fecha Inicio</Label>
-                <Input
-                  type="date"
-                  value={filtroFechaInicio}
-                  onChange={(e) => setFiltroFechaInicio(e.target.value)}
-                  onClick={(e) => e.currentTarget.showPicker?.()}
-                  className="cursor-pointer"
-                />
-              </div>
-              <div>
-                <Label>Fecha Fin</Label>
-                <Input
-                  type="date"
-                  value={filtroFechaFin}
-                  onChange={(e) => setFiltroFechaFin(e.target.value)}
-                  onClick={(e) => e.currentTarget.showPicker?.()}
-                  className="cursor-pointer"
-                />
-              </div>
+      {/* Filtros de Fecha e Historial */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros y Consulta por Fecha
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`grid gap-4 ${isCobrador ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
+            <div>
+              <Label>Fecha Inicio</Label>
+              <Input
+                type="date"
+                value={filtroFechaInicio}
+                onChange={(e) => setFiltroFechaInicio(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="cursor-pointer"
+              />
+            </div>
+            <div>
+              <Label>Fecha Fin</Label>
+              <Input
+                type="date"
+                value={filtroFechaFin}
+                onChange={(e) => setFiltroFechaFin(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="cursor-pointer"
+              />
+            </div>
+            {!isCobrador && (
               <div>
                 <Label>Cobrador</Label>
                 <Select value={filtroCobrador} onValueChange={setFiltroCobrador}>
@@ -573,56 +604,83 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Tipo</Label>
-                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="ENTREGADO">Entregado</SelectItem>
-                    <SelectItem value="GASTADO">Gastado</SelectItem>
-                    <SelectItem value="DEVUELTO">Devuelto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Estado</Label>
-                <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="PENDIENTE">Pendiente</SelectItem>
-                    <SelectItem value="APROBADO">Aprobado</SelectItem>
-                    <SelectItem value="RECHAZADO">Rechazado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            )}
+            <div>
+              <Label>Tipo</Label>
+              <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="ENTREGADO">Entregado</SelectItem>
+                  <SelectItem value="GASTADO">Gastado</SelectItem>
+                  <SelectItem value="DEVUELTO">Devuelto</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setFiltroFechaInicio("")
-                  setFiltroFechaFin("")
-                  setFiltroCobrador("all")
-                  setFiltroTipo("all")
-                  setFiltroEstado("all")
-                }}
-              >
-                Limpiar Filtros
-              </Button>
-              <Button variant="outline" onClick={exportarReporte}>
+            <div>
+              <Label>Estado</Label>
+              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                  <SelectItem value="APROBADO">Aprobado</SelectItem>
+                  <SelectItem value="RECHAZADO">Rechazado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-4 items-center">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = format(new Date(), "yyyy-MM-dd")
+                setFiltroFechaInicio(today)
+                setFiltroFechaFin(today)
+              }}
+            >
+              Hoy
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const yesterday = new Date()
+                yesterday.setDate(yesterday.getDate() - 1)
+                const yesterdayStr = format(yesterday, "yyyy-MM-dd")
+                setFiltroFechaInicio(yesterdayStr)
+                setFiltroFechaFin(yesterdayStr)
+              }}
+            >
+              Ayer
+            </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFiltroFechaInicio("")
+                setFiltroFechaFin("")
+                setFiltroCobrador("all")
+                setFiltroTipo("all")
+                setFiltroEstado("all")
+              }}
+            >
+              Limpiar Filtros
+            </Button>
+            {!isCobrador && (
+              <Button variant="outline" size="sm" onClick={exportarReporte} className="ml-auto">
                 <Download className="mr-2 h-4 w-4" />
                 Exportar Reporte
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabla de Movimientos */}
       <Card>

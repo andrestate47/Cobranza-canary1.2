@@ -5,14 +5,13 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
+import { requirePermission } from "@/lib/permissions"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    await requirePermission('REGISTRAR_COBROS')
 
     const body = await request.json()
     const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fotoMiniatura, fecha, metodoPago } = body

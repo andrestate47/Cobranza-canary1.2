@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { ArrowLeft, Plus, Trash2, Edit2, Users, MapPin, UserCheck } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Edit2, Users, MapPin, UserCheck, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -126,6 +126,8 @@ export default function GestionRutas() {
   const [rutaParaAsignar, setRutaParaAsignar] = useState<string>("")
   const [clientesSeleccionados, setClientesSeleccionados] = useState<string[]>([])
   const [rutaParaClientes, setRutaParaClientes] = useState<string>("")
+  const [busquedaCliente, setBusquedaCliente] = useState<string>("")
+  const [filtroOrigenClientes, setFiltroOrigenClientes] = useState<string>("sin_ruta")
 
   useEffect(() => {
     cargarDatos()
@@ -344,20 +346,37 @@ export default function GestionRutas() {
     }
   }
 
-  function abrirModalAsignarClientes(ruta?: Ruta) {
-    setClientesSeleccionados([])
+  function abrirModalAsignarClientes(ruta?: Ruta, clientePreseleccionadoId?: string) {
+    setClientesSeleccionados(clientePreseleccionadoId ? [clientePreseleccionadoId] : [])
     setRutaParaClientes(ruta?.id || "")
+    setBusquedaCliente("")
+    setFiltroOrigenClientes(clientePreseleccionadoId ? "todas" : "sin_ruta")
     setModalClientesAbierto(true)
   }
 
+  const clientesFiltrados = clientes.filter(cliente => {
+    if (filtroOrigenClientes === "sin_ruta" && cliente.rutaId !== null) return false
+    if (filtroOrigenClientes !== "sin_ruta" && filtroOrigenClientes !== "todas") {
+      if (cliente.rutaId !== filtroOrigenClientes) return false
+    }
+    if (busquedaCliente.trim()) {
+      const q = busquedaCliente.toLowerCase().trim()
+      const nombreCompleto = `${cliente.nombre} ${cliente.apellido}`.toLowerCase()
+      const codigo = (cliente.codigoCliente || "").toLowerCase()
+      const doc = (cliente.documento || "").toLowerCase()
+      return nombreCompleto.includes(q) || codigo.includes(q) || doc.includes(q)
+    }
+    return true
+  })
+
   async function asignarClientes() {
     if (clientesSeleccionados.length === 0) {
-      toast.error("Selecciona al menos un cliente")
+      toast.error("Selecciona al menos una persona")
       return
     }
 
     if (!rutaParaClientes) {
-      toast.error("Selecciona una ruta")
+      toast.error("Selecciona una ruta de destino")
       return
     }
 
@@ -400,9 +419,9 @@ export default function GestionRutas() {
     })
   }
 
-  function seleccionarTodosClientes() {
-    const clientesSinRuta = clientes.filter(c => !c.rutaId)
-    setClientesSeleccionados(clientesSinRuta.map(c => c.id))
+  function seleccionarTodosClientesVisibles() {
+    const idsVisibles = clientesFiltrados.map(c => c.id)
+    setClientesSeleccionados(prev => Array.from(new Set([...prev, ...idsVisibles])))
   }
 
   function deseleccionarTodosClientes() {
@@ -661,14 +680,27 @@ export default function GestionRutas() {
                                     </div>
                                   )}
                                 </div>
-                                <button
-                                  onClick={() => desasignarCliente(cliente.id)}
-                                  className="text-rose-600 hover:text-rose-700 font-bold text-base flex-shrink-0"
-                                  disabled={saving}
-                                  title="Desasignar cliente"
-                                >
-                                  ×
-                                </button>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => abrirModalAsignarClientes(undefined, cliente.id)}
+                                    disabled={saving}
+                                    title="Mover a otra Ruta Destino"
+                                    className="text-[11px] text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40 h-7 px-1.5"
+                                  >
+                                    <MapPin className="h-3 w-3 mr-0.5" />
+                                    Mover
+                                  </Button>
+                                  <button
+                                    onClick={() => desasignarCliente(cliente.id)}
+                                    className="text-rose-600 hover:text-rose-700 font-bold text-base px-1"
+                                    disabled={saving}
+                                    title="Desasignar cliente"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -943,19 +975,54 @@ export default function GestionRutas() {
               </Select>
             </div>
 
+            {/* Buscador y Filtro de Origen */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Buscar Persona</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Nombre, apellido, código o doc..."
+                    value={busquedaCliente}
+                    onChange={(e) => setBusquedaCliente(e.target.value)}
+                    className="pl-8 h-9 text-xs bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36]"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Filtrar por Ruta Origen</Label>
+                <Select value={filtroOrigenClientes} onValueChange={setFiltroOrigenClientes}>
+                  <SelectTrigger className="h-9 text-xs bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36]">
+                    <SelectValue placeholder="Filtrar por origen" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-[#0E1F1C]">
+                    <SelectItem value="sin_ruta">Sin Ruta ({clientes.filter(c => !c.rutaId).length})</SelectItem>
+                    <SelectItem value="todas">Todas las personas ({clientes.length})</SelectItem>
+                    {rutas.map(r => (
+                      <SelectItem key={r.id} value={r.id}>
+                        Ruta {r.numero} - {r.nombre} ({clientes.filter(c => c.rutaId === r.id).length})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <Label className="text-gray-700 dark:text-gray-200 font-semibold">Clientes Sin Ruta ({clientes.filter(c => !c.rutaId).length})</Label>
+                <Label className="text-gray-700 dark:text-gray-200 font-semibold text-xs">
+                  Personas disponibles ({clientesFiltrados.length})
+                </Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={seleccionarTodosClientes}
-                    disabled={saving || clientes.filter(c => !c.rutaId).length === 0}
+                    onClick={seleccionarTodosClientesVisibles}
+                    disabled={saving || clientesFiltrados.length === 0}
                     className="border-gray-300 dark:border-[#1F3A36] text-gray-700 dark:text-gray-200 text-xs hover:bg-gray-100 dark:hover:bg-[#1A3330]"
                   >
-                    Seleccionar Todos
+                    Seleccionar Visibles
                   </Button>
                   <Button
                     type="button"
@@ -970,14 +1037,16 @@ export default function GestionRutas() {
                 </div>
               </div>
               <div className="border border-gray-200 dark:border-[#1F3A36] rounded-lg max-h-[280px] overflow-y-auto bg-white dark:bg-[#152e2a]">
-                {clientes.filter(c => !c.rutaId).length === 0 ? (
-                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                    No hay clientes sin ruta asignada
+                {clientesFiltrados.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-xs">
+                    No se encontraron personas con los criterios seleccionados
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100 dark:divide-[#1F3A36]">
-                    {clientes.filter(c => !c.rutaId).map((cliente) => {
+                    {clientesFiltrados.map((cliente) => {
                       const isChecked = clientesSeleccionados.includes(cliente.id)
+                      const rutaOrigen = rutas.find(r => r.id === cliente.rutaId)
+
                       return (
                         <label
                           key={cliente.id}
@@ -995,8 +1064,19 @@ export default function GestionRutas() {
                             className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300 dark:border-[#1F3A36] cursor-pointer"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-                              {cliente.nombre} {cliente.apellido}
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                                {cliente.nombre} {cliente.apellido}
+                              </span>
+                              {rutaOrigen ? (
+                                <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-full shrink-0">
+                                  Ruta {rutaOrigen.numero}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full shrink-0">
+                                  Sin Ruta
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-emerald-300/80">
                               Código: {cliente.codigoCliente} • Doc: {cliente.documento}
@@ -1011,11 +1091,11 @@ export default function GestionRutas() {
               <div className="mt-2 text-xs flex flex-wrap items-center justify-between gap-2">
                 {clientesSeleccionados.length > 0 ? (
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    ✓ {clientesSeleccionados.length} cliente(s) seleccionado(s)
+                    ✓ {clientesSeleccionados.length} persona(s) seleccionada(s)
                   </span>
                 ) : (
                   <span className="text-gray-500 dark:text-gray-400">
-                    Marca las casillas de los clientes que deseas asignar.
+                    Marca las casillas de las personas que deseas mover a la Ruta Destino.
                   </span>
                 )}
                 {clientesSeleccionados.length > 0 && !rutaParaClientes && (

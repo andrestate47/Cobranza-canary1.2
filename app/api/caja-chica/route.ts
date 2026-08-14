@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
 import { getEcuadorDayRange } from "@/lib/date-utils"
+import { hasPermission } from "@/lib/permissions"
 
 // GET /api/caja-chica - Obtener saldo y movimientos del cobrador actual
 export async function GET(request: NextRequest) {
@@ -44,9 +45,22 @@ export async function GET(request: NextRequest) {
     const balance = totalEntregado.minus(totalGastado).minus(totalDevuelto)
 
     // Construir filtro de fecha para el historial
-    let dateFilter = {}
+    const fechaInicioParam = url.searchParams.get("fechaInicio")
+    const fechaFinParam = url.searchParams.get("fechaFin")
+
+    let dateFilter: any = {}
     let limit = 50
-    if (fechaParam) {
+    if (fechaInicioParam || fechaFinParam) {
+      const inicio = fechaInicioParam ? getEcuadorDayRange(fechaInicioParam).inicio : undefined
+      const fin = fechaFinParam ? getEcuadorDayRange(fechaFinParam).fin : undefined
+      dateFilter = {
+        fecha: {
+          ...(inicio ? { gte: inicio } : {}),
+          ...(fin ? { lte: fin } : {}),
+        }
+      }
+      limit = 500
+    } else if (fechaParam) {
       const { inicio, fin } = getEcuadorDayRange(fechaParam)
       dateFilter = {
         fecha: {
@@ -139,7 +153,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    let { cobradorId, tipo, monto, descripcion, observaciones, comprobante } = body
+    let { cobradorId, tipo, monto, descripcion, observaciones, comprobante, fecha } = body
+    const customDate = fecha ? new Date(fecha.includes('T') ? fecha : `${fecha}T12:00:00.000Z`) : undefined
 
     const isCobrador = session.user.role === "COBRADOR"
     if (isCobrador) {
@@ -151,6 +166,21 @@ export async function POST(request: NextRequest) {
       }
       // Forzar que el cobrador solo pueda afectar su propia caja
       cobradorId = session.user.id
+    }
+
+    // Verificar permisos específicos de gastos e ingresos
+    if ((tipo === "GASTO" || tipo === "GASTADO" || tipo === "EGRESO") && !hasPermission(session as any, 'REGISTRAR_GASTOS')) {
+      return NextResponse.json(
+        { error: "No tienes permiso para registrar gastos" },
+        { status: 403 }
+      )
+    }
+
+    if (tipo === "INGRESO" && !hasPermission(session as any, 'REGISTRAR_INGRESOS')) {
+      return NextResponse.json(
+        { error: "No tienes permiso para registrar ingresos" },
+        { status: 403 }
+      )
     }
 
     // Validaciones - APERTURA_CAJA y EGRESO_GENERAL no requieren cobradorId
@@ -192,6 +222,7 @@ export async function POST(request: NextRequest) {
           observaciones,
           comprobante,
           estado: "APROBADO",
+          ...(customDate ? { fecha: customDate } : {}),
         },
         include: {
           asignadoPor: {
@@ -236,6 +267,7 @@ export async function POST(request: NextRequest) {
           observaciones,
           comprobante,
           estado: "APROBADO",
+          ...(customDate ? { fecha: customDate } : {}),
         },
         include: {
           asignadoPor: {
@@ -298,6 +330,7 @@ export async function POST(request: NextRequest) {
         observaciones,
         comprobante,
         estado: tipo === "ENTREGADO" || tipo === "ENTREGA" ? "APROBADO" : "APROBADO",
+        ...(customDate ? { fecha: customDate } : {}),
       },
       include: {
         cobrador: {

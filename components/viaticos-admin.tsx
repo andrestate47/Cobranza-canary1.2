@@ -58,6 +58,7 @@ export function ViaticosAdmin() {
   const [selectedCobrador, setSelectedCobrador] = useState("")
   const [monto, setMonto] = useState("")
   const [observaciones, setObservaciones] = useState("")
+  const [fechaMovimiento, setFechaMovimiento] = useState("")
 
   // Totales Globales
   const [totalesGlobales, setTotalesGlobales] = useState({
@@ -130,9 +131,11 @@ export function ViaticosAdmin() {
         observaciones: string
         tipo?: string
         cobradorId?: string
+        fecha?: string
       } = {
         monto: montoNumerico,
         observaciones,
+        fecha: fechaMovimiento || fechaSeleccionada || undefined,
       }
       
       if (esMontoInicial) {
@@ -182,6 +185,7 @@ export function ViaticosAdmin() {
     setSelectedCobrador("")
     setMonto("")
     setObservaciones("")
+    setFechaMovimiento("")
     setEsMontoInicial(false)
     setEsEgresoGeneral(false)
   }
@@ -748,6 +752,18 @@ export function ViaticosAdmin() {
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
                 💡 Ingresa solo números (sin separadores): 5000000 para cinco millones
               </p>
+            </div>
+
+            <div>
+              <Label htmlFor="fechaMovimiento" className="text-gray-700 dark:text-gray-200 font-semibold">Fecha (opcional - hoy por defecto)</Label>
+              <Input
+                id="fechaMovimiento"
+                type="date"
+                value={fechaMovimiento}
+                onChange={(e) => setFechaMovimiento(e.target.value)}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white cursor-pointer"
+              />
             </div>
 
             <div>

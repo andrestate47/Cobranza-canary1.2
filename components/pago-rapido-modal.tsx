@@ -37,6 +37,7 @@ import BoletaPago from "@/components/boleta-pago"
 import BoletaScaler from "@/components/boleta-scaler"
 import { captureBoletaAsCanvas } from "@/lib/capture-boleta"
 import { useCurrency } from "@/hooks/use-currency"
+import { usePermissions } from "@/hooks/use-permissions"
 
 interface PrestamoConCliente {
   id: string
@@ -128,6 +129,8 @@ export default function PagoRapidoModal({
   const fileInputMiniaturaRef = useRef<HTMLInputElement>(null)
   const lastSelectInteraction = useRef<number>(0)
   const { toast } = useToast()
+  const { canRegisterPayments, isAdmin } = usePermissions()
+  const tienePermisoPago = canRegisterPayments || isAdmin
 
   useEffect(() => {
     return () => {
@@ -372,6 +375,15 @@ export default function PagoRapidoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!tienePermisoPago) {
+      toast({
+        title: "Permiso denegado",
+        description: "No tienes permiso para registrar cobros. Contacta a un administrador.",
+        variant: "destructive",
+      })
+      return
+    }
 
     // Validaciones de entrada más robustas
     if (!monto || monto.trim() === '') {
@@ -682,6 +694,13 @@ export default function PagoRapidoModal({
                 Registrar pago para el préstamo
               </DialogDescription>
             </DialogHeader>
+
+            {!tienePermisoPago && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center gap-2 mb-4">
+                <span>⚠️</span>
+                <span>Tu usuario no tiene el permiso &quot;Registrar Cobros&quot;. Contacta a un administrador para habilitarlo.</span>
+              </div>
+            )}
 
             {/* Info del cliente */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -1048,7 +1067,7 @@ export default function PagoRapidoModal({
                 <Button
                   type="submit"
                   className="btn-primary"
-                  disabled={loading || !monto}
+                  disabled={loading || !monto || !tienePermisoPago}
                 >
                   {loading ? (
                     <>
