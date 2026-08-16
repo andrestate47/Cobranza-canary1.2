@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { getDiasMoraSinDomingos } from "@/lib/date-utils"
+import { getEcuadorDayRange, getDiasMoraSinDomingos } from "@/lib/date-utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,11 +34,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Convertir fecha a rango del día CORRECTAMENTE
-    const [year, month, day] = fecha.split('-').map(Number)
-
-    const fechaInicio = new Date(year, month - 1, day, 0, 0, 0, 0)
-    const fechaFin = new Date(year, month - 1, day, 23, 59, 59, 999)
+    // Obtener rango del día según la zona horaria de Ecuador
+    const { inicio: fechaInicio, fin: fechaFin } = getEcuadorDayRange(fecha)
 
     // Ejecutar todas las consultas del informe de clientes en paralelo con Promise.all
     const [
@@ -95,7 +92,7 @@ export async function GET(request: NextRequest) {
         where: {
           estado: 'ACTIVO',
           fechaFin: {
-            lt: new Date()
+            lt: fechaFin
           },
           cliente: routeFilter
         }
@@ -190,7 +187,7 @@ export async function GET(request: NextRequest) {
         where: {
           estado: 'ACTIVO',
           fechaFin: {
-            lt: new Date()
+            lt: fechaFin
           },
           cliente: routeFilter
         },
