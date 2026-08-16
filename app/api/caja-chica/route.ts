@@ -298,9 +298,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Obtener saldo actual del cobrador
+    // Obtener saldo previo del cobrador para la fecha del movimiento
     const ultimoMovimiento = await prisma.movimientoCajaChica.findFirst({
-      where: { cobradorId },
+      where: {
+        cobradorId,
+        ...(customDate ? { fecha: { lte: customDate } } : {})
+      },
       orderBy: { fecha: "desc" },
     })
 

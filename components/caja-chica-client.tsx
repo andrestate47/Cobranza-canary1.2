@@ -270,8 +270,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   }
 
   const movimientosFiltrados = movimientos.filter(mov => {
-    if (filtroFechaInicio && new Date(mov.fecha) < new Date(filtroFechaInicio)) return false
-    if (filtroFechaFin && new Date(mov.fecha) > new Date(filtroFechaFin)) return false
+    if (filtroFechaInicio && new Date(mov.fecha) < new Date(`${filtroFechaInicio}T00:00:00.000`)) return false
+    if (filtroFechaFin && new Date(mov.fecha) > new Date(`${filtroFechaFin}T23:59:59.999`)) return false
     if (filtroCobrador !== "all" && mov.cobradorId !== filtroCobrador) return false
     if (filtroTipo !== "all" && mov.tipo !== filtroTipo) return false
     if (filtroEstado !== "all" && mov.estado !== filtroEstado) return false

@@ -89,7 +89,7 @@ export function getUserEffectivePermissions(session: SessionWithUser | null): Pe
     ]
   }
 
-  if (session.user.permissions !== undefined && Array.isArray(session.user.permissions)) {
+  if (session.user.permissions !== undefined && Array.isArray(session.user.permissions) && session.user.permissions.length > 0) {
     return session.user.permissions as Permission[]
   }
 
@@ -278,7 +278,7 @@ export async function requireRole(minRole: 'COBRADOR' | 'SUPERVISOR' | 'ADMINIST
     'ADMINISTRADOR': 3
   }
 
-  const userLevel = roleHierarchy[session.user.role]
+  const userLevel = roleHierarchy[session.user.role as keyof typeof roleHierarchy] || 0
   const requiredLevel = roleHierarchy[minRole]
 
   if (userLevel < requiredLevel) {
@@ -302,9 +302,22 @@ export async function requireUserManagementPermission() {
     throw new Error('Usuario desactivado')
   }
 
-  const isAllowed = session.user.role === 'ADMINISTRADOR' ||
-    hasPermission(session as SessionWithUser, 'GESTIONAR_USUARIOS') ||
-    hasPermission(session as SessionWithUser, 'GESTIONAR_PERMISOS')
+  if (session.user.role === 'ADMINISTRADOR') {
+    return session
+  }
+
+  // Consultar permisos actualizados desde la base de datos para efecto inmediato
+  const dbPermissions = await prisma.userPermission.findMany({
+    where: { userId: session.user.id },
+    select: { permission: true }
+  })
+
+  const permList = dbPermissions.map((p: { permission: string }) => p.permission as Permission)
+  const effectivePerms = dbPermissions.length > 0
+    ? permList
+    : (ROLE_PERMISSIONS[session.user.role || ""] || [])
+
+  const isAllowed = effectivePerms.includes('GESTIONAR_USUARIOS') || effectivePerms.includes('GESTIONAR_PERMISOS')
 
   if (!isAllowed) {
     throw new Error('No tienes permiso para gestionar usuarios')

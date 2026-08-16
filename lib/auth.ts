@@ -91,6 +91,37 @@ export const authOptions: NextAuthOptions = {
         token.timeLimit = (user as any).timeLimit
         token.permissions = (user as any).permissions
         token.supervisor = (user as any).supervisor
+      } else if (token.sub) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: {
+              role: true,
+              firstName: true,
+              lastName: true,
+              isActive: true,
+              timeLimit: true,
+              permissions: { select: { permission: true } },
+              supervisor: { select: { id: true, name: true, firstName: true, lastName: true } }
+            }
+          })
+          if (dbUser) {
+            token.role = dbUser.role
+            token.firstName = dbUser.firstName || undefined
+            token.lastName = dbUser.lastName || undefined
+            token.isActive = dbUser.isActive
+            token.timeLimit = dbUser.timeLimit || undefined
+            token.permissions = dbUser.permissions.map(p => p.permission)
+            token.supervisor = dbUser.supervisor ? {
+              id: dbUser.supervisor.id,
+              name: dbUser.supervisor.name || undefined,
+              firstName: dbUser.supervisor.firstName || undefined,
+              lastName: dbUser.supervisor.lastName || undefined
+            } : undefined
+          }
+        } catch (error) {
+          console.error("Error refreshing token permissions:", error)
+        }
       }
       return token
     },

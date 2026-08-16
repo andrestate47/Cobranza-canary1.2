@@ -40,8 +40,40 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Calculate overall totals and balances from ALL movements
+    const fechaInicioParam = url.searchParams.get("fechaInicio")
+    const fechaFinParam = url.searchParams.get("fechaFin")
+
+    // Obtener movimientos para el historial (filtrado por fecha o ultimos 50)
+    let dateFilter: any = {}
+    let limit = 50
+    let maxFechaSaldo: Date | undefined = undefined
+
+    if (fechaInicioParam || fechaFinParam) {
+      const inicio = fechaInicioParam ? getEcuadorDayRange(fechaInicioParam).inicio : undefined
+      const fin = fechaFinParam ? getEcuadorDayRange(fechaFinParam).fin : undefined
+      dateFilter = {
+        fecha: {
+          ...(inicio ? { gte: inicio } : {}),
+          ...(fin ? { lte: fin } : {}),
+        }
+      }
+      maxFechaSaldo = fin
+      limit = 500
+    } else if (fechaParam) {
+      const { inicio, fin } = getEcuadorDayRange(fechaParam)
+      dateFilter = {
+        fecha: {
+          gte: inicio,
+          lte: fin,
+        }
+      }
+      maxFechaSaldo = fin
+      limit = 500 // Más límite si se busca un día específico
+    }
+
+    // Calculate totals and balances (up to specified maxFechaSaldo or all time)
     const allTimeMovements = await prisma.movimientoCajaChica.findMany({
+      where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
       select: { tipo: true, monto: true, cobradorId: true }
     })
     
@@ -92,33 +124,6 @@ export async function GET(request: NextRequest) {
       totalDevoluciones,
       totalEgresosGenerales,
       totalGastosCobradores
-    }
-
-    const fechaInicioParam = url.searchParams.get("fechaInicio")
-    const fechaFinParam = url.searchParams.get("fechaFin")
-
-    // Obtener movimientos para el historial (filtrado por fecha o ultimos 50)
-    let dateFilter: any = {}
-    let limit = 50
-    if (fechaInicioParam || fechaFinParam) {
-      const inicio = fechaInicioParam ? getEcuadorDayRange(fechaInicioParam).inicio : undefined
-      const fin = fechaFinParam ? getEcuadorDayRange(fechaFinParam).fin : undefined
-      dateFilter = {
-        fecha: {
-          ...(inicio ? { gte: inicio } : {}),
-          ...(fin ? { lte: fin } : {}),
-        }
-      }
-      limit = 500
-    } else if (fechaParam) {
-      const { inicio, fin } = getEcuadorDayRange(fechaParam)
-      dateFilter = {
-        fecha: {
-          gte: inicio,
-          lte: fin,
-        }
-      }
-      limit = 500 // Más límite si se busca un día específico
     }
 
     const todosMovimientos = await prisma.movimientoCajaChica.findMany({

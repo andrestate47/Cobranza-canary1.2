@@ -1,7 +1,7 @@
 
 
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/permissions"
+import { requireUserManagementPermission } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 // GET - Obtener lista de supervisores disponibles
 export async function GET(request: NextRequest) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requireUserManagementPermission()
 
     const supervisores = await prisma.user.findMany({
       where: {

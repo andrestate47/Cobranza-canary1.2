@@ -144,7 +144,6 @@ export default function AdminUsuarios() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...usuario,
           isActive: !isActive
         })
       })
