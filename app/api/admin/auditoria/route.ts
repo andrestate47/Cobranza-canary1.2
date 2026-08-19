@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/permissions"
+import { requirePermission } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@prisma/client"
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 // GET - Obtener registros de auditoría
 export async function GET(request: NextRequest) {
   try {
-    await requireRole('ADMINISTRADOR')
+    await requirePermission('VER_AUDITORIA')
 
     const { searchParams } = new URL(request.url)
     const entidad = searchParams.get('entidad')

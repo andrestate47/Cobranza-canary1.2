@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Eye, EyeOff, Info, Upload, X, FileText, User } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { ROLE_PERMISSIONS } from "@/lib/permissions"
 // MapLocationPicker eliminado - ahora se usa un simple link de Google Maps
 
 interface Usuario {
@@ -67,7 +68,8 @@ const PERMISOS_BASICOS = [
   { key: 'VER_DETALLES_PRESTAMO', label: 'Ver Detalles de Préstamos', description: 'Ver información detallada' },
   { key: 'REGISTRAR_COBROS', label: 'Registrar Cobros', description: 'Registrar pagos de clientes' },
   { key: 'MAPA_CLIENTES', label: 'Mapa de Clientes', description: 'Ver ubicaciones en mapa' },
-  { key: 'REGISTRAR_GASTOS', label: 'Registrar Gastos', description: 'Registrar gastos operativos' }
+  { key: 'REGISTRAR_GASTOS', label: 'Registrar Gastos', description: 'Registrar gastos operativos' },
+  { key: 'REGISTRAR_INGRESOS', label: 'Registrar Ingresos', description: 'Registrar ingresos en el sistema' }
 ]
 
 const PERMISOS_GESTION = [
@@ -76,7 +78,8 @@ const PERMISOS_GESTION = [
   { key: 'CREAR_PRESTAMOS', label: 'Crear Préstamos', description: 'Crear nuevos préstamos' },
   { key: 'EDITAR_PRESTAMOS', label: 'Editar Préstamos', description: 'Modificar préstamos existentes' },
   { key: 'ELIMINAR_PRESTAMOS', label: 'Eliminar Préstamos', description: 'Eliminar préstamos del sistema' },
-  { key: 'REGISTRAR_TRANSFERENCIAS', label: 'Registrar Transferencias', description: 'Registrar transferencias bancarias' }
+  { key: 'REGISTRAR_TRANSFERENCIAS', label: 'Registrar Transferencias', description: 'Registrar transferencias bancarias' },
+  { key: 'VER_TRANSFERENCIAS', label: 'Ver Transferencias', description: 'Ver histórico de transferencias' }
 ]
 
 const PERMISOS_AVANZADOS = [
@@ -367,16 +370,7 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
   }
 
   const getPermisosRecomendados = (role: string) => {
-    switch (role) {
-      case 'COBRADOR':
-        return PERMISOS_BASICOS.map(p => p.key)
-      case 'SUPERVISOR':
-        return [...PERMISOS_BASICOS.map(p => p.key), ...PERMISOS_GESTION.map(p => p.key), ...PERMISOS_AVANZADOS.map(p => p.key)]
-      case 'ADMINISTRADOR':
-        return [] // Los administradores tienen acceso total por defecto
-      default:
-        return []
-    }
+    return ROLE_PERMISSIONS[role] || []
   }
 
   const aplicarPermisosRecomendados = () => {
@@ -716,11 +710,13 @@ export default function FormularioUsuario({ usuario, onSuccess }: FormularioUsua
               <Select
                 value={formData.role}
                 onValueChange={(value) => {
-                  setFormData(prev => ({ ...prev, role: value as 'ADMINISTRADOR' | 'SUPERVISOR' | 'COBRADOR' }))
-                  // Limpiar supervisor si no es cobrador
-                  if (value !== 'COBRADOR') {
-                    setFormData(prev => ({ ...prev, supervisorId: '' }))
-                  }
+                  const newRole = value as 'ADMINISTRADOR' | 'SUPERVISOR' | 'COBRADOR'
+                  setFormData(prev => ({
+                    ...prev,
+                    role: newRole,
+                    permissions: ROLE_PERMISSIONS[newRole] || [],
+                    supervisorId: newRole !== 'COBRADOR' ? '' : prev.supervisorId
+                  }))
                 }}
               >
                 <SelectTrigger className="bg-white dark:bg-[#152e2a] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white">

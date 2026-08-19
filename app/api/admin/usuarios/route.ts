@@ -47,33 +47,39 @@ export async function GET(request: NextRequest) {
     })
 
     // Formatear datos para frontend
-    const usuariosFormateados = usuarios.map(usuario => ({
-      id: usuario.id,
-      email: usuario.email,
-      firstName: usuario.firstName,
-      lastName: usuario.lastName,
-      name: usuario.name,
-      role: usuario.role,
-      isActive: usuario.isActive,
-      timeLimit: usuario.timeLimit,
-      lastLogin: usuario.lastLogin,
-      createdAt: usuario.createdAt,
-      supervisor: usuario.supervisor,
-      supervisados: usuario.supervisados,
-      documentoIdentificacion: usuario.documentoIdentificacion,
-      profilePhoto: usuario.profilePhoto,
-      phone: usuario.phone,
-      phoneReferencial: usuario.phoneReferencial,
-      address: usuario.address,
-      pais: usuario.pais,
-      ciudad: usuario.ciudad,
-      ubicacion: usuario.ubicacion,
-      mapLink: usuario.mapLink,
-      referenciaFamiliar: usuario.referenciaFamiliar,
-      referenciaTrabajo: usuario.referenciaTrabajo,
-      permissions: usuario.permissions.map(p => p.permission),
-      stats: usuario._count
-    }))
+    const usuariosFormateados = usuarios.map(usuario => {
+      const effectivePermissions = usuario.permissions.length > 0
+        ? usuario.permissions.map(p => p.permission)
+        : (ROLE_PERMISSIONS[usuario.role] || [])
+
+      return {
+        id: usuario.id,
+        email: usuario.email,
+        firstName: usuario.firstName,
+        lastName: usuario.lastName,
+        name: usuario.name,
+        role: usuario.role,
+        isActive: usuario.isActive,
+        timeLimit: usuario.timeLimit,
+        lastLogin: usuario.lastLogin,
+        createdAt: usuario.createdAt,
+        supervisor: usuario.supervisor,
+        supervisados: usuario.supervisados,
+        documentoIdentificacion: usuario.documentoIdentificacion,
+        profilePhoto: usuario.profilePhoto,
+        phone: usuario.phone,
+        phoneReferencial: usuario.phoneReferencial,
+        address: usuario.address,
+        pais: usuario.pais,
+        ciudad: usuario.ciudad,
+        ubicacion: usuario.ubicacion,
+        mapLink: usuario.mapLink,
+        referenciaFamiliar: usuario.referenciaFamiliar,
+        referenciaTrabajo: usuario.referenciaTrabajo,
+        permissions: effectivePermissions,
+        stats: usuario._count
+      }
+    })
 
     return NextResponse.json(usuariosFormateados)
   } catch (error: unknown) {
@@ -81,7 +87,7 @@ export async function GET(request: NextRequest) {
     const msg = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') || msg.includes('permiso') ? 403 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') || msg.includes('autenticado') ? 403 : 500 }
     )
   }
 }
@@ -267,7 +273,7 @@ export async function POST(request: NextRequest) {
     const msg = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') ? 401 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') || msg.includes('autenticado') ? 403 : 500 }
     )
   }
 }

@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Prisma } from "@prisma/client"
 import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
+import { requirePermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -79,10 +80,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('REGISTRAR_GASTOS')
 
     const body = await request.json()
     const { concepto, monto, observaciones, fotoComprobante } = body

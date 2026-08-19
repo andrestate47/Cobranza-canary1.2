@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Info, Shield, User, Crown, CheckCircle, XCircle, Settings } from "lucide-react"
+import { ROLE_PERMISSIONS } from "@/lib/permissions"
 
 interface Usuario {
   id: string
@@ -99,20 +100,6 @@ const CATEGORIAS_PERMISOS = [
   }
 ]
 
-// Permisos recomendados por rol
-const PERMISOS_POR_ROL: Record<string, string[]> = {
-  SUPERVISOR: [
-    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 'REGISTRAR_COBROS',
-    'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 'CREAR_CLIENTES', 'EDITAR_CLIENTES',
-    'CREAR_PRESTAMOS', 'EDITAR_PRESTAMOS', 'REGISTRAR_TRANSFERENCIAS', 'VER_TRANSFERENCIAS',
-    'VER_REPORTES', 'REALIZAR_CIERRE_DIA', 'VER_CIERRES_HISTORICOS'
-  ],
-  COBRADOR: [
-    'VER_DASHBOARD', 'VER_LISTADO_GENERAL', 'VER_DETALLES_PRESTAMO', 'REGISTRAR_COBROS',
-    'MAPA_CLIENTES', 'REGISTRAR_GASTOS', 'CREAR_CLIENTES', 'CREAR_PRESTAMOS'
-  ]
-}
-
 export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioProps) {
   const [permisos, setPermisos] = useState<string[]>(usuario.permissions || [])
   const [loading, setLoading] = useState(false)
@@ -127,7 +114,7 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
   }
 
   const aplicarPermisosRecomendados = () => {
-    const permisosRecomendados = PERMISOS_POR_ROL[usuario.role] || []
+    const permisosRecomendados = ROLE_PERMISSIONS[usuario.role] || []
     setPermisos(permisosRecomendados)
     toast({
       title: "Permisos aplicados",
@@ -287,7 +274,7 @@ export default function PermisosUsuario({ usuario, onSuccess }: PermisosUsuarioP
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <Info className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>
-                  Recomendado para {usuario.role}: {PERMISOS_POR_ROL[usuario.role]?.length || 0} permisos
+                  Recomendado para {usuario.role}: {ROLE_PERMISSIONS[usuario.role]?.length || 0} permisos
                 </span>
               </div>
             </div>

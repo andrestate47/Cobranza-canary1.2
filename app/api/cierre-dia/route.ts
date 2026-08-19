@@ -6,23 +6,13 @@ import { prisma } from "@/lib/db"
 
 import { getEcuadorDayRange, normalizeToEcuadorMidnight } from "@/lib/date-utils"
 import { calcularSaldoParaDia, obtenerSaldoInicialParaDia, recalcularYPropagarSaldos } from "@/lib/cierre-utils"
+import { requirePermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
-    // Solo administradores pueden cerrar el día
-    if (session.user.role !== "ADMINISTRADOR") {
-      return NextResponse.json(
-        { error: "Solo los administradores pueden cerrar el día" },
-        { status: 403 }
-      )
-    }
+    const session = await requirePermission('REALIZAR_CIERRE_DIA')
 
     const body = await request.json()
     const { fecha, totalCobrado, totalPrestado, totalGastos, saldoEfectivo, observaciones, cobradorId } = body
@@ -169,10 +159,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('VER_CIERRES_HISTORICOS')
 
     const { searchParams } = new URL(request.url)
     const limite = parseInt(searchParams.get("limite") || "30")

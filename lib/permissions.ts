@@ -60,7 +60,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'REGISTRAR_GASTOS',
     'VER_REPORTES',
     'CREAR_CLIENTES',
-    'EDITAR_CLIENTES'
+    'EDITAR_CLIENTES',
+    'CREAR_PRESTAMOS'
   ]
 }
 

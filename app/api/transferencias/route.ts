@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requirePermission('REGISTRAR_COBROS')
+    const session = await requirePermission('REGISTRAR_TRANSFERENCIAS')
 
     const body = await request.json()
     const { prestamoId, monto, banco, referencia, observaciones, fotoComprobante, fotoMiniatura, fecha, metodoPago } = body
@@ -233,10 +233,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('VER_TRANSFERENCIAS')
 
     const { searchParams } = new URL(request.url)
     const prestamoId = searchParams.get('prestamoId')

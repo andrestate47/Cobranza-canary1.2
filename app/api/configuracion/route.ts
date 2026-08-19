@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { requirePermission } from '@/lib/permissions';
 
 // GET - Obtener configuración actual
 export async function GET() {
@@ -40,26 +41,7 @@ export async function GET() {
 // PUT - Actualizar configuración
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'No autenticado' },
-        { status: 401 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    // Solo administradores pueden cambiar la configuración
-    if (user?.role !== 'ADMINISTRADOR') {
-      return NextResponse.json(
-        { error: 'No tienes permisos para cambiar la configuración' },
-        { status: 403 }
-      );
-    }
+    const session = await requirePermission('CONFIGURAR_SISTEMA')
 
     const body = await request.json();
     const { moneda } = body;

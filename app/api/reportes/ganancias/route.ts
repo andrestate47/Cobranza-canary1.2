@@ -4,8 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
-
 import { getEcuadorDayRange, getEcuadorRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
+import { requirePermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -130,18 +130,14 @@ interface GastoDetallado {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('VER_REPORTES')
 
-    // Verificar que sea administrador o supervisor
     const user = await prisma.user.findUnique({
       where: { email: session.user?.email || "" }
     })
 
-    if (!user || (user.role !== "ADMINISTRADOR" && user.role !== "SUPERVISOR")) {
-      return NextResponse.json({ error: "No tienes permisos para ver este reporte" }, { status: 403 })
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
     }
 
     const { searchParams } = new URL(request.url)

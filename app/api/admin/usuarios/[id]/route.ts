@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireUserManagementPermission } from "@/lib/permissions"
+import { requireUserManagementPermission, ROLE_PERMISSIONS } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
 import { Permission } from "@prisma/client"
 import bcryptjs from "bcryptjs"
@@ -53,6 +53,10 @@ export async function GET(
       )
     }
 
+    const effectivePermissions = usuario.permissions.length > 0
+      ? usuario.permissions.map(p => p.permission)
+      : (ROLE_PERMISSIONS[usuario.role] || [])
+
     return NextResponse.json({
       id: usuario.id,
       email: usuario.email,
@@ -77,7 +81,7 @@ export async function GET(
       mapLink: usuario.mapLink,
       referenciaFamiliar: usuario.referenciaFamiliar,
       referenciaTrabajo: usuario.referenciaTrabajo,
-      permissions: usuario.permissions.map(p => p.permission),
+      permissions: effectivePermissions,
       timeUsage: usuario.timeUsage
     })
 
@@ -86,7 +90,7 @@ export async function GET(
     const msg = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') || msg.includes('permiso') ? 403 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') || msg.includes('autenticado') ? 403 : 500 }
     )
   }
 }
@@ -281,6 +285,10 @@ export async function PUT(
       }
     })
 
+    const effectivePermissions = usuarioActualizado!.permissions.length > 0
+      ? usuarioActualizado!.permissions.map(p => p.permission)
+      : (ROLE_PERMISSIONS[usuarioActualizado!.role] || [])
+
     return NextResponse.json({
       id: usuarioActualizado!.id,
       email: usuarioActualizado!.email,
@@ -293,7 +301,7 @@ export async function PUT(
       supervisor: usuarioActualizado!.supervisor,
       documentoIdentificacion: usuarioActualizado!.documentoIdentificacion,
       profilePhoto: usuarioActualizado!.profilePhoto,
-      permissions: usuarioActualizado!.permissions.map(p => p.permission)
+      permissions: effectivePermissions
     })
 
   } catch (error: unknown) {
@@ -301,7 +309,7 @@ export async function PUT(
     console.error("Error updating user:", error)
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') ? 401 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') || msg.includes('autenticado') ? 403 : 500 }
     )
   }
 }
@@ -369,7 +377,7 @@ export async function DELETE(
     console.error("Error deleting user:", error)
     return NextResponse.json(
       { error: msg },
-      { status: msg.includes('autorizado') ? 401 : 500 }
+      { status: msg.includes('autorizado') || msg.includes('permiso') || msg.includes('autenticado') ? 403 : 500 }
     )
   }
 }

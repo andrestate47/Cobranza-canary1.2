@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db"
 
 import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
 import { obtenerSaldoInicialParaDia } from "@/lib/cierre-utils"
+import { requirePermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -476,10 +477,7 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('VER_REPORTES')
 
     const { searchParams } = new URL(request.url)
     const fechaParam = searchParams.get("fecha")

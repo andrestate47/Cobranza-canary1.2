@@ -1,30 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadFile, deleteFile } from '@/lib/s3'
+import { requirePermission } from '@/lib/permissions'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id }
-    })
-
-    if (user?.role !== 'ADMINISTRADOR') {
-      return NextResponse.json(
-        { error: 'No tienes permisos para cambiar el logo' },
-        { status: 403 }
-      )
-    }
+    const session = await requirePermission('CONFIGURAR_SISTEMA')
 
     const formData = await request.formData()
     const file = formData.get('logo') as File

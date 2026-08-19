@@ -69,7 +69,17 @@ interface ModuleItem {
 export default function DashboardClient({ session }: DashboardClientProps) {
   const user = session?.user
   const { logoUrl, format: formatCurrency } = useCurrency()
-  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions } = usePermissions()
+  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports } = usePermissions()
+
+  if (!isAdmin && !canViewDashboard) {
+    return (
+      <div className="text-center p-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl my-8">
+        <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
+        <h3 className="text-lg font-bold text-rose-800 dark:text-rose-300">Acceso Denegado</h3>
+        <p className="text-rose-600 dark:text-rose-400">No tienes permiso para ver el Dashboard</p>
+      </div>
+    )
+  }
 
   const userFirstName = user?.firstName?.trim()
   const userName = user?.name?.trim()
@@ -225,7 +235,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
         glow: "from-purple-500 to-pink-500"
       }
     },
-    ...(isAdmin || isSupervisor ? [
+    ...(isAdmin || isSupervisor || canViewReports ? [
       {
         title: "Reporte de Ganancias",
         description: "Análisis financiero avanzado e intereses generados",

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     console.error("Error getting supervisors:", error)
     return NextResponse.json(
       { error: message },
-      { status: message.includes('autorizado') ? 401 : 500 }
+      { status: message.includes('autorizado') || message.includes('permiso') || message.includes('autenticado') ? 403 : 500 }
     )
   }
 }
