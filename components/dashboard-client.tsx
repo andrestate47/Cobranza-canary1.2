@@ -69,7 +69,7 @@ interface ModuleItem {
 export default function DashboardClient({ session }: DashboardClientProps) {
   const user = session?.user
   const { logoUrl, format: formatCurrency } = useCurrency()
-  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports } = usePermissions()
+  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports, canViewInformeClientes } = usePermissions()
 
   if (!isAdmin && !canViewDashboard) {
     return (
@@ -170,19 +170,21 @@ export default function DashboardClient({ session }: DashboardClientProps) {
         glow: "from-blue-500 to-indigo-500"
       }
     },
-    {
-      title: "Informe de Clientes",
-      description: "Gestión completa de clientes, fichas y estado de cobros",
-      icon: User,
-      href: "/informe-clientes",
-      category: "operaciones",
-      accentColor: {
-        bg: "bg-indigo-500/10 dark:bg-indigo-500/20",
-        text: "text-indigo-600 dark:text-indigo-400",
-        border: "border-indigo-500/30",
-        glow: "from-indigo-500 to-purple-500"
+    ...(isAdmin || canViewInformeClientes ? [
+      {
+        title: "Informe de Clientes",
+        description: "Gestión completa de clientes, fichas y estado de cobros",
+        icon: User,
+        href: "/informe-clientes",
+        category: "operaciones" as const,
+        accentColor: {
+          bg: "bg-indigo-500/10 dark:bg-indigo-500/20",
+          text: "text-indigo-600 dark:text-indigo-400",
+          border: "border-indigo-500/30",
+          glow: "from-indigo-500 to-purple-500"
+        }
       }
-    },
+    ] : []),
     {
       title: user?.role === 'COBRADOR' ? "Caja Chica" : "Viáticos / Caja",
       description: user?.role === 'COBRADOR' ? "Balance y control de efectivo diario" : "Control general de ingresos y egresos de cobradores",

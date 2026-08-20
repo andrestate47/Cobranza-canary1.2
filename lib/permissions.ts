@@ -27,6 +27,7 @@ export type Permission =
   | 'GESTIONAR_PERMISOS'
   | 'REALIZAR_CIERRE_DIA'
   | 'VER_CIERRES_HISTORICOS'
+  | 'VER_INFORME_CLIENTES'
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   ADMINISTRADOR: [], // Los administradores tienen acceso total, no necesitan permisos específicos
@@ -39,6 +40,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'REGISTRAR_GASTOS',
     'REGISTRAR_INGRESOS',
     'VER_REPORTES',
+    'VER_INFORME_CLIENTES',
     'CREAR_CLIENTES',
     'EDITAR_CLIENTES',
     'CREAR_PRESTAMOS',
@@ -59,6 +61,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     'MAPA_CLIENTES',
     'REGISTRAR_GASTOS',
     'VER_REPORTES',
+    'VER_INFORME_CLIENTES',
     'CREAR_CLIENTES',
     'EDITAR_CLIENTES',
     'CREAR_PRESTAMOS'
@@ -82,7 +85,7 @@ export function getUserEffectivePermissions(session: SessionWithUser | null): Pe
   if (session.user.role === 'ADMINISTRADOR') {
     return [
       'SINCRONIZAR_DATOS', 'REGISTRAR_COBROS', 'MAPA_CLIENTES', 'REGISTRAR_GASTOS',
-      'REGISTRAR_INGRESOS', 'VER_REPORTES', 'VER_DASHBOARD', 'VER_LISTADO_GENERAL',
+      'REGISTRAR_INGRESOS', 'VER_REPORTES', 'VER_INFORME_CLIENTES', 'VER_DASHBOARD', 'VER_LISTADO_GENERAL',
       'VER_DETALLES_PRESTAMO', 'CREAR_CLIENTES', 'EDITAR_CLIENTES', 'CREAR_PRESTAMOS',
       'EDITAR_PRESTAMOS', 'ELIMINAR_PRESTAMOS', 'REGISTRAR_TRANSFERENCIAS',
       'VER_TRANSFERENCIAS', 'GESTIONAR_USUARIOS', 'VER_AUDITORIA',

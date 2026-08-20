@@ -84,6 +84,7 @@ const PERMISOS_GESTION = [
 
 const PERMISOS_AVANZADOS = [
   { key: 'VER_REPORTES', label: 'Ver Reportes', description: 'Acceder a reportes y estadísticas' },
+  { key: 'VER_INFORME_CLIENTES', label: 'Ver Informe de Clientes', description: 'Acceder al informe de clientes' },
   { key: 'VER_AUDITORIA', label: 'Ver Auditoría', description: 'Ver logs de actividad' },
   { key: 'REALIZAR_CIERRE_DIA', label: 'Cierre de Día', description: 'Realizar cierre diario' },
   { key: 'VER_CIERRES_HISTORICOS', label: 'Ver Histórico de Cierres', description: 'Ver cierres anteriores' },

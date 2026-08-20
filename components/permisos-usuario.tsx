@@ -70,6 +70,7 @@ const CATEGORIAS_PERMISOS = [
     descripcion: 'Permisos para acceder a reportes y estadísticas',
     permisos: [
       { key: 'VER_REPORTES', label: 'Ver Reportes', descripcion: 'Acceder a reportes y estadísticas del sistema' },
+      { key: 'VER_INFORME_CLIENTES', label: 'Ver Informe de Clientes', descripcion: 'Acceder al informe detallado y estadísticas de clientes' },
       { key: 'VER_AUDITORIA', label: 'Ver Auditoría', descripcion: 'Ver logs de actividad y auditoría' }
     ]
   },

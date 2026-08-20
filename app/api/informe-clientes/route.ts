@@ -1,16 +1,12 @@
 
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getEcuadorDayRange, getDiasMoraSinDomingos } from "@/lib/date-utils"
+import { requirePermission } from "@/lib/permissions"
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
+    const session = await requirePermission('VER_INFORME_CLIENTES')
 
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha') || new Date().toISOString().split('T')[0]
@@ -779,8 +775,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(informe)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al generar informe de clientes:", error)
+    if (error?.message?.includes("permiso") || error?.message?.includes("autenticado") || error?.message?.includes("desactivado")) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     return NextResponse.json(
       { error: "Error al generar informe de clientes" },
       { status: 500 }

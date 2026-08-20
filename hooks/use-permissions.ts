@@ -43,6 +43,7 @@ export function usePermissions() {
         canManagePermissions: false,
         canCloseDaySession: false,
         canViewClosureHistory: false,
+        canViewInformeClientes: false,
         
         // Verificadores de rol
         isAdmin: false,
@@ -93,6 +94,7 @@ export function usePermissions() {
       canManagePermissions: hasPermission(session as Parameters<typeof hasPermission>[0], 'GESTIONAR_PERMISOS'),
       canCloseDaySession: hasPermission(session as Parameters<typeof hasPermission>[0], 'REALIZAR_CIERRE_DIA'),
       canViewClosureHistory: hasPermission(session as Parameters<typeof hasPermission>[0], 'VER_CIERRES_HISTORICOS'),
+      canViewInformeClientes: hasPermission(session as Parameters<typeof hasPermission>[0], 'VER_INFORME_CLIENTES'),
       
       // Verificadores de rol
       isAdmin,
