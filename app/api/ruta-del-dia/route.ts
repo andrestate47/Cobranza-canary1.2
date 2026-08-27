@@ -11,16 +11,20 @@ function getCuotasEsperadas(tipoPago: string, fechaInicio: Date, fechaEvaluar: D
   const inicio = new Date(fechaInicio)
   const evaluar = new Date(fechaEvaluar)
   
-  if (evaluar < inicio) return 0
+  // Normalizar a fechas sin hora (12:00:00 UTC) para evitar desfases por zonas horarias/horas de creación
+  const inicioUTC = Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), inicio.getUTCDate(), 12, 0, 0)
+  const evaluarUTC = Date.UTC(evaluar.getUTCFullYear(), evaluar.getUTCMonth(), evaluar.getUTCDate(), 12, 0, 0)
+
+  if (evaluarUTC < inicioUTC) return 0
+
+  const diffDays = Math.round((evaluarUTC - inicioUTC) / (1000 * 60 * 60 * 24))
 
   if (tipoPago === 'SEMANAL') {
-    const diffMs = evaluar.getTime() - inicio.getTime()
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7))
+    return Math.floor(diffDays / 7)
   }
   if (tipoPago === 'CATORCENAL' || tipoPago === 'QUINCENAL') {
     const days = tipoPago === 'QUINCENAL' ? 15 : 14
-    const diffMs = evaluar.getTime() - inicio.getTime()
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24 * days))
+    return Math.floor(diffDays / days)
   }
   if (tipoPago === 'MENSUAL' || tipoPago === 'FIN_DE_MES') {
     const months = (evaluar.getUTCFullYear() - inicio.getUTCFullYear()) * 12 + (evaluar.getUTCMonth() - inicio.getUTCMonth())
