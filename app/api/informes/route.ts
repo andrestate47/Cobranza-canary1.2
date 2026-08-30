@@ -58,12 +58,12 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     }
   })
 
-  // Obtener todos los préstamos activos (filtrados por usuario)
+  // Obtener todos los préstamos activos/vencidos del cobrador (excluyendo CANCELADO y RENOVADO)
   const prestamosActivos = await prisma.prestamo.findMany({
     where: {
-      userId: userId, // Filtrar por el cobrador seleccionado
+      userId: userId,
       estado: {
-        notIn: ["CANCELADO"]
+        in: ["ACTIVO", "VENCIDO"]
       }
     },
     select: {
@@ -75,6 +75,9 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
       fechaFin: true,
       moraCredito: true,
       valorCuota: true,
+      renovadoDeId: true,
+      datosRefinanciamiento: true,
+      observaciones: true,
       pagos: {
         select: { monto: true }
       },
@@ -89,6 +92,13 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     }
   })
 
+  // Filtrar solo préstamos que mantienen saldo pendiente real > 0
+  const prestamosActivosConSaldo = prestamosActivos.filter(p => {
+    const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
+    const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+    return Math.max(0, montoTotal - totalPagado) > 0.01
+  })
+
   // Obtener gastos del día (filtrados por usuario)
   const gastos = await prisma.gasto.findMany({
     where: {
@@ -100,94 +110,89 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     }
   })
 
-  // Obtener clientes nuevos (creados en el día, filtrados por ruta del cobrador)
+  // Obtener clientes nuevos creados en el día
   const clientesNuevos = await prisma.cliente.findMany({
     where: {
-      rutaId: usuario?.rutaId || null,
       createdAt: {
         gte: fechaInicio,
         lte: fechaFin
-      }
+      },
+      OR: [
+        { rutaId: usuario?.rutaId || undefined },
+        { prestamos: { some: { userId: userId, createdAt: { gte: fechaInicio, lte: fechaFin } } } }
+      ]
     }
   })
 
-  // Obtener clientes visitados (con pagos en el día)
-  const clientesVisitadosIds = [...new Set(pagos.map(p => p.prestamo.clienteId))]
-  
-  // Obtener todos los clientes con préstamos activos (filtrados por ruta)
-  const clientesConPrestamosActivos = await prisma.cliente.findMany({
+  // Obtener IDs únicos de clientes visitados (con pagos en el día)
+  const clientesVisitadosIds = new Set(pagos.map(p => p.prestamo.clienteId))
+
+  // Clientes únicos que tienen al menos un préstamo activo/vencido con saldo del cobrador
+  const clientesConPrestamosActivosMap = new Map<string, { id: string }>()
+  for (const p of prestamosActivosConSaldo) {
+    clientesConPrestamosActivosMap.set(p.cliente.id, { id: p.cliente.id })
+  }
+  const clientesConPrestamosActivos = Array.from(clientesConPrestamosActivosMap.values())
+
+  // Clientes pendientes: Clientes con préstamo activo/vencido que NO abonaron hoy
+  const clientesPendientes = clientesConPrestamosActivos.filter(
+    cliente => !clientesVisitadosIds.has(cliente.id)
+  )
+
+  // Clientes restantes: Clientes con préstamo activo/vencido cuya cuota corresponde/vence HOY (esDiaDePago) y NO abonaron hoy
+  const clientesConCuotaHoyIds = new Set<string>()
+  for (const p of prestamosActivosConSaldo) {
+    const fechaInicioPrestamo = new Date(p.fechaInicio)
+    if (fechaInicioPrestamo <= fechaFin && esDiaDePago(p.tipoPago, p.fechaInicio, fecha)) {
+      clientesConCuotaHoyIds.add(p.cliente.id)
+    }
+  }
+  const clientesRestantes = Array.from(clientesConCuotaHoyIds).filter(
+    clienteId => !clientesVisitadosIds.has(clienteId)
+  )
+
+  // --- REFINANCIAMIENTOS Y RENOVACIONES ---
+  // Clientes con refinanciamientos (clientes del cobrador que tienen o tuvieron créditos refinanciados)
+  const clientesRefinanciados = await prisma.cliente.findMany({
     where: {
-      rutaId: usuario?.rutaId || null,
       prestamos: {
         some: {
           userId: userId,
-          estado: {
-            notIn: ["CANCELADO"]
-          }
+          OR: [
+            { renovadoDeId: { not: null } },
+            { estado: "RENOVADO" },
+            { observaciones: { contains: "REFINANCIAMIENTO" } },
+            { observaciones: { contains: "RENOVACION" } },
+            { observaciones: { contains: "RENOVACIÓN" } }
+          ]
         }
       }
     },
     select: { id: true }
   })
 
-  // Clientes pendientes (con préstamos activos sin pago en el día)
-  const clientesPendientes = clientesConPrestamosActivos.filter(
-    cliente => !clientesVisitadosIds.includes(cliente.id)
+  // Refinanciamientos / Renovaciones realizadas HOY (préstamos creados hoy que provienen de una refinanciación)
+  const renovacionesRealizadas = prestamos.filter(p => 
+    p.renovadoDeId != null ||
+    p.datosRefinanciamiento != null ||
+    p.observaciones?.startsWith("REFINANCIAMIENTO") ||
+    p.observaciones?.startsWith("RENOVACION") ||
+    p.observaciones?.startsWith("RENOVACIÓN")
   )
 
-  // Calcular renovaciones (clientes que tienen más de un préstamo del usuario seleccionado)
-  const clientesConPrestamos = await prisma.cliente.findMany({
-    where: {
-      rutaId: usuario?.rutaId || null
-    },
-    select: {
-      id: true,
-      prestamos: {
-        where: {
-          userId: userId
-        },
-        select: { id: true }
-      }
-    }
-  })
-
-  // Clientes con renovaciones (más de un préstamo)
-  const clientesRenovacion = clientesConPrestamos.filter(c => c.prestamos.length > 1)
-  
-  // Renovaciones realizadas en el día (préstamos creados hoy para clientes que ya tenían préstamos)
-  const renovacionesRealizadas = prestamos.filter(p => {
-    const cliente = clientesConPrestamos.find(c => c.id === p.clienteId)
-    return cliente && cliente.prestamos.length > 1
-  })
-
-  // Clientes por renovar (con préstamos próximos a vencer - últimos 5 días)
+  // Clientes por refinanciar (clientes con préstamos activos vigentes próximos a vencer en los siguientes 5 días)
   const fechaLimiteRenovacion = new Date(fecha)
   fechaLimiteRenovacion.setDate(fechaLimiteRenovacion.getDate() + 5)
-  
-  const clientesPorRenovar = await prisma.cliente.findMany({
-    where: {
-      prestamos: {
-        some: {
-          estado: "ACTIVO",
-          fechaFin: {
-            lte: fechaLimiteRenovacion
-          }
-        }
-      }
-    },
-    select: { id: true }
-  })
 
-  // Renovaciones pendientes (clientes con préstamos activos que ya vencieron)
-  const renovacionesPendientes = await prisma.prestamo.findMany({
-    where: {
-      estado: "ACTIVO",
-      fechaFin: {
-        lt: fecha
-      }
-    },
-    select: { id: true }
-  })
+  const clientesPorRenovarSet = new Set<string>()
+  for (const p of prestamosActivosConSaldo) {
+    if (p.fechaFin >= fecha && p.fechaFin <= fechaLimiteRenovacion) {
+      clientesPorRenovarSet.add(p.cliente.id)
+    }
+  }
+
+  // Refinanciamientos pendientes (préstamos VENCIDOS activos con saldo pendiente del cobrador)
+  const prestamosVencidosPendientes = prestamosActivosConSaldo.filter(p => p.fechaFin < fecha)
 
   // Calcular totales
   const totalCobrado = pagos.reduce((sum, pago) => 
@@ -410,19 +415,19 @@ async function getInformeForUser(userId: string, fechaInicio: Date, fechaFin: Da
     cantidadGastos: gastos.length,
     resumenClientes: {
       clientesNuevos: clientesNuevos.length,
-      clientesVisitados: clientesVisitadosIds.length,
+      clientesVisitados: clientesVisitadosIds.size,
       clientesPendientes: clientesPendientes.length,
-      clientesPorVisitar: clientesConPrestamosActivos.length - clientesVisitadosIds.length,
+      clientesPorVisitar: clientesRestantes.length,
       clientesMora: detalleClientesMora.length
     },
     resumenPrestamos: {
       nuevosPrestamos: prestamos.length,
-      prestamosRealizados: prestamosActivos.length
+      prestamosRealizados: prestamosActivosConSaldo.length
     },
     resumenRenovaciones: {
-      renovacionClientes: clientesRenovacion.length,
-      clientesPorRenovar: clientesPorRenovar.length,
-      renovacionesPendientes: renovacionesPendientes.length,
+      renovacionClientes: clientesRefinanciados.length,
+      clientesPorRenovar: clientesPorRenovarSet.size,
+      renovacionesPendientes: prestamosVencidosPendientes.length,
       renovacionesRealizadas: renovacionesRealizadas.length
     },
     resumenTransferencias: {
@@ -531,12 +536,35 @@ export async function GET(request: NextRequest) {
       const cantidadPrestamos = informes.reduce((sum, i) => sum + i.cantidadPrestamos, 0)
       const cantidadGastos = informes.reduce((sum, i) => sum + i.cantidadGastos, 0)
 
+      const detallePagos = informes.flatMap(i => i.detallePagos)
+      const detallePrestamos = informes.flatMap(i => i.detallePrestamos)
+      const detalleGastos = informes.flatMap(i => i.detalleGastos)
+      const detalleClientesNuevos = informes.flatMap(i => i.detalleClientesNuevos)
+      
+      const uniqueMoraClientes = new Map<string, any>()
+      for (const i of informes) {
+        for (const c of i.detalleClientesMora) {
+          if (!uniqueMoraClientes.has(c.id)) {
+            uniqueMoraClientes.set(c.id, c)
+          } else {
+            const existing = uniqueMoraClientes.get(c.id)
+            if (c.saldoPendiente > existing.saldoPendiente) {
+              uniqueMoraClientes.set(c.id, c)
+            }
+          }
+        }
+      }
+      const detalleClientesMora = Array.from(uniqueMoraClientes.values())
+
+      const uniqueNuevosCount = new Set(detalleClientesNuevos.map(c => c.id)).size
+      const uniqueVisitadosCount = new Set(detallePagos.map(p => p.cliente.documento || p.cliente.nombre)).size
+
       const resumenClientes = {
-        clientesNuevos: informes.reduce((sum, i) => sum + i.resumenClientes.clientesNuevos, 0),
-        clientesVisitados: informes.reduce((sum, i) => sum + i.resumenClientes.clientesVisitados, 0),
+        clientesNuevos: uniqueNuevosCount > 0 ? uniqueNuevosCount : informes.reduce((sum, i) => sum + i.resumenClientes.clientesNuevos, 0),
+        clientesVisitados: uniqueVisitadosCount > 0 ? uniqueVisitadosCount : informes.reduce((sum, i) => sum + i.resumenClientes.clientesVisitados, 0),
         clientesPendientes: informes.reduce((sum, i) => sum + i.resumenClientes.clientesPendientes, 0),
         clientesPorVisitar: informes.reduce((sum, i) => sum + i.resumenClientes.clientesPorVisitar, 0),
-        clientesMora: informes.reduce((sum, i) => sum + i.resumenClientes.clientesMora, 0)
+        clientesMora: detalleClientesMora.length
       }
 
       const resumenPrestamos = {
@@ -564,26 +592,6 @@ export async function GET(request: NextRequest) {
         cobrado: informes.reduce((sum, i) => sum + (i.resumenMicroseguros?.cobrado || 0), 0),
         gananciaNeta: informes.reduce((sum, i) => sum + (i.resumenMicroseguros?.gananciaNeta || 0), 0)
       }
-
-      const detallePagos = informes.flatMap(i => i.detallePagos)
-      const detallePrestamos = informes.flatMap(i => i.detallePrestamos)
-      const detalleGastos = informes.flatMap(i => i.detalleGastos)
-      const detalleClientesNuevos = informes.flatMap(i => i.detalleClientesNuevos)
-      
-      const uniqueMoraClientes = new Map<string, any>()
-      for (const i of informes) {
-        for (const c of i.detalleClientesMora) {
-          if (!uniqueMoraClientes.has(c.id)) {
-            uniqueMoraClientes.set(c.id, c)
-          } else {
-            const existing = uniqueMoraClientes.get(c.id)
-            if (c.saldoPendiente > existing.saldoPendiente) {
-              uniqueMoraClientes.set(c.id, c)
-            }
-          }
-        }
-      }
-      const detalleClientesMora = Array.from(uniqueMoraClientes.values())
 
       const cerrado = informes.length > 0 && informes.every(i => i.cerrado)
 
