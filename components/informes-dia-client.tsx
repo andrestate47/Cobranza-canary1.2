@@ -662,7 +662,7 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
                       {informe.resumenClientes.clientesPorVisitar}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Préstamos activos por cobrar en esta fecha
+                      Clientes agendados hoy sin abono
                     </p>
                   </CardContent>
                 </Card>
