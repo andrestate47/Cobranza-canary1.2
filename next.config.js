@@ -10,7 +10,6 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   experimental: {
-    outputFileTracingRoot: path.join(__dirname, '../'),
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', 'framer-motion'],
   },
   swcMinify: true,
