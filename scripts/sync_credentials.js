@@ -8,7 +8,7 @@ async function syncCredentials() {
 
   // 1. Definir contraseñas por defecto conocidas para cada usuario
   const defaultAccounts = [
-    { email: 'admin@cobranza.com', pass: 'admin123', name: 'Administrador Principal', role: 'ADMINISTRADOR' },
+    { email: 'admin@cobranza.com', pass: '184672', name: 'Administrador Principal', role: 'ADMINISTRADOR' },
     { email: 'supervisor@cobranza.com', pass: 'supervisor123', name: 'María Supervisora', role: 'SUPERVISOR' },
     { email: 'cobrador@cobranza.com', pass: 'cobrador123', name: 'Juan Pérez', role: 'COBRADOR' },
     { email: 'john@doe.com', pass: 'johndoe123', name: 'John Doe', role: 'ADMINISTRADOR' },
