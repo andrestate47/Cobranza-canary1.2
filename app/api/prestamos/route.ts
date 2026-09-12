@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         fechaFin: prestamo.fechaFin,
         estado: prestamo.estado,
         observaciones: prestamo.observaciones,
-        tipoPago: prestamo.tipoPago,
+        tipoPago: prestamo.tipoPago || 'DIARIO',
         tipoCredito: prestamo.tipoCredito,
         diasGracia: prestamo.diasGracia,
         moraCredito: parseFloat(prestamo.moraCredito?.toString() || '0'),
