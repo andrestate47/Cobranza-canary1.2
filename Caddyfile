@@ -3,8 +3,8 @@ www.bydscgroup.com {
 }
 
 bydscgroup.com {
-  handle /_next/static/* {
-    root * /var/www/cobranza
+  handle_path /_next/static/* {
+    root * /var/www/cobranza/.next/static
     file_server
   }
 
