@@ -8,7 +8,17 @@ async function main() {
   const prisma = new PrismaClient();
 
   try {
-    // 1. Obtener o crear Ruta Principal (RUTA-001)
+    // 1. Obtener usuario Administrador
+    const adminUser = await prisma.user.findFirst({
+      where: { role: 'ADMINISTRADOR' }
+    });
+
+    if (!adminUser) {
+      console.log('❌ Error: No se encontró un usuario administrador.');
+      return;
+    }
+
+    // 2. Obtener o crear Ruta Principal (RUTA-001)
     let ruta = await prisma.ruta.findFirst({
       where: { numeroRuta: 'RUTA-001' }
     });
@@ -27,7 +37,7 @@ async function main() {
       console.log('✅ Ruta RUTA-001 encontrada:', ruta.id);
     }
 
-    // 2. Asignar rutaId a los 44 clientes
+    // 3. Asignar rutaId a los 44 clientes
     const updateClientes = await prisma.cliente.updateMany({
       data: {
         rutaId: ruta.id,
@@ -37,7 +47,7 @@ async function main() {
     });
     console.log(`✅ Se asignó RUTA-001 a los ${updateClientes.count} clientes!`);
 
-    // 3. Crear préstamos activos para cada cliente si no tienen uno
+    // 4. Crear préstamos activos para cada cliente si no tienen uno
     const clientes = await prisma.cliente.findMany({
       include: { prestamos: true }
     });
@@ -57,14 +67,12 @@ async function main() {
         await prisma.prestamo.create({
           data: {
             clienteId: c.id,
+            userId: adminUser.id,
             monto: monto,
             interes: interes,
-            totalPagar: totalPagar,
-            saldoPendiente: totalPagar,
             cuotas: cuotas,
-            cuotasPagadas: 0,
             valorCuota: valorCuota,
-            modalidadPago: 'DIARIO',
+            tipoPago: 'DIARIO',
             estado: 'ACTIVO',
             fechaInicio: fechaInicio,
             fechaFin: fechaFin
@@ -74,13 +82,6 @@ async function main() {
       }
     }
     console.log(`✅ ${prestamosCreados} préstamos activos asignados a los clientes!`);
-
-    // 4. Asignar rol ADMINISTRADOR a admin@cobranza.com y admin@admin.com
-    await prisma.user.updateMany({
-      where: { email: { in: ['admin@cobranza.com', 'admin@admin.com'] } },
-      data: { role: 'ADMINISTRADOR', isActive: true }
-    });
-    console.log('✅ Rol ADMINISTRADOR verificado para los usuarios principales.');
 
     const totalPrestamosActivos = await prisma.prestamo.count({ where: { estado: 'ACTIVO' } });
     console.log(`\n🎉 TOTAL PRÉSTAMOS ACTIVOS LISTOS PARA LISTADO GENERAL: ${totalPrestamosActivos}`);

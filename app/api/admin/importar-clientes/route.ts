@@ -12,8 +12,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const adminUser = await prisma.user.findUnique({
+      where: { email: session.user?.email || '' }
+    })
+
+    if (!adminUser) {
+      return NextResponse.json({ error: "Usuario administrador no encontrado" }, { status: 404 })
+    }
+
     const body = await request.json()
-    const { clientes } = body // Array de objetos { documento, nombre, apellido, telefono, direccionCliente, numeroRuta, valorPrestamo, cuotas }
+    const { clientes } = body
 
     if (!Array.isArray(clientes) || clientes.length === 0) {
       return NextResponse.json({ error: "Se requiere un arreglo de clientes válido" }, { status: 400 })
@@ -36,7 +44,6 @@ export async function POST(request: NextRequest) {
         const telefonoLimpio = c.telefono ? String(c.telefono).trim() : null
         const direccionLimpia = c.direccionCliente ? String(c.direccionCliente).trim() : "Sin dirección"
 
-        // Upsert cliente
         const cliente = await prisma.cliente.upsert({
           where: { documento: docLimpio },
           update: {
@@ -58,27 +65,28 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Crear préstamo si viene incluido
         if (c.valorPrestamo && parseFloat(c.valorPrestamo) > 0) {
           const monto = parseFloat(c.valorPrestamo)
           const cuotas = parseInt(c.cuotas) || 24
           const interes = parseFloat(c.interes) || 20
           const totalPagar = monto * (1 + interes / 100)
           const valorCuota = totalPagar / cuotas
+          const fechaInicio = new Date()
+          const fechaFin = new Date()
+          fechaFin.setDate(fechaFin.getDate() + 30)
 
           await prisma.prestamo.create({
             data: {
               clienteId: cliente.id,
+              userId: adminUser.id,
               monto: monto,
               interes: interes,
-              totalPagar: totalPagar,
-              saldoPendiente: totalPagar,
               cuotas: cuotas,
-              cuotasPagadas: 0,
               valorCuota: valorCuota,
-              modalidadPago: c.modalidadPago || 'DIARIO',
+              tipoPago: 'DIARIO',
               estado: 'ACTIVO',
-              fechaInicio: new Date()
+              fechaInicio: fechaInicio,
+              fechaFin: fechaFin
             }
           })
         }
