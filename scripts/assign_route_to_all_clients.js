@@ -20,15 +20,14 @@ async function main() {
 
     // 2. Obtener o crear Ruta Principal (RUTA-001)
     let ruta = await prisma.ruta.findFirst({
-      where: { numeroRuta: 'RUTA-001' }
+      where: { numero: 'RUTA-001' }
     });
 
     if (!ruta) {
       ruta = await prisma.ruta.create({
         data: {
           nombre: 'Ruta Principal',
-          numeroRuta: 'RUTA-001',
-          ciudad: 'Ecuador',
+          numero: 'RUTA-001',
           activa: true
         }
       });
