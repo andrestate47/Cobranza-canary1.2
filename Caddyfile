@@ -3,8 +3,8 @@ www.bydscgroup.com {
 }
 
 bydscgroup.com {
-  handle_path /_next/* {
-    root * /var/www/cobranza/.next
+  handle /_next/static/* {
+    root * /var/www/cobranza
     file_server
   }
 
@@ -12,4 +12,5 @@ bydscgroup.com {
     reverse_proxy 127.0.0.1:3030
   }
 }
+
 
