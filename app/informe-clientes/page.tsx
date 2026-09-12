@@ -5,6 +5,8 @@ import { redirect } from "next/navigation"
 import { hasPermission } from "@/lib/permissions"
 import InformeClientesClient from "@/components/informe-clientes-client"
 
+export const dynamic = "force-dynamic"
+
 export default async function InformeClientesPage() {
   const session = await getServerSession(authOptions)
   

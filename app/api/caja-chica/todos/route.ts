@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
 import { getEcuadorDayRange } from "@/lib/date-utils"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/caja-chica/todos - Obtener cobradores y movimientos (solo admin/supervisor)
 export async function GET(request: NextRequest) {
   try {
