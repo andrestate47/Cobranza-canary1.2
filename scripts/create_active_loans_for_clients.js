@@ -17,12 +17,14 @@ async function main() {
 
     for (const c of clientes) {
       if (c.prestamos.length === 0) {
-        // Crear préstamo por defecto de 300 o valor recuperado
         const monto = 300;
         const interes = 20;
         const totalPagar = monto * (1 + interes / 100);
         const cuotas = 24;
         const valorCuota = totalPagar / cuotas;
+        const fechaInicio = new Date();
+        const fechaFin = new Date();
+        fechaFin.setDate(fechaFin.getDate() + 30);
 
         await prisma.prestamo.create({
           data: {
@@ -36,7 +38,8 @@ async function main() {
             valorCuota: valorCuota,
             modalidadPago: 'DIARIO',
             estado: 'ACTIVO',
-            fechaInicio: new Date()
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin
           }
         });
         prestamosCreados++;
