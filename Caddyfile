@@ -3,10 +3,13 @@ www.bydscgroup.com {
 }
 
 bydscgroup.com {
-  reverse_proxy 127.0.0.1:3030 {
-    header_up Host {host}
-    header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
+  handle_path /_next/* {
+    root * /var/www/cobranza/.next
+    file_server
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:3030
   }
 }
+
