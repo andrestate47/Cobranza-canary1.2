@@ -475,45 +475,56 @@ function CardConfiguracionBackups({ isAdmin }: { isAdmin: boolean }) {
             No hay respaldos generados aún. Haz clic en <strong>Generar Respaldo Ahora</strong> para crear el primero.
           </div>
         ) : (
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold border-b">
-                <tr>
-                  <th className="p-3">Nombre de Archivo</th>
-                  <th className="p-3">Fecha y Hora</th>
-                  <th className="p-3">Tamaño</th>
-                  <th className="p-3">Contenido</th>
-                  <th className="p-3 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {backups.map((b) => (
-                  <tr key={b.filename} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                    <td className="p-3 font-mono text-xs font-medium text-gray-900 dark:text-gray-100">
-                      {b.filename}
-                    </td>
-                    <td className="p-3 text-gray-600 dark:text-gray-400 text-xs">
-                      {new Date(b.createdAt).toLocaleString('es-EC')}
-                    </td>
-                    <td className="p-3 font-mono text-xs text-gray-700 dark:text-gray-300">
-                      {b.sizeFormatted}
-                    </td>
-                    <td className="p-3 text-xs">
-                      {b.counts ? (
-                        <span className="text-gray-500 dark:text-gray-400">
-                          👤 {b.counts.clientes || 0} clientes | 💵 {b.counts.prestamos || 0} préstamos | 💳 {b.counts.pagos || 0} pagos
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">Sin detalles</span>
+          <div>
+            {/* VISTA MÓVIL (Tarjetas de respaldos) */}
+            <div className="grid gap-3 md:hidden">
+              {backups.map((b) => {
+                const isAuto = b.filename.includes('auto');
+                return (
+                  <div 
+                    key={b.filename} 
+                    className="p-4 border rounded-xl bg-card text-card-foreground shadow-sm space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 overflow-hidden">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            isAuto 
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                          }`}>
+                            {isAuto ? '🔄 Automático' : '👤 Manual'}
+                          </span>
+                          <span className="text-xs font-mono font-medium text-muted-foreground">
+                            {b.sizeFormatted}
+                          </span>
+                        </div>
+                        <p className="font-mono text-xs font-semibold text-foreground break-all leading-tight">
+                          {b.filename}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1 bg-muted/40 p-2.5 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-foreground">Fecha:</span>
+                        <span>{new Date(b.createdAt).toLocaleString('es-EC')}</span>
+                      </div>
+                      {b.counts && (
+                        <div className="pt-1 border-t border-border/50 flex justify-between gap-1 flex-wrap text-[11px]">
+                          <span>👥 {b.counts.clientes || 0} clientes</span>
+                          <span>💵 {b.counts.prestamos || 0} préstamos</span>
+                          <span>💳 {b.counts.pagos || 0} pagos</span>
+                        </div>
                       )}
-                    </td>
-                    <td className="p-3 text-right space-x-2">
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleDescargar(b.filename)}
-                        title="Descargar archivo a tu dispositivo"
-                        className="text-xs"
+                        className="flex-1 text-xs border-emerald-600/40 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                       >
                         Descargar 📥
                       </Button>
@@ -522,17 +533,78 @@ function CardConfiguracionBackups({ isAdmin }: { isAdmin: boolean }) {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEliminar(b.filename)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs px-3"
                           title="Eliminar este respaldo"
                         >
                           Eliminar 🗑️
                         </Button>
                       )}
-                    </td>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* VISTA DESKTOP (Tabla con scroll horizontal si se requiere) */}
+            <div className="hidden md:block overflow-x-auto border rounded-xl">
+              <table className="w-full text-sm text-left min-w-[650px]">
+                <thead className="bg-muted text-muted-foreground font-semibold border-b">
+                  <tr>
+                    <th className="p-3">Nombre de Archivo</th>
+                    <th className="p-3">Fecha y Hora</th>
+                    <th className="p-3">Tamaño</th>
+                    <th className="p-3">Contenido</th>
+                    <th className="p-3 text-right">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {backups.map((b) => (
+                    <tr key={b.filename} className="hover:bg-muted/50 transition-colors">
+                      <td className="p-3 font-mono text-xs font-medium text-foreground max-w-[280px] break-all">
+                        {b.filename}
+                      </td>
+                      <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
+                        {new Date(b.createdAt).toLocaleString('es-EC')}
+                      </td>
+                      <td className="p-3 font-mono text-xs text-foreground whitespace-nowrap">
+                        {b.sizeFormatted}
+                      </td>
+                      <td className="p-3 text-xs whitespace-nowrap">
+                        {b.counts ? (
+                          <span className="text-muted-foreground">
+                            👤 {b.counts.clientes || 0} clientes | 💵 {b.counts.prestamos || 0} préstamos | 💳 {b.counts.pagos || 0} pagos
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground opacity-60">Sin detalles</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-right space-x-2 whitespace-nowrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDescargar(b.filename)}
+                          title="Descargar archivo a tu dispositivo"
+                          className="text-xs"
+                        >
+                          Descargar 📥
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEliminar(b.filename)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs"
+                            title="Eliminar este respaldo"
+                          >
+                            Eliminar 🗑️
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </CardContent>
