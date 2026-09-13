@@ -336,6 +336,9 @@ function CardConfiguracionBackups({ isAdmin }: { isAdmin: boolean }) {
   const handleGenerarRespaldo = async () => {
     if (!isAdmin) return;
     setGenerating(true);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("app-backup-started"));
+    }
     try {
       const res = await fetch('/api/admin/backups', { method: 'POST' });
       if (res.ok) {

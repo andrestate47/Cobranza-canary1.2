@@ -4,6 +4,7 @@ import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/toaster'
 import { DeviceGuard } from '@/components/device-guard'
+import { BackupNotificationBanner } from '@/components/backup-notification-banner'
 
 export const metadata: Metadata = {
   title: 'B.&.D.S.C',
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="font-sans antialiased" style={{ fontFamily: "'Roboto Condensed', sans-serif" }}>
         <Providers>
           <DeviceGuard>
+            <BackupNotificationBanner />
             {children}
           </DeviceGuard>
           <Toaster />
