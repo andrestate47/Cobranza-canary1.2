@@ -29,6 +29,9 @@ Thumbs.db
 # uploads / user data (no versionar)
 uploads
 Uploads
+backups/*
+!backups/.gitkeep
+scratch*
 
 # prisma local db (si existe)
 prisma/*.db
@@ -39,3 +42,4 @@ tsconfig.tsbuildinfo
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
