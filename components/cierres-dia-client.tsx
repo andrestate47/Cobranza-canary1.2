@@ -346,7 +346,7 @@ export default function CierresDiaClient({ session }: CierresDiaClientProps) {
           {cierres.map((cierre, index) => (
             <Card
               key={cierre.id}
-              className="list-item animate-fadeInScale"
+              className="list-none animate-fadeInScale"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <CardContent className="p-6">

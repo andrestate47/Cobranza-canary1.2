@@ -310,6 +310,7 @@ export async function POST(request: NextRequest) {
           montoTotal: montoTotalPrestamo,
           saldoPendiente: nuevoSaldoPendiente,
           fechaInicio: prestamo.fechaInicio,
+          fechaFin: prestamo.fechaFinManual || prestamo.fechaFin,
           tipoPago: prestamo.tipoPago,
           cuotas: prestamo.cuotas,
           microseguroTipo: prestamo.microseguroTipo,

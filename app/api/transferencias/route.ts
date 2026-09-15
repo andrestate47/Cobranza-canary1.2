@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
           montoTotal: montoTotalPrestamo,
           saldoPendiente: saldoPendienteActual, // Saldo DESPUÉS del pago
           fechaInicio: pagoAsociado.prestamo.fechaInicio,
+          fechaFin: pagoAsociado.prestamo.fechaFinManual || pagoAsociado.prestamo.fechaFin,
           tipoPago: pagoAsociado.prestamo.tipoPago,
           cuotas: pagoAsociado.prestamo.cuotas,
           microseguroTipo: pagoAsociado.prestamo.microseguroTipo,

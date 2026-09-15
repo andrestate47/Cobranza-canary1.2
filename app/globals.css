@@ -164,8 +164,31 @@
   }
 }
 
+/* Eliminación global absoluta de puntos negros / viñetas en todo el sitio */
+ul, ol, li, div, button, section, article, nav, main, header, footer,
+.list-item, .list-none, [role="list"], [data-radix-collection-item], [data-state] {
+  list-style: none !important;
+  list-style-type: none !important;
+  list-style-image: none !important;
+}
+
+*::marker,
+*::-webkit-details-marker,
+::marker,
+::-webkit-details-marker {
+  display: none !important;
+  content: "" !important;
+  width: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
 /* Estilos para elementos de lista */
 .list-item {
+  display: block !important;
+  list-style: none !important;
+  list-style-type: none !important;
   @apply bg-white dark:bg-[#0E1F1C] rounded-lg shadow-sm border border-gray-200 dark:border-[#1F3A36] p-4 hover:shadow-md transition-shadow duration-200;
 }
 

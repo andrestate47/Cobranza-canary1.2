@@ -24,6 +24,7 @@ interface BoletaPagoData {
     montoTotal: number
     saldoPendiente: number
     fechaInicio: string
+    fechaFin?: string | Date
     tipoPago: string
     cuotas: number
     microseguroTipo?: string
@@ -436,6 +437,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     
     const diasTranscurridos = calcularDiasTranscurridosPro(data.prestamo.fechaInicio, data.fecha as string, data.prestamo.tipoPago)
 
+    const fechaFinCalculada = data.prestamo.fechaFin || (data.prestamo as any).fechaFinManual || (
+      data.prestamo.fechaInicio && data.prestamo.tipoPago && totalCuotas
+        ? calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, totalCuotas)
+        : null
+    )
+
     return (
       <div ref={ref} className={`bg-white p-6 ${className}`} style={{ width: '800px', margin: '0 auto' }}>
         <div className="w-full space-y-4">
@@ -667,6 +674,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     <span className="text-gray-600">Fecha de inicio:</span>
                     <span className="font-medium">{formatDateOnly(data.prestamo.fechaInicio)}</span>
                   </div>
+                  {fechaFinCalculada && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Fecha fin:</span>
+                      <span className="font-medium text-gray-800">{formatDateOnly(fechaFinCalculada)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Días transcurridos (al pago):</span>
                     <span className="font-medium">{diasTranscurridos} días</span>

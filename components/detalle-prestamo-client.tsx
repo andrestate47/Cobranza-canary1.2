@@ -27,7 +27,8 @@ import {
   Send,
   CreditCard,
   Edit,
-  ShieldCheck
+  ShieldCheck,
+  ZoomIn
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -910,6 +911,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         montoTotal: montoTotal,
         saldoPendiente: saldoPendienteEnEseMomento, // Saldo DESPUÉS de este pago
         fechaInicio: prestamo.fechaInicio,
+        fechaFin: (prestamo as any).fechaFinManual || prestamo.fechaFin,
         tipoPago: prestamo.tipoPago,
         cuotas: prestamo.cuotas,
         microseguroTipo: prestamo.microseguroTipo,
@@ -1506,60 +1508,74 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start space-x-3 sm:space-x-4 w-full">
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex flex-col items-center justify-center flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-5 w-full">
+                {/* Contenedor interactivo de foto del cliente */}
+                <div className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 self-center sm:self-start bg-gradient-to-tr from-blue-500/20 via-purple-500/20 to-teal-500/20 p-1 shadow-md hover:shadow-xl transition-all duration-300">
                   {prestamo.cliente.foto ? (
                     <button
                       onClick={abrirImagenModal}
-                      className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
-                      title="Ver foto del cliente"
+                      className="relative w-full h-full rounded-[14px] overflow-hidden ring-2 ring-blue-500/30 group-hover:ring-blue-500 transition-all duration-300 group hover:scale-[1.03]"
+                      title="Ver foto del cliente en pantalla completa"
                     >
                       <img
                         src={prestamo.cliente.foto}
                         alt={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
+                      <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white backdrop-blur-[2px] gap-1">
+                        <ZoomIn className="w-6 h-6 text-white drop-shadow-md" />
+                        <span className="text-[10px] font-medium tracking-wider uppercase">Ampliar</span>
+                      </div>
                     </button>
                   ) : (
-                    <User className="h-8 w-8 text-gray-400 dark:text-gray-300" />
+                    <div className="w-full h-full rounded-[14px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      <User className="h-10 w-10 text-gray-400 dark:text-gray-400" />
+                    </div>
                   )}
                   {/* Ícono de alerta superpuesto */}
-                  <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${estadoAlerta.color}`}>
+                  <div className={`absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 shadow-md ${estadoAlerta.color}`}>
                     <IconoAlerta className="h-4 w-4 text-white" />
                   </div>
                 </div>
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 w-full">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate w-full" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
+
+                <div className="flex-1 min-w-0 overflow-hidden w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2 w-full">
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate w-full tracking-tight" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
                       {prestamo.cliente.nombre} {prestamo.cliente.apellido}
                     </h3>
                     <Badge
                       variant="outline"
-                      className="text-xs bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0 font-semibold"
+                      className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0 font-semibold px-2.5 py-0.5 rounded-full"
                     >
                       {getTipoPagoText(prestamo.tipoPago)}
                     </Badge>
                   </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center text-gray-600 dark:text-gray-300">
-                      <FileText className="h-4 w-4 mr-2" />
-                      <span className="font-medium">Código:</span>
-                      <span className="ml-1 text-gray-900 dark:text-gray-100 font-medium">{prestamo.cliente.codigoCliente}</span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                      <FileText className="h-4 w-4 mr-2 text-blue-500 shrink-0" />
+                      <div className="truncate">
+                        <span className="font-medium text-gray-500 dark:text-gray-400 text-xs block">Código Cliente</span>
+                        <span className="text-gray-900 dark:text-gray-100 font-semibold">{prestamo.cliente.codigoCliente}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-300">
-                      <FileText className="h-4 w-4 mr-2" />
-                      <span className="font-medium">Documento:</span>
-                      <span className="ml-1 text-gray-900 dark:text-gray-100 font-medium">{prestamo.cliente.documento}</span>
+
+                    <div className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800">
+                      <FileText className="h-4 w-4 mr-2 text-indigo-500 shrink-0" />
+                      <div className="truncate">
+                        <span className="font-medium text-gray-500 dark:text-gray-400 text-xs block">Documento / DNI</span>
+                        <span className="text-gray-900 dark:text-gray-100 font-semibold">{prestamo.cliente.documento}</span>
+                      </div>
                     </div>
 
                     {/* Dirección del Cliente */}
-                    <div className="flex items-start text-gray-600 dark:text-gray-300">
-                      <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start text-gray-600 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 col-span-1 sm:col-span-2">
+                      <MapPin className="h-4 w-4 mr-2 mt-0.5 text-rose-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección Cliente:</div>
+                        <span className="font-medium text-gray-500 dark:text-gray-400 text-xs block">Dirección Principal</span>
                         <button
                           onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente', prestamo.cliente.mapLink)}
-                          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full font-medium"
+                          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-words w-full font-semibold transition-colors mt-0.5"
                           title="Click para abrir en Google Maps"
                         >
                           {prestamo.cliente.direccionCliente}
@@ -1569,13 +1585,13 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                     {/* Dirección de Cobro (si existe) */}
                     {prestamo.cliente.direccionCobro && (
-                      <div className="flex items-start text-gray-600 dark:text-gray-300">
-                        <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-orange-500" />
+                      <div className="flex items-start text-gray-600 dark:text-gray-300 bg-orange-50/60 dark:bg-orange-950/30 p-2.5 rounded-xl border border-orange-100 dark:border-orange-900/50 col-span-1 sm:col-span-2">
+                        <MapPin className="h-4 w-4 mr-2 mt-0.5 text-amber-500 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-orange-700 dark:text-orange-400 mb-1">Dirección Cobro:</div>
+                          <span className="font-medium text-amber-700 dark:text-amber-400 text-xs block">Dirección de Cobro</span>
                           <button
                             onClick={() => abrirMapa(prestamo.cliente.direccionCobro!, 'cobro')}
-                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-tight break-words w-full font-medium"
+                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-words w-full font-semibold transition-colors mt-0.5"
                             title="Click para abrir en Google Maps"
                           >
                             {prestamo.cliente.direccionCobro}
@@ -1585,14 +1601,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     )}
 
                     {prestamo.cliente.telefono && (
-                      <div className="flex items-center text-gray-600 dark:text-gray-300">
-                        <Phone className="h-4 w-4 mr-2" />
-                        <a
-                          href={`tel:${prestamo.cliente.telefono}`}
-                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                        >
-                          {prestamo.cliente.telefono}
-                        </a>
+                      <div className="flex items-center text-gray-600 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 col-span-1 sm:col-span-2">
+                        <Phone className="h-4 w-4 mr-2 text-emerald-500 shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-500 dark:text-gray-400 text-xs block">Teléfono de contacto</span>
+                          <a
+                            href={`tel:${prestamo.cliente.telefono}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-sm"
+                          >
+                            {prestamo.cliente.telefono}
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>

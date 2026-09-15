@@ -637,8 +637,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
             return (
               <Card
                 key={clienteData.cliente.id}
-                className="list-item animate-fadeInScale"
-                style={{ animationDelay: `${Math.min(index * 0.02, 0.2)}s` }}
+                className="block list-none animate-fadeInScale [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden"
+                style={{ animationDelay: `${Math.min(index * 0.02, 0.2)}s`, display: 'block', listStyle: 'none', listStyleType: 'none' }}
               >
                 <Collapsible
                   open={isExpanded}
@@ -649,7 +649,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                     <CollapsibleTrigger asChild>
                       <div className="flex items-center justify-between w-full cursor-pointer select-none">
                         <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
-                          <div className="relative w-10 h-10 bg-gray-200 rounded-full flex flex-col items-center justify-center flex-shrink-0">
+                          <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex flex-col items-center justify-center flex-shrink-0 p-0.5 shadow-sm">
                             {clienteData.cliente.foto ? (
                               <button
                                 type="button"
@@ -657,20 +657,20 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                   e.stopPropagation()
                                   abrirImagenModal(clienteData.cliente)
                                 }}
-                                className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
-                                title="Ver foto del cliente"
+                                className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 active:scale-90 transition-all duration-200 touch-manipulation group"
+                                title="Ver foto del cliente en pantalla completa"
                               >
                                 <img
                                   src={clienteData.cliente.foto}
                                   alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
                                 />
                               </button>
                             ) : (
-                              <User className="h-5 w-5 text-gray-400" />
+                              <User className="h-6 w-6 text-gray-400 dark:text-gray-300" />
                             )}
                             {/* Ícono de alerta superpuesto */}
-                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${estadoAlerta.color}`}>
+                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${estadoAlerta.color}`}>
                               <IconoAlerta className="h-3 w-3 text-white" />
                             </div>
                           </div>
@@ -759,8 +759,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                             return (
                               <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
                                 {/* Header del préstamo */}
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
-                                  <div className="flex items-center flex-wrap gap-2">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                                  <div className="flex items-center flex-wrap gap-1.5 min-w-0">
                                     <Badge variant="outline" className="text-xs font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
                                       Préstamo #{prestamoIndex + 1}
                                     </Badge>
@@ -793,18 +793,18 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                                     <Button
                                       size="sm"
                                       onClick={() => handlePagoRapido(prestamo, clienteData)}
-                                      className="btn-primary text-xs flex-1 sm:flex-none h-8"
+                                      className="btn-primary text-xs h-8 px-3 rounded-lg shadow-sm"
                                       disabled={prestamo.saldoPendiente <= 0}
                                     >
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      <DollarSign className="h-3 w-3 mr-1 hidden sm:inline" />
+                                      <Plus className="h-3.5 w-3.5 mr-1" />
+                                      <DollarSign className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
                                       Pago
                                     </Button>
-                                    <Button asChild variant="outline" size="sm" className="text-xs w-full h-8 flex-1 sm:flex-none">
+                                    <Button asChild variant="outline" size="sm" className="text-xs h-8 px-3 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
                                       <Link href={`/prestamos/${prestamo.id}`}>
                                         Ver
                                       </Link>

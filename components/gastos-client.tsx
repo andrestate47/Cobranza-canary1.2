@@ -326,7 +326,7 @@ export default function GastosClient({ session }: GastosClientProps) {
           {filteredGastos.slice(0, visibleCount).map((gasto, index) => (
             <Card
               key={gasto.id}
-              className="list-item animate-fadeInScale bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] transition-all"
+              className="list-none animate-fadeInScale bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] transition-all"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <CardContent className="p-4">

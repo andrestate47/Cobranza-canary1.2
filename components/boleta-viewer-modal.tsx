@@ -37,6 +37,7 @@ interface BoletaPagoData {
         montoTotal: number
         saldoPendiente: number
         fechaInicio: string | Date
+        fechaFin?: string | Date
         tipoPago: string
         cuotas: number
         microseguroTipo?: string
