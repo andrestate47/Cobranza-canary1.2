@@ -81,6 +81,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   // Estados
   const [movimientos, setMovimientos] = useState<MovimientoCajaChica[]>([])
   const [balance, setBalance] = useState<BalanceData | null>(null)
+  const [totalesGlobales, setTotalesGlobales] = useState<any>(null)
+  const [cobradoresResumen, setCobradoresResumen] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [cobradores, setCobradores] = useState<any[]>([])
   
@@ -129,6 +131,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         setMovimientos(data.movimientos || [])
       } else {
         setMovimientos(data.movimientosRecientes || (Array.isArray(data) ? data : []))
+        setTotalesGlobales(data.totalesGlobales || null)
+        setCobradoresResumen(data.cobradores || [])
       }
     } catch (error) {
       toast({
@@ -506,56 +510,171 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         )}
       </div>
 
-      {/* Resumen de Balance */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Balance Actual</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              Bs. {totales.balance.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Resumen de Balance y Caja Central */}
+      {!isCobrador && totalesGlobales ? (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Caja Central (Disponible)</CardTitle>
+                <Wallet className="h-5 w-5 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-700 dark:text-blue-400">
+                  Bs. {totalesGlobales.saldoCajaCentral?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Capital Base + Cobros - Créditos - Gastos
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Entregado</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              Bs. {totales.totalEntregado.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Capital Invertido Total</CardTitle>
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-600">
+                  Bs. {totalesGlobales.capitalInvertidoTotal?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Monto total en préstamos activos
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Gastado</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              Bs. {totales.totalGastado.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Dividendos del Día (Rutas)</CardTitle>
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-700">
+                  Bs. {totalesGlobales.totalDividendosDia?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ganancia diaria acumulada por intereses
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Devuelto</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              Bs. {totales.totalDevuelto.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gastos de Cobradores</CardTitle>
+                <TrendingDown className="h-4 w-4 text-rose-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-rose-600">
+                  Bs. {totalesGlobales.totalGastosGlobal?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Viáticos y gastos operacionales
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabla Desglose de Dividendos Diarios por Ruta */}
+          {cobradoresResumen.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  Dividendos y Movimientos Diarios por Ruta
+                </CardTitle>
+                <CardDescription>
+                  Resumen diario de cobros, nuevos créditos, gastos y rendimiento por cada cobrador
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="text-left p-3 font-semibold">Ruta</th>
+                        <th className="text-left p-3 font-semibold">Cobrador</th>
+                        <th className="text-right p-3 font-semibold">Saldo Caja</th>
+                        <th className="text-right p-3 font-semibold">Cobrado Hoy</th>
+                        <th className="text-right p-3 font-semibold">Créditos Hoy</th>
+                        <th className="text-right p-3 font-semibold">Gastos Hoy</th>
+                        <th className="text-right p-3 font-semibold text-emerald-700 dark:text-emerald-400">Dividendo del Día</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cobradoresResumen.map((cob) => (
+                        <tr key={cob.id} className="border-b hover:bg-muted/50">
+                          <td className="p-3 font-medium">
+                            <Badge variant="outline">Ruta {cob.numeroRuta || "-"}</Badge>
+                          </td>
+                          <td className="p-3 font-medium">{cob.nombre}</td>
+                          <td className="p-3 text-right font-semibold">Bs. {cob.saldoActual?.toFixed(2)}</td>
+                          <td className="p-3 text-right text-emerald-600 font-medium">Bs. {cob.cobradoDia?.toFixed(2)}</td>
+                          <td className="p-3 text-right text-blue-600">Bs. {cob.prestadoDia?.toFixed(2)}</td>
+                          <td className="p-3 text-right text-rose-600">Bs. {cob.gastosDia?.toFixed(2)}</td>
+                          <td className="p-3 text-right font-bold text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20">
+                            Bs. {cob.dividendoDia?.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Balance Actual</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                Bs. {totales.balance.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Entregado</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                Bs. {totales.totalEntregado.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Gastado</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                Bs. {totales.totalGastado.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Devuelto</CardTitle>
+              <DollarSign className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                Bs. {totales.totalDevuelto.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filtros de Fecha e Historial */}
       <Card>

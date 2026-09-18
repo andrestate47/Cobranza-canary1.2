@@ -10,16 +10,19 @@ if [ -z "$NODE_PATH" ]; then
   NODE_PATH="/usr/bin/node"
 fi
 
-CRON_JOB="0 2 * * * cd $APP_DIR && $NODE_PATH scripts/vps-auto-backup.js >> $APP_DIR/backups/cron.log 2>&1"
+CRON_JOB_BACKUP="0 2 * * * cd $APP_DIR && $NODE_PATH scripts/vps-auto-backup.js >> $APP_DIR/backups/cron.log 2>&1"
+CRON_JOB_CIERRE="0 0 * * * cd $APP_DIR && $NODE_PATH scripts/cierre-cron-job.js >> $APP_DIR/backups/cierre-cron.log 2>&1"
 
-# Verificar si ya existe en crontab
-(crontab -l 2>/dev/null | grep -v "scripts/vps-auto-backup.js"; echo "$CRON_JOB") | crontab -
+# Verificar e instalar en crontab
+(crontab -l 2>/dev/null | grep -v "scripts/vps-auto-backup.js" | grep -v "scripts/cierre-cron-job.js"; echo "$CRON_JOB_BACKUP"; echo "$CRON_JOB_CIERRE") | crontab -
 
 echo "================================================================"
-echo "✅ CRON JOB DE RESPALDOS AUTOMÁTICOS INSTALADO CORRECTAMENTE"
+echo "✅ CRON JOBS INSTALADOS CORRECTAMENTE EN EL VPS"
 echo "================================================================"
 echo "Directorio de la App: $APP_DIR"
 echo "Ejecutable Node: $NODE_PATH"
-echo "Frecuencia: Todos los días a las 02:00 AM"
-echo "Registro de logs: $APP_DIR/backups/cron.log"
+echo "1. Respaldo Automático: Todos los días a las 02:00 AM"
+echo "2. Cierre de Caja Automático: Todos los días a las 12:00 AM (00:00)"
+echo "Logs de cierre: $APP_DIR/backups/cierre-cron.log"
 echo "================================================================"
+

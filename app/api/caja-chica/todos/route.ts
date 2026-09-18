@@ -73,10 +73,35 @@ export async function GET(request: NextRequest) {
       limit = 500 // Más límite si se busca un día específico
     }
 
+    // Rango de fechas para el resumen diario / dividendos por ruta
+    const rangeFecha = dateFilter.fecha || getEcuadorDayRange(fechaParam || undefined)
+    const fechaInicioRange = rangeFecha.gte || getEcuadorDayRange(fechaParam || undefined).inicio
+    const fechaFinRange = rangeFecha.lte || getEcuadorDayRange(fechaParam || undefined).fin
+
+    // Consultar préstamos, pagos y gastos para el cálculo financiero de Caja Central y Dividendos
+    const [allPrestamos, allPagos, allGastos] = await Promise.all([
+      prisma.prestamo.findMany({
+        where: maxFechaSaldo ? { createdAt: { lte: maxFechaSaldo } } : undefined,
+        select: { id: true, userId: true, monto: true, interes: true, createdAt: true, tipoCredito: true }
+      }),
+      prisma.pago.findMany({
+        where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
+        include: {
+          prestamo: {
+            select: { id: true, monto: true, interes: true, userId: true }
+          }
+        }
+      }),
+      prisma.gasto.findMany({
+        where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
+        select: { id: true, userId: true, monto: true, fecha: true }
+      })
+    ])
+
     // Calculate totals and balances (up to specified maxFechaSaldo or all time)
     const allTimeMovements = await prisma.movimientoCajaChica.findMany({
       where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
-      select: { tipo: true, monto: true, cobradorId: true }
+      select: { tipo: true, monto: true, cobradorId: true, fecha: true }
     })
     
     let totalApertura = 0
@@ -113,15 +138,81 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const cobradoresConSaldo = cobradores.map((cobrador) => ({
-      id: cobrador.id,
-      nombre: `${cobrador.firstName || cobrador.name || ""} ${cobrador.lastName || ""}`.trim(),
-      numeroRuta: cobrador.numeroRuta,
-      saldoActual: saldosCobradores[cobrador.id] || 0,
-    }))
+    // Totales de Capital Invertido, Cobros, Préstamos y Gastos
+    const capitalInvertidoTotal = allPrestamos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
+    const totalCobradoGlobal = allPagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
+    const totalPrestadoGlobal = capitalInvertidoTotal
+    const totalGastosDirectosGlobal = allGastos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
+    const totalGastosGlobal = totalGastosDirectosGlobal + totalGastosCobradores
+
+    // Saldo Dinámico de la Caja Central:
+    // Capital Invertido Base (o Aperturas) + Cobrado - Prestado - Gastos - Egresos Generales
+    const saldoCajaCentral = (totalApertura > 0 ? totalApertura : capitalInvertidoTotal) 
+      + totalCobradoGlobal 
+      - totalPrestadoGlobal 
+      - totalGastosGlobal 
+      - totalEgresosGenerales
+
+    // Agrupar métricas por ruta / cobrador para la fecha del filtro (o día actual)
+    const cobradoresConSaldo = cobradores.map((cobrador) => {
+      // Filtrar pagos del día/rango para esta ruta
+      const pagosRuta = allPagos.filter(p => p.userId === cobrador.id && p.fecha >= fechaInicioRange && p.fecha <= fechaFinRange)
+      const cobradoDia = pagosRuta.reduce((sum, p) => sum + p.monto.toNumber(), 0)
+
+      // Interés cobrado (dividendo real generado por la ruta)
+      let dividendoInteresDia = 0
+      pagosRuta.forEach(p => {
+        const prestamo = p.prestamo
+        if (prestamo) {
+          const montoOriginal = prestamo.monto.toNumber()
+          const tasaInteres = prestamo.interes.toNumber() / 100
+          const montoConInteres = montoOriginal * (1 + tasaInteres)
+          if (montoConInteres > 0) {
+            const porcentajeInteres = (montoConInteres - montoOriginal) / montoConInteres
+            dividendoInteresDia += p.monto.toNumber() * porcentajeInteres
+          }
+        }
+      })
+
+      // Filtrar préstamos nuevos del día/rango para esta ruta
+      const prestamosRuta = allPrestamos.filter(p => p.userId === cobrador.id && p.createdAt >= fechaInicioRange && p.createdAt <= fechaFinRange)
+      const prestadoDia = prestamosRuta.reduce((sum, p) => sum + p.monto.toNumber(), 0)
+
+      // Gastos del día/rango
+      const gastosRutaDirectos = allGastos.filter(g => g.userId === cobrador.id && g.fecha >= fechaInicioRange && g.fecha <= fechaFinRange)
+      const totalGastosDirectosDia = gastosRutaDirectos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
+      
+      const movsGastosRuta = allTimeMovements.filter(m => m.cobradorId === cobrador.id && ["GASTO", "GASTADO", "PAGO_SUELDO"].includes(m.tipo) && m.fecha >= fechaInicioRange && m.fecha <= fechaFinRange)
+      const totalGastosMovsDia = movsGastosRuta.reduce((sum, m) => sum + m.monto.toNumber(), 0)
+      
+      const gastosDia = totalGastosDirectosDia + totalGastosMovsDia
+
+      // Flujo neto del día (Cobrado - Prestado - Gastos)
+      const flujoNetoDia = cobradoDia - prestadoDia - gastosDia
+
+      return {
+        id: cobrador.id,
+        nombre: `${cobrador.firstName || cobrador.name || ""} ${cobrador.lastName || ""}`.trim(),
+        numeroRuta: cobrador.numeroRuta,
+        saldoActual: saldosCobradores[cobrador.id] || 0,
+        cobradoDia,
+        prestadoDia,
+        gastosDia,
+        flujoNetoDia,
+        dividendoDia: Number(dividendoInteresDia.toFixed(2)),
+      }
+    })
+
+    const totalDividendosDia = cobradoresConSaldo.reduce((sum, c) => sum + c.dividendoDia, 0)
 
     const totalesGlobales = {
       totalApertura,
+      capitalInvertidoTotal,
+      totalCobradoGlobal,
+      totalPrestadoGlobal,
+      totalGastosGlobal,
+      saldoCajaCentral: Number(saldoCajaCentral.toFixed(2)),
+      totalDividendosDia: Number(totalDividendosDia.toFixed(2)),
       totalEntregas,
       totalDevoluciones,
       totalEgresosGenerales,
@@ -186,3 +277,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
