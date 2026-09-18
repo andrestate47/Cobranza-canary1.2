@@ -514,9 +514,24 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       {!isCobrador && totalesGlobales ? (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+            <Card className="border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Caja Central (Disponible)</CardTitle>
+                <CardTitle className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Monto Invertido (Clientes)</CardTitle>
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+                  Bs. {totalesGlobales.capitalInvertidoTotal?.toFixed(2) || "0.00"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Activos: <span className="font-semibold text-emerald-800 dark:text-emerald-300">Bs. {totalesGlobales.capitalInvertidoActivo?.toFixed(2) || "0.00"}</span>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-semibold text-blue-900 dark:text-blue-300">Caja Central (Disponible)</CardTitle>
                 <Wallet className="h-5 w-5 text-blue-600" />
               </CardHeader>
               <CardContent>
@@ -524,44 +539,29 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   Bs. {totalesGlobales.saldoCajaCentral?.toFixed(2) || "0.00"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Capital Base + Cobros - Créditos - Gastos
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Capital Invertido Total</CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600">
-                  Bs. {totalesGlobales.capitalInvertidoTotal?.toFixed(2) || "0.00"}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Monto total en préstamos activos
+                  Monto Invertido + Cobros - Gastos - Egresos
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Dividendos del Día (Rutas)</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Cobrado (Recaudación)</CardTitle>
                 <DollarSign className="h-4 w-4 text-emerald-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-emerald-700">
-                  Bs. {totalesGlobales.totalDividendosDia?.toFixed(2) || "0.00"}
+                  Bs. {totalesGlobales.totalCobradoGlobal?.toFixed(2) || "0.00"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ganancia diaria acumulada por intereses
+                  Recaudación total por pagos de clientes
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Gastos de Cobradores</CardTitle>
+                <CardTitle className="text-sm font-medium">Gastos & Viáticos</CardTitle>
                 <TrendingDown className="h-4 w-4 text-rose-500" />
               </CardHeader>
               <CardContent>
@@ -569,7 +569,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   Bs. {totalesGlobales.totalGastosGlobal?.toFixed(2) || "0.00"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Viáticos y gastos operacionales
+                  Gastos directos y de cobradores
                 </p>
               </CardContent>
             </Card>

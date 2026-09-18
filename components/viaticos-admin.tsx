@@ -63,6 +63,8 @@ export function ViaticosAdmin() {
   // Totales Globales
   const [totalesGlobales, setTotalesGlobales] = useState({
     totalApertura: 0,
+    capitalInvertidoTotal: 0,
+    saldoCajaCentral: 0,
     totalEntregas: 0,
     totalDevoluciones: 0,
     totalEgresosGenerales: 0,
@@ -261,10 +263,12 @@ export function ViaticosAdmin() {
   const totalViaticos = cobradores.reduce((sum, c) => sum + c.saldoActual, 0)
   
   // Usar los totales globales del servidor para los cálculos (no los movimientos filtrados)
-  const { totalApertura, totalEntregas, totalDevoluciones, totalEgresosGenerales, totalGastosCobradores } = totalesGlobales
+  const { totalApertura, capitalInvertidoTotal, saldoCajaCentral, totalEntregas, totalDevoluciones, totalEgresosGenerales, totalGastosCobradores } = totalesGlobales
 
-  // 1. Caja Central (Admin): Dinero físico en poder de la administración.
-  const saldoCajaAdmin = totalApertura - totalEntregas - totalEgresosGenerales + totalDevoluciones
+  // 1. Caja Central (Admin): Dinero disponible en la caja central.
+  const saldoCajaAdmin = saldoCajaCentral !== undefined && saldoCajaCentral !== 0 
+    ? saldoCajaCentral 
+    : (totalApertura - totalEntregas - totalEgresosGenerales + totalDevoluciones)
 
   // 2. Caja en Cobradores: Dinero activo entregado a los cobradores.
   // totalViaticos ya representa la suma de los saldos actuales.
@@ -340,6 +344,24 @@ export function ViaticosAdmin() {
       <div className="container-mobile space-y-6">
         {/* Tarjetas de Resumen */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Monto Invertido en Clientes */}
+          <Card className="border-l-4 border-l-emerald-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Monto Invertido (Clientes)
+              </CardTitle>
+              <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="text-xl md:text-2xl font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
+                {formatCurrency(capitalInvertidoTotal || 0)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
+                Capital total colocado en clientes.
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Caja Central (Admin) */}
           <Card className="border-l-4 border-l-blue-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -353,7 +375,7 @@ export function ViaticosAdmin() {
                 {formatCurrency(saldoCajaAdmin)}
               </div>
               <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
-                Dinero físico del administrador.
+                Base invertida + Cobros - Gastos - Egresos.
               </div>
             </CardContent>
           </Card>
@@ -376,24 +398,6 @@ export function ViaticosAdmin() {
             </CardContent>
           </Card>
           
-          {/* Fondo Consolidado */}
-          <Card className={`border-l-4 ${saldoConsolidado >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'} bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                Fondo Total Consolidado
-              </CardTitle>
-              <DollarSign className={`h-5 w-5 ${saldoConsolidado >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} flex-shrink-0`} />
-            </CardHeader>
-            <CardContent className="pb-4">
-              <div className={`text-xl md:text-2xl font-bold ${saldoConsolidado >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} leading-tight`}>
-                {formatCurrency(saldoConsolidado)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
-                Dinero total disponible en el sistema.
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Egresos Totales */}
           <Card className="border-l-4 border-l-amber-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

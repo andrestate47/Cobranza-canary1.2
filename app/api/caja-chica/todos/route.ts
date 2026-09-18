@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     const [allPrestamos, allPagos, allGastos] = await Promise.all([
       prisma.prestamo.findMany({
         where: maxFechaSaldo ? { createdAt: { lte: maxFechaSaldo } } : undefined,
-        select: { id: true, userId: true, monto: true, interes: true, createdAt: true, tipoCredito: true }
+        select: { id: true, userId: true, monto: true, interes: true, createdAt: true, tipoCredito: true, estado: true }
       }),
       prisma.pago.findMany({
         where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
@@ -140,18 +140,23 @@ export async function GET(request: NextRequest) {
 
     // Totales de Capital Invertido, Cobros, Préstamos y Gastos
     const capitalInvertidoTotal = allPrestamos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
+    const capitalInvertidoActivo = allPrestamos
+      .filter(p => p.estado === "ACTIVO")
+      .reduce((sum, p) => sum + p.monto.toNumber(), 0)
+
     const totalCobradoGlobal = allPagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
     const totalPrestadoGlobal = capitalInvertidoTotal
     const totalGastosDirectosGlobal = allGastos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
     const totalGastosGlobal = totalGastosDirectosGlobal + totalGastosCobradores
 
     // Saldo Dinámico de la Caja Central:
-    // Capital Invertido Base (o Aperturas) + Cobrado - Prestado - Gastos - Egresos Generales
-    const saldoCajaCentral = (totalApertura > 0 ? totalApertura : capitalInvertidoTotal) 
-      + totalCobradoGlobal 
-      - totalPrestadoGlobal 
-      - totalGastosGlobal 
+    // Monto Invertido Base + Aperturas + Cobros + Devoluciones - Gastos - Egresos Generales - Entregas
+    const saldoCajaCentral = (capitalInvertidoTotal + totalApertura)
+      + totalCobradoGlobal
+      + totalDevoluciones
+      - totalGastosGlobal
       - totalEgresosGenerales
+      - totalEntregas
 
     // Agrupar métricas por ruta / cobrador para la fecha del filtro (o día actual)
     const cobradoresConSaldo = cobradores.map((cobrador) => {
@@ -207,10 +212,11 @@ export async function GET(request: NextRequest) {
 
     const totalesGlobales = {
       totalApertura,
-      capitalInvertidoTotal,
-      totalCobradoGlobal,
-      totalPrestadoGlobal,
-      totalGastosGlobal,
+      capitalInvertidoTotal: Number(capitalInvertidoTotal.toFixed(2)),
+      capitalInvertidoActivo: Number(capitalInvertidoActivo.toFixed(2)),
+      totalCobradoGlobal: Number(totalCobradoGlobal.toFixed(2)),
+      totalPrestadoGlobal: Number(totalPrestadoGlobal.toFixed(2)),
+      totalGastosGlobal: Number(totalGastosGlobal.toFixed(2)),
       saldoCajaCentral: Number(saldoCajaCentral.toFixed(2)),
       totalDividendosDia: Number(totalDividendosDia.toFixed(2)),
       totalEntregas,
