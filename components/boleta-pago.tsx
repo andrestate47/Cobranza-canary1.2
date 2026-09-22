@@ -121,14 +121,26 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       }).format(date)
     }
 
-    // Convierte el timestamp del pago a la fecha local en formato YYYY-MM-DD
+    // Convierte el timestamp del pago a la fecha local (America/Bogota GMT-5) en formato YYYY-MM-DD
     const getLocalYYYYMMDD = (dateString: string | Date): string => {
+      if (!dateString) return ''
       const str = String(dateString)
-      if (str.includes('T') && str.length > 15) {
+      try {
         const d = new Date(str)
         if (!isNaN(d.getTime())) {
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Bogota',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).formatToParts(d)
+          const year = parts.find(p => p.type === 'year')?.value
+          const month = parts.find(p => p.type === 'month')?.value
+          const day = parts.find(p => p.type === 'day')?.value
+          if (year && month && day) return `${year}-${month}-${day}`
         }
+      } catch (e) {
+        console.error("Error in getLocalYYYYMMDD:", e)
       }
       return str.split('T')[0]
     }
@@ -152,27 +164,22 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       return tiposMap[tipoPago] || 1
     }
 
-    // Función para calcular cuotas atrasadas
+    // Función para calcular cuotas atrasadas a la fecha de referencia
     const calcularCuotasAtrasadas = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, totalCuotas: number, fechaReferencia: string): number => {
-      // Normalizar fecha de inicio usando componentes locales en UTC mediodía
       const fechaInicioStr = String(fechaInicio).split('T')[0]
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
       const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
 
-      // Normalizar fecha de referencia
       const fechaRefStr = getLocalYYYYMMDD(fechaReferencia)
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
       const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
-      // Si la referencia es anterior al inicio, no hay atraso
       if (referenciaNormalized < inicioNormalized) return 0
-
-      // Si cuotas pagadas supera el total, no hay atraso
       if (cuotasPagadas >= totalCuotas) return 0
 
       let cuotasEsperadas = 0
       const oneDay = 1000 * 60 * 60 * 24
-      const diasTranscurridos = Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / oneDay)
+      const diasTranscurridos = Math.max(0, Math.floor((referenciaNormalized.getTime() - inicioNormalized.getTime()) / oneDay))
 
       if (tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'LUNES_A_SABADO' || tipoPago === 'DIARIO') {
         let diasLaborales = 0
@@ -181,10 +188,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
         while (current <= referenciaNormalized) {
           const day = current.getUTCDay()
-          let valid = false
-          if (tipoPago === 'LUNES_A_VIERNES' && day !== 0 && day !== 6) valid = true
-          if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
-          if (tipoPago === 'DIARIO' && day !== 0) valid = true
+          let valid = true
+          if (tipoPago === 'LUNES_A_VIERNES' && (day === 0 || day === 6)) valid = false
+          if (tipoPago === 'LUNES_A_SABADO' && day === 0) valid = false
+          if (tipoPago === 'DIARIO' && day === 0) valid = false
 
           if (valid) {
             diasLaborales++
@@ -201,8 +208,8 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       return atrasadas
     }
 
-    // Función para calcular días vencidos
-    const calcularDiasVencidos = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, fechaReferencia: string): number => {
+    // Función para calcular días vencidos exactamente igual al Perfil del Cliente
+    const calcularDiasVencidos = (fechaInicio: string, tipoPago: string, cuotasPagadas: number, fechaReferencia: string, diasGracia = 0): number => {
       const fechaInicioStr = String(fechaInicio).split('T')[0]
       const [yI, mI, dI] = fechaInicioStr.split('-').map(Number)
       const inicioNormalized = new Date(Date.UTC(yI, mI - 1, dI, 12, 0, 0))
@@ -211,46 +218,44 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       const [yR, mR, dR] = fechaRefStr.split('-').map(Number)
       const referenciaNormalized = new Date(Date.UTC(yR, mR - 1, dR, 12, 0, 0))
 
+      const proximaCuotaIdx = Math.floor(cuotasPagadas) + 1
+      let fechaReferenciaMora: Date | null = null
+
       if (tipoPago === 'LUNES_A_SABADO' || tipoPago === 'LUNES_A_VIERNES' || tipoPago === 'DIARIO') {
         let current = new Date(inicioNormalized)
-        current.setUTCDate(current.getUTCDate() + 1)
-        
-        let cuotasEsperadasTotales = 0;
-        while (current <= referenciaNormalized) {
-          const day = current.getUTCDay()
-          let valid = false
-          if (tipoPago === 'LUNES_A_SABADO' && day !== 0) valid = true
-          if (tipoPago === 'LUNES_A_VIERNES' && (day !== 0 && day !== 6)) valid = true
-          if (tipoPago === 'DIARIO' && day !== 0) valid = true
-
-          if (valid) cuotasEsperadasTotales++;
-          current.setUTCDate(current.getUTCDate() + 1);
-        }
-        
-        let cuotasAtrasadasCount = Math.max(0, cuotasEsperadasTotales - cuotasPagadas);
-        return Math.floor(cuotasAtrasadasCount);
-      }
-
-      // Para otros pagos (Diario, Semanal, etc)
-      const diasEntrePagos = getDiasEntrePagos(tipoPago)
-      const ultimaCuotaEsperada = new Date(inicioNormalized)
-      ultimaCuotaEsperada.setUTCDate(ultimaCuotaEsperada.getUTCDate() + (cuotasPagadas * diasEntrePagos))
-
-      if (referenciaNormalized > ultimaCuotaEsperada) {
-        let current = new Date(ultimaCuotaEsperada)
-        let diasVencidosCount = 0
-        while (current <= referenciaNormalized) {
-          const day = current.getUTCDay()
+        let count = 0
+        while (count < proximaCuotaIdx) {
+          current.setUTCDate(current.getUTCDate() + 1)
+          const d = current.getUTCDay()
           let valid = true
-          if (day === 0) valid = false // Excluir domingos siempre
-          if (tipoPago === 'LUNES_A_VIERNES' && day === 6) valid = false // Excluir sábados si es lunes a viernes
+          if (tipoPago === 'LUNES_A_SABADO' && d === 0) valid = false
+          if (tipoPago === 'LUNES_A_VIERNES' && (d === 0 || d === 6)) valid = false
+          if (tipoPago === 'DIARIO' && d === 0) valid = false
 
           if (valid) {
-            diasVencidosCount++
+            count++
           }
-          current.setUTCDate(current.getUTCDate() + 1)
         }
-        return diasVencidosCount
+        fechaReferenciaMora = current
+      } else {
+        const diasEntrePagos = getDiasEntrePagos(tipoPago)
+        const oneDay = 1000 * 60 * 60 * 24
+        fechaReferenciaMora = new Date(inicioNormalized.getTime() + (proximaCuotaIdx * diasEntrePagos * oneDay))
+      }
+
+      if (fechaReferenciaMora && fechaReferenciaMora <= referenciaNormalized) {
+        let diasHabilesVencidos = 0
+        let tempDate = new Date(fechaReferenciaMora)
+        while (tempDate <= referenciaNormalized) {
+          const d = tempDate.getUTCDay()
+          let esDiaValido = true
+          if (d === 0) esDiaValido = false
+          if (tipoPago === 'LUNES_A_VIERNES' && d === 6) esDiaValido = false
+
+          if (esDiaValido) diasHabilesVencidos++
+          tempDate.setUTCDate(tempDate.getUTCDate() + 1)
+        }
+        return Math.max(0, diasHabilesVencidos - diasGracia)
       }
 
       return 0
@@ -417,7 +422,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
         diasVencidos = Number(prestamoFlex.diasVencidosManual)
       } else if (cuotasAtrasadas > 0) {
-        diasVencidos = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string)
+        diasVencidos = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string, (data.prestamo as any).diasGracia || 0)
       }
     }
 
