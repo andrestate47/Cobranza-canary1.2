@@ -27,11 +27,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Obtener todos los cobradores
-    const cobradores = await prisma.user.findMany({
+    // Obtener todos los cobradores y trabajadores con rutas o roles de cobro
+    const cobradoresRaw = await prisma.user.findMany({
       where: {
-        role: "COBRADOR",
-        isActive: true,
+        OR: [
+          { role: { in: ["COBRADOR", "SUPERVISOR"] } },
+          { numeroRuta: { not: null } },
+          { rutaId: { not: null } }
+        ]
       },
       select: {
         id: true,
@@ -39,7 +42,32 @@ export async function GET(request: NextRequest) {
         lastName: true,
         name: true,
         numeroRuta: true,
+        rutaId: true,
+        role: true,
+        isActive: true,
+        ruta: {
+          select: {
+            id: true,
+            numero: true,
+            nombre: true,
+          }
+        }
       },
+      orderBy: [
+        { numeroRuta: 'asc' },
+        { firstName: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+
+    const cobradores = cobradoresRaw.map((c) => {
+      const nombreCompleto = `${c.firstName || c.name || ""}${c.lastName ? ` ${c.lastName}` : ""}`.trim() || c.id
+      const ruta = c.numeroRuta || (c.ruta ? (c.ruta.numero ? `${c.ruta.numero}` : c.ruta.nombre) : null)
+      return {
+        id: c.id,
+        nombre: nombreCompleto,
+        numeroRuta: ruta,
+      }
     })
 
     const fechaInicioParam = url.searchParams.get("fechaInicio")
@@ -150,8 +178,9 @@ export async function GET(request: NextRequest) {
     const totalGastosGlobal = totalGastosDirectosGlobal + totalGastosCobradores
 
     // Saldo Dinámico de la Caja Central:
-    // Monto Invertido Base + Aperturas + Cobros + Devoluciones - Gastos - Egresos Generales - Entregas
-    const saldoCajaCentral = (capitalInvertidoTotal + totalApertura)
+    // Monto Invertido Base (usado como Saldo Inicial si no hay Apertura manual) + Cobros + Devoluciones - Gastos - Egresos Generales - Entregas
+    const saldoInicialCaja = totalApertura > 0 ? totalApertura : capitalInvertidoTotal
+    const saldoCajaCentral = saldoInicialCaja
       + totalCobradoGlobal
       + totalDevoluciones
       - totalGastosGlobal
@@ -197,7 +226,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: cobrador.id,
-        nombre: `${cobrador.firstName || cobrador.name || ""} ${cobrador.lastName || ""}`.trim(),
+        nombre: cobrador.nombre,
         numeroRuta: cobrador.numeroRuta,
         saldoActual: saldosCobradores[cobrador.id] || 0,
         cobradoDia,
@@ -211,7 +240,7 @@ export async function GET(request: NextRequest) {
     const totalDividendosDia = cobradoresConSaldo.reduce((sum, c) => sum + c.dividendoDia, 0)
 
     const totalesGlobales = {
-      totalApertura,
+      totalApertura: totalApertura > 0 ? totalApertura : Number(capitalInvertidoTotal.toFixed(2)),
       capitalInvertidoTotal: Number(capitalInvertidoTotal.toFixed(2)),
       capitalInvertidoActivo: Number(capitalInvertidoActivo.toFixed(2)),
       totalCobradoGlobal: Number(totalCobradoGlobal.toFixed(2)),

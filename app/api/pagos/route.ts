@@ -158,16 +158,14 @@ export async function POST(request: NextRequest) {
 
     const montoOriginalPrestamo = Number(prestamo.monto)
     const tasaInteresPrestamo = Number(prestamo.interes) / 100
-    let montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
+    let montoTotalPrestamo = Math.round((montoOriginalPrestamo * (1 + tasaInteresPrestamo)) * 100) / 100
     
     const microseguroTotal = Number(prestamo.microseguroTotal || 0)
-    // Se elimina la suma del microseguro al monto total prestado 
-    // para que no infle el saldo amortizable artificialmente.
-    const totalPagosExistentes = Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)
+    const totalPagosExistentes = Math.round((Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)) * 100) / 100
     // Redondear a 2 decimales para evitar precisiones de punto flotante
     const saldoActual = Math.max(0, Math.round((montoTotalPrestamo - totalPagosExistentes) * 100) / 100)
 
-    const pagoTotalVirtual = montoNumerico + devolucionSeguroNumerico;
+    const pagoTotalVirtual = Math.round((montoNumerico + devolucionSeguroNumerico) * 100) / 100
 
     console.log('💰 Validación de saldo:')
     console.log('  - Monto total préstamo:', montoTotalPrestamo)
@@ -176,12 +174,12 @@ export async function POST(request: NextRequest) {
     console.log('  - Monto a pagar (efectivo):', montoNumerico)
     console.log('  - Devolución seguro:', devolucionSeguroNumerico)
 
-    // Validar que el pago no exceda el saldo pendiente
-    if (pagoTotalVirtual > saldoActual) {
+    // Validar que el pago no exceda el saldo pendiente (con tolerancia de $0.01 por desajustes flotantes)
+    if (pagoTotalVirtual - saldoActual > 0.01) {
       console.log('❌ Pago excede saldo pendiente')
       return NextResponse.json(
         {
-          error: `La suma del pago y seguro devuelto ($${pagoTotalVirtual.toLocaleString('es-CO')}) no puede ser mayor al saldo pendiente ($${saldoActual.toLocaleString('es-CO')})`
+          error: `La suma del pago y seguro devuelto ($${pagoTotalVirtual.toFixed(2)}) no puede ser mayor al saldo pendiente ($${saldoActual.toFixed(2)})`
         },
         { status: 400 }
       )

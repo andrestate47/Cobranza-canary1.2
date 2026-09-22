@@ -561,20 +561,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                       <span className="font-semibold text-rose-500 dark:text-rose-400">-{formatCurrency((ruta.gastosOperativos || 0) + (ruta.gastosSueldos || 0))}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm border-t pt-1.5 border-dashed border-gray-200 dark:border-[#1F3A36]">
-                      <span className="text-gray-500 dark:text-gray-400">Capital Invertido (Período)</span>
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(ruta.capitalInvertidoRuta)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Regado en Calle (Cartera)</span>
+                      <span className="text-gray-500 dark:text-gray-400">Saldo total pendiente de cobro</span>
                       <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCurrency(ruta.regadoCalleRuta)}</span>
-                    </div>
-                    <div className="border-t pt-2 mt-2 border-gray-200 dark:border-[#1F3A36]">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-900 dark:text-white text-sm">Flujo Efectivo del Período</span>
-                        <span className={`font-bold ${ruta.balancePeriodo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {formatCurrency(ruta.balancePeriodo)}
-                        </span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1650,7 +1638,7 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
                     <p className="text-[10px] text-blue-600 dark:text-blue-300 mt-0.5">Total prestado</p>
                   </div>
                   <div className="bg-amber-50/60 dark:bg-[#152e2a] border border-amber-100 dark:border-[#1F3A36] p-3.5 rounded-xl">
-                    <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold uppercase tracking-wider">Regado en Calle</p>
+                    <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold uppercase tracking-wider">Saldo total pendiente de cobro</p>
                     <p className="text-xl font-bold text-amber-700 dark:text-amber-400 mt-1">{formatCurrency(selectedRuta.regadoCalleRuta)}</p>
                     <p className="text-[10px] text-amber-600 dark:text-amber-300 mt-0.5">Saldo pendiente total por cobrar</p>
                   </div>

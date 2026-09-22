@@ -343,16 +343,16 @@ export function ViaticosAdmin() {
 
       <div className="container-mobile space-y-6">
         {/* Tarjetas de Resumen */}
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
           {/* Monto Invertido en Clientes */}
-          <Card className="border-l-4 border-l-emerald-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+          <Card className="border-l-4 border-l-emerald-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Monto Invertido (Clientes)
               </CardTitle>
               <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-4">
+            <CardContent className="pb-4 flex-1 flex flex-col justify-center">
               <div className="text-xl md:text-2xl font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
                 {formatCurrency(capitalInvertidoTotal || 0)}
               </div>
@@ -362,51 +362,50 @@ export function ViaticosAdmin() {
             </CardContent>
           </Card>
 
-          {/* Caja Central (Admin) */}
-          <Card className="border-l-4 border-l-blue-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+          {/* Cobradores y Rutas */}
+          <Card className="border-l-4 border-l-purple-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                Caja Central (Admin)
-              </CardTitle>
-              <Banknote className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            </CardHeader>
-            <CardContent className="pb-4">
-              <div className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400 leading-tight">
-                {formatCurrency(saldoCajaAdmin)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
-                Base invertida + Cobros - Gastos - Egresos.
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Caja en Cobradores */}
-          <Card className="border-l-4 border-l-purple-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                En Cobradores (Viáticos)
+                Cobradores y Rutas ({cobradores.length})
               </CardTitle>
               <Users className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-4">
-              <div className="text-xl md:text-2xl font-bold text-purple-600 dark:text-purple-400 leading-tight">
-                {formatCurrency(totalViaticos)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-emerald-300/80 mt-2">
-                Efectivo activo en manos de los cobradores.
-              </div>
+            <CardContent className="pb-3 flex-1">
+              <ScrollArea className="h-[95px] pr-2">
+                {cobradores.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500">No hay cobradores registrados</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {cobradores.map((cobrador) => (
+                      <div key={cobrador.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-gray-50 dark:bg-[#152e2a]">
+                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[120px]">
+                          {cobrador.nombre}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-300">
+                            {cobrador.numeroRuta ? (cobrador.numeroRuta.toLowerCase().includes('ruta') ? cobrador.numeroRuta : `Ruta ${cobrador.numeroRuta}`) : 'Sin Ruta'}
+                          </Badge>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(cobrador.saldoActual || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
-          
+
           {/* Egresos Totales */}
-          <Card className="border-l-4 border-l-amber-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm">
+          <Card className="border-l-4 border-l-amber-500 bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36] shadow-sm flex flex-col justify-between">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Egresos Totales (Gastos)
               </CardTitle>
               <TrendingDown className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent className="pb-4">
+            <CardContent className="pb-4 flex-1 flex flex-col justify-center">
               <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 leading-tight">
                 {formatCurrency(totalEgresos)}
               </div>
@@ -417,207 +416,114 @@ export function ViaticosAdmin() {
           </Card>
         </div>
 
-        {/* Acciones Rápidas */}
+        {/* Historial de Movimientos */}
         <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-gray-900 dark:text-white">Acciones Rápidas</CardTitle>
-                <CardDescription className="text-gray-500 dark:text-gray-400">
-                  Registra ingresos y egresos para cobradores
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchData}
-                disabled={loading}
-                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-gray-700 dark:text-gray-200" />
+              <CardTitle className="text-gray-900 dark:text-white">Historial de Movimientos</CardTitle>
+              {fechaSeleccionada && (
+                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                  Filtrado
+                </Badge>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Button 
-                onClick={abrirDialogIngreso}
-                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium shadow-sm"
-              >
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Registrar Ingreso
-              </Button>
-              <Button 
-                onClick={abrirDialogEgreso}
-                className="bg-rose-600 hover:bg-rose-700 dark:bg-rose-600 dark:hover:bg-rose-700 text-white font-medium shadow-sm"
-              >
-                <TrendingDown className="h-4 w-4 mr-2" />
-                Registrar Egreso
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabs para Cobradores y Movimientos */}
-        <Card className="bg-white dark:bg-[#0E1F1C] border-gray-200 dark:border-[#1F3A36]">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white">Detalle de Viáticos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-[#152e2a]">
-                <TabsTrigger value="cobradores" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white">
-                  <Users className="h-4 w-4 mr-2" />
-                  Cobradores
-                </TabsTrigger>
-                <TabsTrigger value="movimientos" className="dark:data-[state=active]:bg-[#0E1F1C] dark:data-[state=active]:text-white flex items-center justify-center gap-1.5">
-                  <History className="h-4 w-4" />
-                  <span>Historial</span>
-                  {fechaSeleccionada && (
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                      Filtrado
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="cobradores" className="space-y-4 mt-4">
-                <ScrollArea className="h-[400px] pr-4">
-                  {loading ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      <p>Cargando cobradores...</p>
-                    </div>
-                  ) : cobradores.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p>No hay cobradores registrados</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {cobradores.map((cobrador) => (
-                        <div
-                          key={cobrador.id}
-                          className="border border-gray-200 dark:border-[#1F3A36] rounded-lg p-4 flex items-center justify-between bg-white dark:bg-[#152e2a] hover:bg-gray-50 dark:hover:bg-[#1A3330] transition-colors"
-                        >
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-white">{cobrador.nombre}</p>
-                            {cobrador.numeroRuta && (
-                              <p className="text-sm text-gray-500 dark:text-emerald-300/80">Ruta {cobrador.numeroRuta}</p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-xl font-bold ${
-                              cobrador.saldoActual > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-gray-500"
-                            }`}>
-                              {formatCurrency(cobrador.saldoActual)}
+            <ScrollArea className="h-[400px] pr-4">
+              {loading ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  <p>Cargando movimientos...</p>
+                </div>
+              ) : movimientos.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>No hay movimientos registrados</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {movimientos.map((mov) => {
+                    const isApertura = mov.tipo === "APERTURA_CAJA"
+                    const isEgresoGeneral = mov.tipo === "EGRESO_GENERAL"
+                    const isIngreso = mov.tipo === "ENTREGA" || isApertura
+                    const borderColor = isApertura ? "border-blue-500" : isIngreso ? "border-emerald-500" : "border-rose-500"
+                    const montoColor = isApertura ? "text-blue-600 dark:text-blue-400" : isIngreso ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                    
+                    return (
+                      <div
+                        key={mov.id}
+                        className={`border-l-4 ${borderColor} border-gray-200 dark:border-y-[#1F3A36] dark:border-r-[#1F3A36] rounded-lg p-4 bg-white dark:bg-[#152e2a] shadow-sm hover:shadow-md transition-shadow relative`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {isApertura ? "Monto Inicial de Caja" : isEgresoGeneral ? "Egreso General" : mov.cobrador}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Saldo actual</p>
+                            <Badge variant={getTipoBadge(mov.tipo)} className="mt-1 dark:bg-[#1F3A36] dark:text-emerald-200 border-none">
+                              {getTipoLabel(mov.tipo)}
+                            </Badge>
+                          </div>
+                          <div className="text-right flex items-start gap-2">
+                            <span className={`text-base font-bold ${montoColor} leading-tight`}>
+                              {isIngreso ? "+" : "-"}{formatCurrency(mov.monto).replace(/^[^\d-]+/, '')}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => confirmarEliminarMovimiento(mov.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 h-8 w-8 p-0 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="movimientos" className="space-y-4 mt-4">
-                <ScrollArea className="h-[400px] pr-4">
-                  {loading ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      <p>Cargando movimientos...</p>
-                    </div>
-                  ) : movimientos.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p>No hay movimientos registrados</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {movimientos.map((mov) => {
-                        const isApertura = mov.tipo === "APERTURA_CAJA"
-                        const isEgresoGeneral = mov.tipo === "EGRESO_GENERAL"
-                        const isIngreso = mov.tipo === "ENTREGA" || isApertura
-                        const borderColor = isApertura ? "border-blue-500" : isIngreso ? "border-emerald-500" : "border-rose-500"
-                        const montoColor = isApertura ? "text-blue-600 dark:text-blue-400" : isIngreso ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                        
-                        return (
-                          <div
-                            key={mov.id}
-                            className={`border-l-4 ${borderColor} border-gray-200 dark:border-y-[#1F3A36] dark:border-r-[#1F3A36] rounded-lg p-4 bg-white dark:bg-[#152e2a] shadow-sm hover:shadow-md transition-shadow relative`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <p className="font-semibold text-gray-900 dark:text-white">
-                                  {isApertura ? "Monto Inicial de Caja" : isEgresoGeneral ? "Egreso General" : mov.cobrador}
-                                </p>
-                                <Badge variant={getTipoBadge(mov.tipo)} className="mt-1 dark:bg-[#1F3A36] dark:text-emerald-200 border-none">
-                                  {getTipoLabel(mov.tipo)}
-                                </Badge>
-                              </div>
-                              <div className="text-right flex items-start gap-2">
-                                <span className={`text-base font-bold ${montoColor} leading-tight`}>
-                                  {isIngreso ? "+" : "-"}{formatCurrency(mov.monto).replace(/^[^\d-]+/, '')}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => confirmarEliminarMovimiento(mov.id)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 h-8 w-8 p-0 flex-shrink-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                        {!isApertura && !isEgresoGeneral && (
+                          <div className="text-sm space-y-1 mt-3">
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-emerald-300/80 flex-wrap">
+                              <span className="font-medium">Saldo:</span>
+                              <span>{formatCurrency(mov.saldoAnterior)}</span>
+                              <span>→</span>
+                              <span className="font-semibold">{formatCurrency(mov.saldoNuevo)}</span>
                             </div>
-                            {!isApertura && !isEgresoGeneral && (
-                              <div className="text-sm space-y-1 mt-3">
-                                <div className="flex items-center gap-2 text-gray-600 dark:text-emerald-300/80 flex-wrap">
-                                  <span className="font-medium">Saldo:</span>
-                                  <span>{formatCurrency(mov.saldoAnterior)}</span>
-                                  <span>→</span>
-                                  <span className="font-semibold">{formatCurrency(mov.saldoNuevo)}</span>
-                                </div>
-                                <p className="text-gray-500 dark:text-gray-400">
-                                  {format(new Date(mov.fecha), "PPp", { locale: es })}
-                                </p>
-                                {mov.asignadoPor && (
-                                  <p className="text-gray-500 dark:text-gray-400">
-                                    Por: {mov.asignadoPor}
-                                  </p>
-                                )}
-                                {mov.observaciones && (
-                                  <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
-                                    "{mov.observaciones}"
-                                  </p>
-                                )}
-                              </div>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              {format(new Date(mov.fecha), "PPp", { locale: es })}
+                            </p>
+                            {mov.asignadoPor && (
+                              <p className="text-gray-500 dark:text-gray-400">
+                                Por: {mov.asignadoPor}
+                              </p>
                             )}
-                            {(isApertura || isEgresoGeneral) && (
-                              <div className="text-sm space-y-1 mt-3">
-                                <p className="text-gray-500 dark:text-gray-400">
-                                  {format(new Date(mov.fecha), "PPp", { locale: es })}
-                                </p>
-                                {mov.asignadoPor && (
-                                  <p className="text-gray-500 dark:text-gray-400">
-                                    Registrado por: {mov.asignadoPor}
-                                  </p>
-                                )}
-                                {mov.observaciones && (
-                                  <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
-                                    "{mov.observaciones}"
-                                  </p>
-                                )}
-                              </div>
+                            {mov.observaciones && (
+                              <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
+                                "{mov.observaciones}"
+                              </p>
                             )}
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
+                        )}
+                        {(isApertura || isEgresoGeneral) && (
+                          <div className="text-sm space-y-1 mt-3">
+                            <p className="text-gray-500 dark:text-gray-400">
+                              {format(new Date(mov.fecha), "PPp", { locale: es })}
+                            </p>
+                            {mov.asignadoPor && (
+                              <p className="text-gray-500 dark:text-gray-400">
+                                Registrado por: {mov.asignadoPor}
+                              </p>
+                            )}
+                            {mov.observaciones && (
+                              <p className="text-gray-700 dark:text-emerald-200 mt-2 p-2 bg-gray-50 dark:bg-[#0E1F1C] border border-gray-100 dark:border-[#1F3A36] rounded italic">
+                                "{mov.observaciones}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>

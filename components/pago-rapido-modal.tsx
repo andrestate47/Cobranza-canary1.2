@@ -438,7 +438,8 @@ export default function PagoRapidoModal({
       return
     }
 
-    if (montoNumerico > prestamo.saldoPendiente) {
+    const saldoRedondeado = Math.round((prestamo.saldoPendiente + 0.0001) * 100) / 100
+    if (montoNumerico - saldoRedondeado > 0.01) {
       const saldoFormateado = formatCurrency(prestamo.saldoPendiente)
       const montoFormateado = formatCurrency(montoNumerico)
       toast({
