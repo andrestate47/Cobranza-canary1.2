@@ -617,7 +617,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     <span className="font-medium text-orange-600">{Number(cuotasPendientes.toFixed(2))}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas atrasadas:</span>
+                    <span className="text-gray-600">Cuotas atrasadas (al abono):</span>
                     <span className={`font-medium ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {Number(cuotasAtrasadas.toFixed(2))}
                     </span>
@@ -626,13 +626,13 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <Separator className="my-2" />
 
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Días vencidos:</span>
+                    <span className="text-gray-600">Días vencidos (al abono):</span>
                     <span className={`font-medium ${diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {diasVencidos} días
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Valor en atraso:</span>
+                    <span className="text-gray-600">Valor en atraso (al abono):</span>
                     <span className={`font-medium ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {formatCurrency(valorEnAtraso)}
                     </span>
