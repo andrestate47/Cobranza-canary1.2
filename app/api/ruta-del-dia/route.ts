@@ -178,10 +178,9 @@ export async function GET(request: NextRequest) {
             // Si el préstamo ya venció (fechaFin < inicio), contamos los días hábiles (sin domingos) desde fechaFin hasta inicio (hoy)
             diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, inicio, prestamo.tipoPago)
           } else {
-            // Si está activo, es la diferencia de cuotas esperadas hasta ayer (ya vencidas) menos las pagadas
-            const fechaAyer = new Date(inicio.getTime() - 24 * 60 * 60 * 1000)
-            const cuotasEsperadasAyer = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, fechaAyer)
-            diasMora = Math.max(0, Math.floor(cuotasEsperadasAyer - cuotasPagadasRaw))
+            // Si está activo, es la diferencia de cuotas esperadas a la fecha actual menos las pagadas
+            const cuotasEsperadasHoy = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, inicio)
+            diasMora = Math.max(0, Math.floor(cuotasEsperadasHoy - cuotasPagadasRaw))
           }
         }
 

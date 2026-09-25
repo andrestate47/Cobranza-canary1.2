@@ -263,9 +263,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       let pagosEsperados = 0
 
       if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        pagosEsperados = countDiasHabiles(fechaInicioMidnight, ayerMidnight, prestamo.tipoPago)
+        pagosEsperados = countDiasHabiles(fechaInicioMidnight, hoyMidnight, prestamo.tipoPago)
       } else {
-        pagosEsperados = Math.floor((ayerMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+        pagosEsperados = Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
       }
 
       const cuotasVencidasEfectivas = Math.max(0, pagosEsperados)
