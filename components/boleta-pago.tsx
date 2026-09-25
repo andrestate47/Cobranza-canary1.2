@@ -412,23 +412,47 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
       ? Number(prestamoFlex.cuotasPendientesManual)
       : Math.max(0, totalCuotas - cuotasPagadas))
 
-    const cuotasAtrasadas = estaCompletado ? 0 : ((prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
+    // 1. Cálculo del atraso ACTUAL (al día de hoy) para coincidir 100% con el perfil del cliente
+    const hoyStr = getLocalYYYYMMDD(new Date())
+    const cuotasAtrasadasActuales = estaCompletado ? 0 : ((prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
       ? Number(prestamoFlex.cuotasAtrasadasManual)
-      : calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, data.fecha as string))
+      : calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, hoyStr))
 
-    // Para días vencidos, refinamos: solo si hay atraso y no está completado
-    let diasVencidos = 0
+    let diasVencidosActuales = 0
     if (!estaCompletado) {
       if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
-        diasVencidos = Number(prestamoFlex.diasVencidosManual)
-      } else if (cuotasAtrasadas > 0) {
-        diasVencidos = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string, (data.prestamo as any).diasGracia || 0)
+        diasVencidosActuales = Number(prestamoFlex.diasVencidosManual)
+      } else if (cuotasAtrasadasActuales > 0) {
+        diasVencidosActuales = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, hoyStr, (data.prestamo as any).diasGracia || 0)
       }
     }
 
-    const valorEnAtraso = estaCompletado ? 0 : ((prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
+    const valorEnAtrasoActual = estaCompletado ? 0 : ((prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
       ? Number(prestamoFlex.valorEnAtrasoManual)
-      : cuotasAtrasadas * valorCuotaMostrar)
+      : cuotasAtrasadasActuales * valorCuotaMostrar)
+
+    // 2. Cálculo del atraso HISTÓRICO (específico a la fecha del abono)
+    const cuotasAtrasadasAlAbono = estaCompletado ? 0 : ((prestamoFlex.cuotasAtrasadasManual !== null && prestamoFlex.cuotasAtrasadasManual !== undefined)
+      ? Number(prestamoFlex.cuotasAtrasadasManual)
+      : calcularCuotasAtrasadas(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, totalCuotas, data.fecha as string))
+
+    let diasVencidosAlAbono = 0
+    if (!estaCompletado) {
+      if (prestamoFlex.diasVencidosManual !== null && prestamoFlex.diasVencidosManual !== undefined) {
+        diasVencidosAlAbono = Number(prestamoFlex.diasVencidosManual)
+      } else if (cuotasAtrasadasAlAbono > 0) {
+        diasVencidosAlAbono = calcularDiasVencidos(data.prestamo.fechaInicio, data.prestamo.tipoPago, cuotasPagadas, data.fecha as string, (data.prestamo as any).diasGracia || 0)
+      }
+    }
+
+    const valorEnAtrasoAlAbono = estaCompletado ? 0 : ((prestamoFlex.valorEnAtrasoManual !== null && prestamoFlex.valorEnAtrasoManual !== undefined)
+      ? Number(prestamoFlex.valorEnAtrasoManual)
+      : cuotasAtrasadasAlAbono * valorCuotaMostrar)
+
+    // Asignar los valores principales de mora consistentes con la fecha del abono de la boleta
+    const cuotasAtrasadas = cuotasAtrasadasAlAbono
+    const diasVencidos = diasVencidosAlAbono
+    const valorEnAtraso = valorEnAtrasoAlAbono
     
     let fechaProximaTeorica = calcularFechaProximoPago(data.prestamo.fechaInicio, data.prestamo.tipoPago, Math.floor(cuotasPagadas) + 1)
     
