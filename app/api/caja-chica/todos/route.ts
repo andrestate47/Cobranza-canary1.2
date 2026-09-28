@@ -107,16 +107,32 @@ export async function GET(request: NextRequest) {
     const fechaFinRange = rangeFecha.lte || getEcuadorDayRange(fechaParam || undefined).fin
 
     // Consultar préstamos, pagos y gastos para el cálculo financiero de Caja Central y Dividendos
+    // Consultar préstamos, pagos y gastos para el cálculo financiero de Caja Central y Dividendos
     const [allPrestamos, allPagos, allGastos] = await Promise.all([
       prisma.prestamo.findMany({
         where: maxFechaSaldo ? { createdAt: { lte: maxFechaSaldo } } : undefined,
-        select: { id: true, userId: true, monto: true, interes: true, createdAt: true, tipoCredito: true, estado: true }
+        select: { 
+          id: true, 
+          userId: true, 
+          monto: true, 
+          interes: true, 
+          createdAt: true, 
+          tipoCredito: true, 
+          estado: true,
+          cliente: { select: { nombre: true, apellido: true } }
+        }
       }),
       prisma.pago.findMany({
         where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
         include: {
           prestamo: {
-            select: { id: true, monto: true, interes: true, userId: true }
+            select: { 
+              id: true, 
+              monto: true, 
+              interes: true, 
+              userId: true,
+              cliente: { select: { nombre: true, apellido: true } }
+            }
           }
         }
       }),
@@ -166,6 +182,33 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Desglose de Capital Recuperado e Interés Ganado global
+    let capitalRecuperadoGlobal = 0
+    let interesGanadoGlobal = 0
+
+    allPagos.forEach(p => {
+      const prestamo = p.prestamo
+      if (prestamo) {
+        const montoOriginal = prestamo.monto.toNumber()
+        const tasaInteres = prestamo.interes.toNumber() / 100
+        const montoConInteres = montoOriginal * (1 + tasaInteres)
+        if (montoConInteres > 0) {
+          const porcentajeInteres = (montoConInteres - montoOriginal) / montoConInteres
+          const porcentajeCapital = 1 - porcentajeInteres
+          
+          const interesMonto = p.monto.toNumber() * porcentajeInteres
+          const capitalMonto = p.monto.toNumber() * porcentajeCapital
+          
+          interesGanadoGlobal += interesMonto
+          capitalRecuperadoGlobal += capitalMonto
+        } else {
+          capitalRecuperadoGlobal += p.monto.toNumber()
+        }
+      } else {
+        capitalRecuperadoGlobal += p.monto.toNumber()
+      }
+    })
+
     // Totales de Capital Invertido, Cobros, Préstamos y Gastos
     const capitalInvertidoTotal = allPrestamos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
     const capitalInvertidoActivo = allPrestamos
@@ -176,6 +219,7 @@ export async function GET(request: NextRequest) {
     const totalPrestadoGlobal = capitalInvertidoTotal
     const totalGastosDirectosGlobal = allGastos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
     const totalGastosGlobal = totalGastosDirectosGlobal + totalGastosCobradores
+    const balanceCobradoMenosPrestado = totalCobradoGlobal - totalPrestadoGlobal
 
     // Saldo Dinámico de la Caja Central:
     // Monto Invertido Base (usado como Saldo Inicial si no hay Apertura manual) + Cobros + Devoluciones - Gastos - Egresos Generales - Entregas
@@ -243,6 +287,9 @@ export async function GET(request: NextRequest) {
       totalApertura: totalApertura > 0 ? totalApertura : Number(capitalInvertidoTotal.toFixed(2)),
       capitalInvertidoTotal: Number(capitalInvertidoTotal.toFixed(2)),
       capitalInvertidoActivo: Number(capitalInvertidoActivo.toFixed(2)),
+      capitalRecuperadoGlobal: Number(capitalRecuperadoGlobal.toFixed(2)),
+      interesGanadoGlobal: Number(interesGanadoGlobal.toFixed(2)),
+      balanceCobradoMenosPrestado: Number(balanceCobradoMenosPrestado.toFixed(2)),
       totalCobradoGlobal: Number(totalCobradoGlobal.toFixed(2)),
       totalPrestadoGlobal: Number(totalPrestadoGlobal.toFixed(2)),
       totalGastosGlobal: Number(totalGastosGlobal.toFixed(2)),
@@ -298,10 +345,78 @@ export async function GET(request: NextRequest) {
         null,
     }))
 
+    // Mapear pagos de clientes a la línea de tiempo unificada
+    const pagosFiltrados = dateFilter.fecha ? allPagos.filter(p => {
+      if (dateFilter.fecha.gte && p.fecha < dateFilter.fecha.gte) return false
+      if (dateFilter.fecha.lte && p.fecha > dateFilter.fecha.lte) return false
+      return true
+    }) : allPagos
+
+    const pagosFormateados = pagosFiltrados.map(p => {
+      const prestamo = p.prestamo
+      let capitalMonto = p.monto.toNumber()
+      let interesMonto = 0
+      if (prestamo) {
+        const montoOriginal = prestamo.monto.toNumber()
+        const tasaInteres = prestamo.interes.toNumber() / 100
+        const montoConInteres = montoOriginal * (1 + tasaInteres)
+        if (montoConInteres > 0) {
+          const pctInt = (montoConInteres - montoOriginal) / montoConInteres
+          interesMonto = p.monto.toNumber() * pctInt
+          capitalMonto = p.monto.toNumber() * (1 - pctInt)
+        }
+      }
+
+      const clienteNombre = prestamo?.cliente ? `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`.trim() : "Cliente"
+      return {
+        id: `pago-${p.id}`,
+        tipo: "COBRO",
+        monto: p.monto.toNumber(),
+        capital: Number(capitalMonto.toFixed(2)),
+        interes: Number(interesMonto.toFixed(2)),
+        descripcion: "Pago recibido",
+        observaciones: p.observaciones,
+        fecha: p.fecha.toISOString(),
+        estado: "APROBADO",
+        cobradorId: p.userId,
+        cobrador: clienteNombre,
+        clienteNombre: clienteNombre,
+      }
+    })
+
+    // Mapear nuevos préstamos a la línea de tiempo unificada
+    const prestamosFiltrados = dateFilter.fecha ? allPrestamos.filter(p => {
+      if (dateFilter.fecha.gte && p.createdAt < dateFilter.fecha.gte) return false
+      if (dateFilter.fecha.lte && p.createdAt > dateFilter.fecha.lte) return false
+      return true
+    }) : allPrestamos
+
+    const prestamosFormateados = prestamosFiltrados.map(pr => {
+      const clienteNombre = pr.cliente ? `${pr.cliente.nombre} ${pr.cliente.apellido}`.trim() : "Cliente"
+      return {
+        id: `prestamo-${pr.id}`,
+        tipo: "PRESTAMO",
+        monto: pr.monto.toNumber(),
+        capital: pr.monto.toNumber(),
+        interes: 0,
+        descripcion: `Préstamo (${pr.interes.toNumber()}% int.)`,
+        fecha: pr.createdAt.toISOString(),
+        estado: "APROBADO",
+        cobradorId: pr.userId,
+        cobrador: clienteNombre,
+        clienteNombre: clienteNombre,
+      }
+    })
+
+    // Combinar y ordenar cronológicamente
+    const listaCombinada = [...movimientosFormateados, ...pagosFormateados, ...prestamosFormateados]
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .slice(0, limit)
+
     return NextResponse.json({
       success: true,
       cobradores: cobradoresConSaldo,
-      movimientosRecientes: movimientosFormateados,
+      movimientosRecientes: listaCombinada,
       totalesGlobales,
     })
   } catch (error) {

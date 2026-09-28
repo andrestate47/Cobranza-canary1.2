@@ -1,15 +1,14 @@
-
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { ViaticosAdmin } from "@/components/viaticos-admin"
+import CajaChicaClient from "@/components/caja-chica-client"
 
 export default async function ViaticosPage() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
 
   if (!session) {
     redirect("/login")
   }
 
-  return <ViaticosAdmin />
+  return <CajaChicaClient session={session} />
 }
-
