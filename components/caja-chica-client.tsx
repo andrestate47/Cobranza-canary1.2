@@ -634,7 +634,18 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
               const esIngreso = ["INGRESO", "ENTREGA", "ENTREGADO", "APERTURA_CAJA"].includes(mov.tipo)
               const esPositivo = esCobro || esIngreso
 
-              const titleName = mov.nombre || mov.clienteNombre || mov.cobrador || "Movimiento de Caja"
+              let titleName = "Movimiento de Caja"
+              if (typeof mov.nombre === 'string' && mov.nombre.trim()) {
+                titleName = mov.nombre
+              } else if (typeof mov.clienteNombre === 'string' && mov.clienteNombre.trim()) {
+                titleName = mov.clienteNombre
+              } else if (typeof mov.cobrador === 'string' && mov.cobrador.trim()) {
+                titleName = mov.cobrador
+              } else if (mov.cobrador && typeof mov.cobrador === 'object') {
+                const cObj = mov.cobrador as any
+                titleName = `${cObj.nombre || cObj.firstName || ''} ${cObj.apellido || cObj.lastName || ''}`.trim() || "Movimiento de Caja"
+              }
+
               const subtitleText = mov.subtipo || (
                 esCobro ? "Pago recibido" :
                 esPrestamo ? "Préstamo otorgado" :

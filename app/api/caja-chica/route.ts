@@ -116,15 +116,16 @@ export async function GET(request: NextRequest) {
         fecha: mov.fecha.toISOString(),
         estado: mov.estado,
         cobradorId: mov.cobradorId,
-        cobrador: mov.cobrador ? {
-          nombre: mov.cobrador.firstName || mov.cobrador.name || "",
-          apellido: mov.cobrador.lastName || "",
-        } : null,
+        cobrador: mov.cobrador ? 
+          `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
+          "Cobrador",
+        nombre: mov.cobrador ? 
+          `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
+          "Cobrador",
         asignadoPorId: mov.asignadoPorId,
-        asignadoPor: mov.asignadoPor ? {
-          nombre: mov.asignadoPor.firstName || mov.asignadoPor.name || "",
-          apellido: mov.asignadoPor.lastName || "",
-        } : undefined,
+        asignadoPor: mov.asignadoPor ? 
+          `${mov.asignadoPor.firstName || mov.asignadoPor.name || ""} ${mov.asignadoPor.lastName || ""}`.trim() :
+          null,
       })),
     })
   } catch (error) {
