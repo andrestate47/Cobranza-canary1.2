@@ -73,9 +73,9 @@ export async function GET(request: NextRequest) {
     const fechaInicioParam = url.searchParams.get("fechaInicio")
     const fechaFinParam = url.searchParams.get("fechaFin")
 
-    // Obtener movimientos para el historial (filtrado por fecha o ultimos 50)
+    // Obtener movimientos para el historial (filtrado por fecha o ultimos 200)
     let dateFilter: any = {}
-    let limit = 50
+    let limit = 200
     let maxFechaSaldo: Date | undefined = undefined
 
     if (fechaInicioParam || fechaFinParam) {
@@ -106,7 +106,6 @@ export async function GET(request: NextRequest) {
     const fechaInicioRange = rangeFecha.gte || getEcuadorDayRange(fechaParam || undefined).inicio
     const fechaFinRange = rangeFecha.lte || getEcuadorDayRange(fechaParam || undefined).fin
 
-    // Consultar préstamos, pagos y gastos para el cálculo financiero de Caja Central y Dividendos
     // Consultar préstamos, pagos y gastos para el cálculo financiero de Caja Central y Dividendos
     const [allPrestamos, allPagos, allGastos] = await Promise.all([
       prisma.prestamo.findMany({
@@ -179,6 +178,27 @@ export async function GET(request: NextRequest) {
         } else if (tipo === "AJUSTE") {
           saldosCobradores[m.cobradorId] += montoNum
         }
+      }
+    })
+
+    // Sumar cobros a la caja física de cada cobrador (+)
+    allPagos.forEach(p => {
+      if (p.userId) {
+        saldosCobradores[p.userId] = (saldosCobradores[p.userId] || 0) + p.monto.toNumber()
+      }
+    })
+
+    // Restar nuevos préstamos otorgados de la caja física de cada cobrador (-)
+    allPrestamos.forEach(pr => {
+      if (pr.userId) {
+        saldosCobradores[pr.userId] = (saldosCobradores[pr.userId] || 0) - pr.monto.toNumber()
+      }
+    })
+
+    // Restar gastos directos de la caja física de cada cobrador (-)
+    allGastos.forEach(g => {
+      if (g.userId) {
+        saldosCobradores[g.userId] = (saldosCobradores[g.userId] || 0) - g.monto.toNumber()
       }
     })
 

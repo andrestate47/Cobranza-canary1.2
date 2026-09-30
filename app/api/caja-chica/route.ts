@@ -7,7 +7,7 @@ import { Decimal } from "@prisma/client/runtime/library"
 import { getEcuadorDayRange } from "@/lib/date-utils"
 import { hasPermission } from "@/lib/permissions"
 
-// GET /api/caja-chica - Obtener saldo y movimientos del cobrador actual
+// GET /api/caja-chica - Obtener saldo, métricas globales y movimientos del cobrador actual
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,119 +17,256 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const fechaParam = url.searchParams.get("fecha")
+    const fechaInicioParam = url.searchParams.get("fechaInicio")
+    const fechaFinParam = url.searchParams.get("fechaFin")
     const userId = session.user.id
 
-    // Obtener TODOS los movimientos del cobrador para calcular el balance real (sin filtro de fecha)
-    const allMovimientos = await prisma.movimientoCajaChica.findMany({
-      where: {
-        cobradorId: userId,
-      },
-      select: { tipo: true, monto: true }
-    })
+    // Obtener TODOS los movimientos, pagos, préstamos y gastos del cobrador para balances históricos
+    const [allMovimientos, allPagos, allPrestamos, allGastos] = await Promise.all([
+      prisma.movimientoCajaChica.findMany({
+        where: { cobradorId: userId },
+        include: {
+          cobrador: {
+            select: { firstName: true, lastName: true, name: true }
+          },
+          asignadoPor: {
+            select: { firstName: true, lastName: true, name: true }
+          }
+        },
+        orderBy: { fecha: "desc" }
+      }),
+      prisma.pago.findMany({
+        where: { userId: userId },
+        include: {
+          prestamo: {
+            select: {
+              id: true,
+              monto: true,
+              interes: true,
+              cliente: { select: { nombre: true, apellido: true } }
+            }
+          }
+        },
+        orderBy: { fecha: "desc" }
+      }),
+      prisma.prestamo.findMany({
+        where: { userId: userId },
+        include: {
+          cliente: { select: { nombre: true, apellido: true } }
+        },
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.gasto.findMany({
+        where: { userId: userId },
+        orderBy: { fecha: "desc" }
+      })
+    ])
 
-    // Calcular balances
-    let totalEntregado = new Decimal(0)
-    let totalGastado = new Decimal(0)
-    let totalDevuelto = new Decimal(0)
+    // 1. Capital Ingresado (Entregas, Ingresos manuales, Aperturas)
+    let capitalIngresado = 0
+    let totalGastadoMovs = 0
+    let totalDevuelto = 0
 
     allMovimientos.forEach((mov) => {
-      if (mov.tipo === "ENTREGADO" || mov.tipo === "ENTREGA" || mov.tipo === "INGRESO" || mov.tipo === "APERTURA_CAJA") {
-        totalEntregado = totalEntregado.plus(mov.monto)
-      } else if (mov.tipo === "GASTADO" || mov.tipo === "GASTO" || mov.tipo === "EGRESO" || mov.tipo === "EGRESO_GENERAL" || mov.tipo === "PAGO_SUELDO") {
-        totalGastado = totalGastado.plus(mov.monto)
-      } else if (mov.tipo === "DEVUELTO" || mov.tipo === "DEVOLUCION") {
-        totalDevuelto = totalDevuelto.plus(mov.monto)
+      const mNum = mov.monto.toNumber()
+      if (["ENTREGADO", "ENTREGA", "INGRESO", "APERTURA_CAJA"].includes(mov.tipo)) {
+        capitalIngresado += mNum
+      } else if (["GASTADO", "GASTO", "EGRESO", "EGRESO_GENERAL", "PAGO_SUELDO"].includes(mov.tipo)) {
+        totalGastadoMovs += mNum
+      } else if (["DEVUELTO", "DEVOLUCION"].includes(mov.tipo)) {
+        totalDevuelto += mNum
       }
     })
 
-    const balance = totalEntregado.minus(totalGastado).minus(totalDevuelto)
+    const totalGastosDirectos = allGastos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
+    const totalRetirado = totalGastadoMovs + totalGastosDirectos + totalDevuelto
 
-    // Construir filtro de fecha para el historial
-    const fechaInicioParam = url.searchParams.get("fechaInicio")
-    const fechaFinParam = url.searchParams.get("fechaFin")
+    // 2. Total Cobrado de clientes
+    const totalCobrado = allPagos.reduce((sum, p) => sum + p.monto.toNumber(), 0)
 
+    // 3. Total Prestado a clientes
+    const totalPrestado = allPrestamos.reduce((sum, pr) => sum + pr.monto.toNumber(), 0)
+
+    // 4. Desglose de Capital Recuperado e Interés Ganado
+    let capitalRecuperado = 0
+    let interesGanado = 0
+
+    allPagos.forEach(p => {
+      const prestamo = p.prestamo
+      if (prestamo) {
+        const montoOriginal = prestamo.monto.toNumber()
+        const tasaInteres = prestamo.interes.toNumber() / 100
+        const montoConInteres = montoOriginal * (1 + tasaInteres)
+        if (montoConInteres > 0) {
+          const pctInt = (montoConInteres - montoOriginal) / montoConInteres
+          const interesMonto = p.monto.toNumber() * pctInt
+          const capitalMonto = p.monto.toNumber() * (1 - pctInt)
+          interesGanado += interesMonto
+          capitalRecuperado += capitalMonto
+        } else {
+          capitalRecuperado += p.monto.toNumber()
+        }
+      } else {
+        capitalRecuperado += p.monto.toNumber()
+      }
+    })
+
+    // 5. Saldo disponible en caja en manos del cobrador:
+    // Saldo = Capital Ingresado + Total Cobrado - Total Prestado - Total Retirado
+    const saldoDisponible = capitalIngresado + totalCobrado - totalPrestado - totalRetirado
+    const balanceCobradoMenosPrestado = totalCobrado - totalPrestado
+
+    // Filtro por fecha para el historial de movimientos
     let dateFilter: any = {}
-    let limit = 50
+    let limit = 200
+
     if (fechaInicioParam || fechaFinParam) {
       const inicio = fechaInicioParam ? getEcuadorDayRange(fechaInicioParam).inicio : undefined
       const fin = fechaFinParam ? getEcuadorDayRange(fechaFinParam).fin : undefined
       dateFilter = {
-        fecha: {
-          ...(inicio ? { gte: inicio } : {}),
-          ...(fin ? { lte: fin } : {}),
-        }
+        gte: inicio,
+        lte: fin,
       }
       limit = 500
     } else if (fechaParam) {
       const { inicio, fin } = getEcuadorDayRange(fechaParam)
       dateFilter = {
-        fecha: {
-          gte: inicio,
-          lte: fin,
-        }
+        gte: inicio,
+        lte: fin,
       }
       limit = 500
     }
 
-    // Obtener los movimientos filtrados para el historial
-    const movimientos = await prisma.movimientoCajaChica.findMany({
-      where: {
-        cobradorId: userId,
-        ...dateFilter
-      },
-      include: {
-        cobrador: {
-          select: {
-            firstName: true,
-            lastName: true,
-            name: true,
-          },
-        },
-        asignadoPor: {
-          select: {
-            firstName: true,
-            lastName: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        fecha: "desc",
-      },
-      take: limit,
+    // Filtrar movimientos por fecha para la línea de tiempo
+    const movsFiltrados = dateFilter.gte || dateFilter.lte ? allMovimientos.filter(m => {
+      if (dateFilter.gte && m.fecha < dateFilter.gte) return false
+      if (dateFilter.lte && m.fecha > dateFilter.lte) return false
+      return true
+    }) : allMovimientos
+
+    const pagosFiltrados = dateFilter.gte || dateFilter.lte ? allPagos.filter(p => {
+      if (dateFilter.gte && p.fecha < dateFilter.gte) return false
+      if (dateFilter.lte && p.fecha > dateFilter.lte) return false
+      return true
+    }) : allPagos
+
+    const prestamosFiltrados = dateFilter.gte || dateFilter.lte ? allPrestamos.filter(pr => {
+      if (dateFilter.gte && pr.createdAt < dateFilter.gte) return false
+      if (dateFilter.lte && pr.createdAt > dateFilter.lte) return false
+      return true
+    }) : allPrestamos
+
+    // Mapear movimientos de caja chica
+    const movsFormateados = movsFiltrados.map((mov) => ({
+      id: mov.id,
+      tipo: mov.tipo,
+      monto: mov.monto.toNumber(),
+      descripcion: mov.descripcion,
+      observaciones: mov.observaciones,
+      fecha: mov.fecha.toISOString(),
+      estado: mov.estado,
+      cobradorId: mov.cobradorId,
+      saldoAnterior: mov.saldoAnterior.toNumber(),
+      saldoNuevo: mov.saldoNuevo.toNumber(),
+      cobrador: mov.cobrador ? 
+        `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
+        "Cobrador",
+      nombre: mov.cobrador ? 
+        `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
+        "Cobrador",
+      asignadoPorId: mov.asignadoPorId,
+      asignadoPor: mov.asignadoPor ? 
+        `${mov.asignadoPor.firstName || mov.asignadoPor.name || ""} ${mov.asignadoPor.lastName || ""}`.trim() :
+        null,
+    }))
+
+    // Mapear cobros (pagos de clientes)
+    const pagosFormateados = pagosFiltrados.map(p => {
+      const prestamo = p.prestamo
+      let capitalMonto = p.monto.toNumber()
+      let interesMonto = 0
+      if (prestamo) {
+        const montoOriginal = prestamo.monto.toNumber()
+        const tasaInteres = prestamo.interes.toNumber() / 100
+        const montoConInteres = montoOriginal * (1 + tasaInteres)
+        if (montoConInteres > 0) {
+          const pctInt = (montoConInteres - montoOriginal) / montoConInteres
+          interesMonto = p.monto.toNumber() * pctInt
+          capitalMonto = p.monto.toNumber() * (1 - pctInt)
+        }
+      }
+
+      const clienteNombre = prestamo?.cliente ? `${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`.trim() : "Cliente"
+      return {
+        id: `pago-${p.id}`,
+        tipo: "COBRO",
+        monto: p.monto.toNumber(),
+        capital: Number(capitalMonto.toFixed(2)),
+        interes: Number(interesMonto.toFixed(2)),
+        descripcion: `Pago recibido de ${clienteNombre}`,
+        observaciones: p.observaciones,
+        fecha: p.fecha.toISOString(),
+        estado: "APROBADO",
+        cobradorId: p.userId,
+        cobrador: clienteNombre,
+        clienteNombre: clienteNombre,
+      }
     })
+
+    // Mapear préstamos concedidos
+    const prestamosFormateados = prestamosFiltrados.map(pr => {
+      const clienteNombre = pr.cliente ? `${pr.cliente.nombre} ${pr.cliente.apellido}`.trim() : "Cliente"
+      return {
+        id: `prestamo-${pr.id}`,
+        tipo: "PRESTAMO",
+        monto: pr.monto.toNumber(),
+        capital: pr.monto.toNumber(),
+        interes: 0,
+        descripcion: `Préstamo a ${clienteNombre} (${pr.interes.toNumber()}% int.)`,
+        fecha: pr.createdAt.toISOString(),
+        estado: "APROBADO",
+        cobradorId: pr.userId,
+        cobrador: clienteNombre,
+        clienteNombre: clienteNombre,
+      }
+    })
+
+    // Combinar y ordenar cronológicamente
+    const listaCombinada = [...movsFormateados, ...pagosFormateados, ...prestamosFormateados]
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .slice(0, limit)
+
+    const totalesGlobales = {
+      totalApertura: Number(capitalIngresado.toFixed(2)),
+      capitalInvertidoTotal: Number(capitalIngresado.toFixed(2)),
+      capitalInvertidoActivo: Number(capitalIngresado.toFixed(2)),
+      capitalRecuperadoGlobal: Number(capitalRecuperado.toFixed(2)),
+      interesGanadoGlobal: Number(interesGanado.toFixed(2)),
+      balanceCobradoMenosPrestado: Number(balanceCobradoMenosPrestado.toFixed(2)),
+      totalCobradoGlobal: Number(totalCobrado.toFixed(2)),
+      totalPrestadoGlobal: Number(totalPrestado.toFixed(2)),
+      totalGastosGlobal: Number(totalRetirado.toFixed(2)),
+      saldoCajaCentral: Number(saldoDisponible.toFixed(2)),
+      totalEgresosGenerales: 0,
+      totalEntregas: Number(capitalIngresado.toFixed(2)),
+      totalDevoluciones: Number(totalDevuelto.toFixed(2)),
+    }
 
     return NextResponse.json({
       success: true,
-      saldoActual: balance.toNumber(),
+      saldoActual: Number(saldoDisponible.toFixed(2)),
       balance: {
-        balance: balance.toNumber(),
-        totalEntregado: totalEntregado.toNumber(),
-        totalGastado: totalGastado.toNumber(),
-        totalDevuelto: totalDevuelto.toNumber(),
+        balance: Number(saldoDisponible.toFixed(2)),
+        totalEntregado: Number(capitalIngresado.toFixed(2)),
+        totalGastado: Number(totalRetirado.toFixed(2)),
+        totalDevuelto: Number(totalDevuelto.toFixed(2)),
       },
-      movimientos: movimientos.map((mov) => ({
-        id: mov.id,
-        tipo: mov.tipo,
-        monto: mov.monto.toNumber(),
-        descripcion: mov.descripcion,
-        fecha: mov.fecha.toISOString(),
-        estado: mov.estado,
-        cobradorId: mov.cobradorId,
-        cobrador: mov.cobrador ? 
-          `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
-          "Cobrador",
-        nombre: mov.cobrador ? 
-          `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
-          "Cobrador",
-        asignadoPorId: mov.asignadoPorId,
-        asignadoPor: mov.asignadoPor ? 
-          `${mov.asignadoPor.firstName || mov.asignadoPor.name || ""} ${mov.asignadoPor.lastName || ""}`.trim() :
-          null,
-      })),
+      totalesGlobales,
+      movimientos: listaCombinada,
+      movimientosRecientes: listaCombinada,
     })
   } catch (error) {
-    console.error("Error al obtener caja chica:", error)
+    console.error("Error al obtener caja chica del cobrador:", error)
     return NextResponse.json(
       { error: "Error al obtener datos de caja chica" },
       { status: 500 }

@@ -138,7 +138,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       
       if (isCobrador) {
         setBalance(data.balance)
-        setMovimientos(data.movimientos || [])
+        setMovimientos(data.movimientosRecientes || data.movimientos || [])
+        setTotalesGlobales(data.totalesGlobales || null)
       } else {
         setMovimientos(data.movimientosRecientes || (Array.isArray(data) ? data : []))
         setTotalesGlobales(data.totalesGlobales || null)
@@ -261,7 +262,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         return ["INGRESO", "ENTREGA", "ENTREGADO", "APERTURA_CAJA"].includes(mov.tipo)
       }
       if (activeTab === "RETIRO") {
-        return ["RETIRO", "EGRESO", "EGRESO_GENERAL", "GASTO", "GASTADO", "DEVOLUCION", "DEVUELTO"].includes(mov.tipo)
+        return ["RETIRO", "EGRESO", "EGRESO_GENERAL", "GASTO", "GASTADO", "DEVOLUCION", "DEVUELTO", "PAGO_SUELDO"].includes(mov.tipo)
       }
       if (activeTab === "COBRO") {
         return mov.tipo === "COBRO"
@@ -278,11 +279,11 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const saldoDisponible = totalesGlobales?.saldoCajaCentral ?? balance?.balance ?? 0
   const capitalIngresado = totalesGlobales?.capitalInvertidoTotal ?? balance?.totalEntregado ?? 0
   const totalRetirado = (totalesGlobales?.totalGastosGlobal || 0) + (totalesGlobales?.totalEgresosGenerales || 0)
-  const totalPrestado = totalesGlobales?.totalPrestadoGlobal ?? capitalIngresado
+  const totalPrestado = totalesGlobales?.totalPrestadoGlobal ?? 0
   const totalCobrado = totalesGlobales?.totalCobradoGlobal ?? 0
 
-  const capitalRecuperado = totalesGlobales?.capitalRecuperadoGlobal ?? (totalCobrado * 0.85)
-  const interesGanado = totalesGlobales?.interesGanadoGlobal ?? (totalCobrado * 0.15)
+  const capitalRecuperado = totalesGlobales?.capitalRecuperadoGlobal ?? 0
+  const interesGanado = totalesGlobales?.interesGanadoGlobal ?? 0
   const balanceCobradoMenosPrestado = totalesGlobales?.balanceCobradoMenosPrestado ?? (totalCobrado - totalPrestado)
 
   const exportarReporte = () => {
