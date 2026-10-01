@@ -283,15 +283,91 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   }, [movimientos, filtroCobrador, activeTab])
 
   // Métricas calculadas para coincidir exactamente con el diseño
-  const saldoDisponible = totalesGlobales?.saldoCajaCentral ?? balance?.balance ?? 0
-  const capitalIngresado = totalesGlobales?.capitalInvertidoTotal ?? balance?.totalEntregado ?? 0
-  const totalRetirado = (totalesGlobales?.totalGastosGlobal || 0) + (totalesGlobales?.totalEgresosGenerales || 0)
-  const totalPrestado = totalesGlobales?.totalPrestadoGlobal ?? 0
-  const totalCobrado = totalesGlobales?.totalCobradoGlobal ?? 0
+  const cobradorSeleccionadoData = useMemo(() => {
+    if (filtroCobrador === "all") return null
+    return cobradoresResumen.find(c => c.id === filtroCobrador) || null
+  }, [filtroCobrador, cobradoresResumen])
 
-  const capitalRecuperado = totalesGlobales?.capitalRecuperadoGlobal ?? 0
-  const interesGanado = totalesGlobales?.interesGanadoGlobal ?? 0
-  const balanceCobradoMenosPrestado = totalesGlobales?.balanceCobradoMenosPrestado ?? (totalCobrado - totalPrestado)
+  // Movimientos pertenecientes al cobrador seleccionado (o todos)
+  const movsCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return movimientos
+    return movimientos.filter(m => m.cobradorId === filtroCobrador)
+  }, [filtroCobrador, movimientos])
+
+  const capitalIngresadoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => ["INGRESO", "ENTREGA", "ENTREGADO", "APERTURA_CAJA"].includes(m.tipo))
+      .reduce((sum, m) => sum + m.monto, 0)
+  }, [filtroCobrador, movsCobrador])
+
+  const totalRetiradoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => ["RETIRO", "EGRESO", "GASTO", "GASTADO", "DEVOLUCION", "DEVUELTO", "PAGO_SUELDO"].includes(m.tipo))
+      .reduce((sum, m) => sum + m.monto, 0)
+  }, [filtroCobrador, movsCobrador])
+
+  const totalPrestadoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => m.tipo === "PRESTAMO")
+      .reduce((sum, m) => sum + m.monto, 0)
+  }, [filtroCobrador, movsCobrador])
+
+  const totalCobradoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => m.tipo === "COBRO")
+      .reduce((sum, m) => sum + m.monto, 0)
+  }, [filtroCobrador, movsCobrador])
+
+  const capitalRecuperadoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => m.tipo === "COBRO")
+      .reduce((sum, m) => sum + (m.capital || m.monto), 0)
+  }, [filtroCobrador, movsCobrador])
+
+  const interesGanadoCobrador = useMemo(() => {
+    if (filtroCobrador === "all") return 0
+    return movsCobrador
+      .filter(m => m.tipo === "COBRO")
+      .reduce((sum, m) => sum + (m.interes || 0), 0)
+  }, [filtroCobrador, movsCobrador])
+
+  // Asignar las métricas de forma condicional: Si se seleccionó un cobrador, usar sus datos específicos; si no, usar totales globales
+  const saldoDisponible = cobradorSeleccionadoData
+    ? cobradorSeleccionadoData.saldoActual
+    : (totalesGlobales?.saldoCajaCentral ?? balance?.balance ?? 0)
+
+  const capitalIngresado = cobradorSeleccionadoData
+    ? (capitalIngresadoCobrador || cobradorSeleccionadoData.cobradoDia)
+    : (totalesGlobales?.capitalInvertidoTotal ?? balance?.totalEntregado ?? 0)
+
+  const totalRetirado = cobradorSeleccionadoData
+    ? (totalRetiradoCobrador || cobradorSeleccionadoData.gastosDia)
+    : ((totalesGlobales?.totalGastosGlobal || 0) + (totalesGlobales?.totalEgresosGenerales || 0))
+
+  const totalPrestado = cobradorSeleccionadoData
+    ? (totalPrestadoCobrador || cobradorSeleccionadoData.prestadoDia)
+    : (totalesGlobales?.totalPrestadoGlobal ?? 0)
+
+  const totalCobrado = cobradorSeleccionadoData
+    ? (totalCobradoCobrador || cobradorSeleccionadoData.cobradoDia)
+    : (totalesGlobales?.totalCobradoGlobal ?? 0)
+
+  const capitalRecuperado = cobradorSeleccionadoData
+    ? capitalRecuperadoCobrador
+    : (totalesGlobales?.capitalRecuperadoGlobal ?? 0)
+
+  const interesGanado = cobradorSeleccionadoData
+    ? interesGanadoCobrador
+    : (totalesGlobales?.interesGanadoGlobal ?? 0)
+
+  const balanceCobradoMenosPrestado = cobradorSeleccionadoData
+    ? (totalCobrado - totalPrestado)
+    : (totalesGlobales?.balanceCobradoMenosPrestado ?? (totalCobrado - totalPrestado))
 
   const exportarReporte = () => {
     const csv = [
@@ -423,14 +499,34 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
           <>
             {/* 3. Banner de Saldo en Caja */}
             <div className="bg-[#eaf7f1] dark:bg-[#0c2b23] border border-emerald-100 dark:border-[#184d3e] p-5 sm:p-7 rounded-3xl space-y-4 shadow-sm">
-              {/* Label e icono wallet */}
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-                  <Wallet className="h-5 w-5" />
+              {/* Label e icono wallet + Selector de Cobrador para Admin */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+                    <Wallet className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-bold text-emerald-900 dark:text-emerald-300 tracking-wide">
+                    {cobradorSeleccionadoData ? `Caja (${cobradorSeleccionadoData.nombre})` : "Caja"}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-emerald-900 dark:text-emerald-300 tracking-wide">
-                  Caja
-                </span>
+
+                {!isCobrador && (
+                  <div className="flex items-center gap-2">
+                    <Select value={filtroCobrador} onValueChange={setFiltroCobrador}>
+                      <SelectTrigger className="h-9 min-w-[210px] bg-white dark:bg-[#102525] border-emerald-200 dark:border-[#1F3A36] text-xs font-semibold shadow-sm">
+                        <SelectValue placeholder="Filtrar por Cobrador" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Caja General (Todos)</SelectItem>
+                        {cobradores.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Hero Amount */}
