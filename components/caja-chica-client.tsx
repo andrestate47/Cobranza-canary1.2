@@ -150,7 +150,9 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
       } else {
         setMovimientos(data.movimientosRecientes || (Array.isArray(data) ? data : []))
         setTotalesGlobales(data.totalesGlobales || null)
-        setCobradoresResumen(data.cobradores || [])
+        const list = data.cobradores || []
+        setCobradoresResumen(list)
+        setCobradores(list)
       }
     } catch (error) {
       toast({
@@ -518,7 +520,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Caja General (Todos)</SelectItem>
-                        {cobradores.map(c => (
+                        {(cobradores.length > 0 ? cobradores : cobradoresResumen).map(c => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
                           </SelectItem>
@@ -613,6 +615,75 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                 </div>
               </div>
             </div>
+
+            {/* 4.5 Sección Visual de Cobradores (Solo para Admin / Supervisor) */}
+            {!isCobrador && cobradoresResumen.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <User className="h-4 w-4 text-emerald-600" />
+                    <span>Cobradores y Rutas ({cobradoresResumen.length})</span>
+                  </h3>
+                  {filtroCobrador !== "all" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFiltroCobrador("all")}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 p-0 h-auto font-semibold"
+                    >
+                      Ver caja general
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {cobradoresResumen.map(cobrador => {
+                    const isSelected = filtroCobrador === cobrador.id
+                    return (
+                      <div
+                        key={cobrador.id}
+                        onClick={() => setFiltroCobrador(isSelected ? "all" : cobrador.id)}
+                        className={`cursor-pointer rounded-2xl p-4 border transition-all space-y-2 ${
+                          isSelected
+                            ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 shadow-sm ring-1 ring-emerald-500"
+                            : "bg-white dark:bg-[#102525] border-gray-200 dark:border-[#1F3A36] hover:border-emerald-300 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-700 dark:text-emerald-300 text-xs font-bold shrink-0">
+                              {cobrador.numeroRuta ? `R${cobrador.numeroRuta}` : 'C'}
+                            </div>
+                            <div className="truncate">
+                              <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                {cobrador.nombre}
+                              </p>
+                              {cobrador.numeroRuta && (
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  Ruta {cobrador.numeroRuta}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant={isSelected ? "default" : "outline"} className="text-[10px] shrink-0">
+                            {isSelected ? "Filtro activo" : "Ver caja"}
+                          </Badge>
+                        </div>
+
+                        <div className="pt-1 flex items-baseline justify-between border-t border-gray-100 dark:border-gray-800">
+                          <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                            Saldo disponible:
+                          </span>
+                          <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(cobrador.saldoActual || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Bar de Filtros Avanzados (Opcional colapsable) */}
             {showAdvancedFilters && (
