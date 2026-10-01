@@ -69,9 +69,10 @@ export async function GET(request: NextRequest) {
 
     allMovimientos.forEach((mov) => {
       const mNum = mov.monto.toNumber()
+      const esGastoVinculado = mov.observaciones && (mov.observaciones.includes("[GASTO:") || mov.observaciones.startsWith("Gasto:"))
       if (["ENTREGADO", "ENTREGA", "INGRESO", "APERTURA_CAJA"].includes(mov.tipo)) {
         capitalIngresado += mNum
-      } else if (["GASTADO", "GASTO", "EGRESO", "EGRESO_GENERAL", "PAGO_SUELDO"].includes(mov.tipo)) {
+      } else if (["GASTADO", "GASTO", "EGRESO", "EGRESO_GENERAL", "PAGO_SUELDO"].includes(mov.tipo) && !esGastoVinculado) {
         totalGastadoMovs += mNum
       } else if (["DEVUELTO", "DEVOLUCION"].includes(mov.tipo)) {
         totalDevuelto += mNum
@@ -156,29 +157,35 @@ export async function GET(request: NextRequest) {
       return true
     }) : allPrestamos
 
+    const gastosFiltrados = dateFilter.gte || dateFilter.lte ? allGastos.filter(g => {
+      if (dateFilter.gte && g.fecha < dateFilter.gte) return false
+      if (dateFilter.lte && g.fecha > dateFilter.lte) return false
+      return true
+    }) : allGastos
+
     // Mapear movimientos de caja chica
-    const movsFormateados = movsFiltrados.map((mov) => ({
-      id: mov.id,
-      tipo: mov.tipo,
-      monto: mov.monto.toNumber(),
-      descripcion: mov.descripcion,
-      observaciones: mov.observaciones,
-      fecha: mov.fecha.toISOString(),
-      estado: mov.estado,
-      cobradorId: mov.cobradorId,
-      saldoAnterior: mov.saldoAnterior.toNumber(),
-      saldoNuevo: mov.saldoNuevo.toNumber(),
-      cobrador: mov.cobrador ? 
-        `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
-        "Cobrador",
-      nombre: mov.cobrador ? 
-        `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() :
-        "Cobrador",
-      asignadoPorId: mov.asignadoPorId,
-      asignadoPor: mov.asignadoPor ? 
-        `${mov.asignadoPor.firstName || mov.asignadoPor.name || ""} ${mov.asignadoPor.lastName || ""}`.trim() :
-        null,
-    }))
+    const movsFormateados = movsFiltrados.map((mov) => {
+      const esGasto = mov.tipo === "GASTO" || mov.tipo === "GASTADO" || (mov.observaciones && mov.observaciones.includes("[GASTO:"))
+      return {
+        id: mov.id,
+        tipo: mov.tipo,
+        monto: mov.monto.toNumber(),
+        descripcion: mov.descripcion || mov.observaciones,
+        observaciones: mov.observaciones,
+        fecha: mov.fecha.toISOString(),
+        estado: mov.estado,
+        cobradorId: mov.cobradorId,
+        saldoAnterior: mov.saldoAnterior.toNumber(),
+        saldoNuevo: mov.saldoNuevo.toNumber(),
+        cobrador: esGasto ? (mov.descripcion || "Gasto") : (mov.cobrador ? `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() : "Cobrador"),
+        nombre: esGasto ? (mov.descripcion || "Gasto") : (mov.cobrador ? `${mov.cobrador.firstName || mov.cobrador.name || ""} ${mov.cobrador.lastName || ""}`.trim() : "Cobrador"),
+        subtipo: esGasto ? "Gasto registrado" : undefined,
+        asignadoPorId: mov.asignadoPorId,
+        asignadoPor: mov.asignadoPor ? 
+          `${mov.asignadoPor.firstName || mov.asignadoPor.name || ""} ${mov.asignadoPor.lastName || ""}`.trim() :
+          null,
+      }
+    })
 
     // Mapear cobros (pagos de clientes)
     const pagosFormateados = pagosFiltrados.map(p => {
@@ -231,8 +238,24 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Mapear gastos directos que no estén ya presentes como movimiento de caja chica
+    const gastosFormateados = gastosFiltrados
+      .filter(g => !movsFiltrados.some(m => m.observaciones && m.observaciones.includes(`[GASTO:${g.id}]`)))
+      .map(g => ({
+        id: `gasto-${g.id}`,
+        tipo: "GASTO",
+        monto: g.monto.toNumber(),
+        descripcion: g.concepto,
+        observaciones: g.observaciones || g.concepto,
+        fecha: g.fecha.toISOString(),
+        estado: "APROBADO",
+        cobradorId: g.userId,
+        nombre: g.concepto || "Gasto",
+        subtipo: "Gasto registrado",
+      }))
+
     // Combinar y ordenar cronológicamente
-    const listaCombinada = [...movsFormateados, ...pagosFormateados, ...prestamosFormateados]
+    const listaCombinada = [...movsFormateados, ...pagosFormateados, ...prestamosFormateados, ...gastosFormateados]
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
       .slice(0, limit)
 
@@ -296,14 +319,10 @@ export async function POST(request: NextRequest) {
 
     const isCobrador = session.user.role === "COBRADOR"
     if (isCobrador) {
-      if (tipo !== "GASTO" && tipo !== "GASTADO" && tipo !== "INGRESO" && tipo !== "EGRESO") {
-        return NextResponse.json(
-          { error: "Los cobradores solo pueden registrar gastos, ingresos y egresos" },
-          { status: 403 }
-        )
-      }
-      // Forzar que el cobrador solo pueda afectar su propia caja
-      cobradorId = session.user.id
+      return NextResponse.json(
+        { error: "Los cobradores no tienen permisos para realizar movimientos de caja" },
+        { status: 403 }
+      )
     }
 
     // Verificar permisos específicos de gastos e ingresos

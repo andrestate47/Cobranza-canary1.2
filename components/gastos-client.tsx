@@ -15,7 +15,8 @@ import {
   DollarSign,
   Trash2,
   FileText,
-  ExternalLink
+  ExternalLink,
+  BarChart3
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ import { useInView } from "react-intersection-observer"
 
 const NuevoGastoModal = dynamic(() => import("@/components/nuevo-gasto-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
+const ReporteCobradores = dynamic(() => import("@/components/reporte-cobradores"), { ssr: false })
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +57,7 @@ interface GastosClientProps {
 }
 
 export default function GastosClient({ session }: GastosClientProps) {
+  const [activeTab, setActiveTab] = useState<"gastos" | "reporte">("gastos")
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -263,15 +266,6 @@ export default function GastosClient({ session }: GastosClientProps) {
             </div>
             <div className="flex items-center space-x-2 self-start md:self-auto">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchGastos}
-                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
-              </Button>
-              <Button
                 onClick={() => setShowNuevoGasto(true)}
                 className="btn-primary"
                 size="sm"
@@ -285,41 +279,72 @@ export default function GastosClient({ session }: GastosClientProps) {
       </div>
 
       <div className="container-mobile py-6">
-        {/* Filtros */}
-        <div className="mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <Input
-                placeholder="Buscar por concepto, usuario u observaciones..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              />
-            </div>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <Input
-                type="date"
-                value={fechaFiltro}
-                onChange={(e) => setFechaFiltro(e.target.value)}
-                className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
+        {/* Navigation Tabs */}
+        <div className="grid grid-cols-2 gap-2 mb-6 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
+          <button
+            onClick={() => setActiveTab("gastos")}
+            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+              activeTab === "gastos"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+            }`}
+          >
+            <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Lista de Gastos</span>
+          </button>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              {filteredGastos.length} resultado{filteredGastos.length !== 1 ? 's' : ''}
-            </div>
-
-            {filteredGastos.length > 0 && (
-              <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                Total: {formatCurrency(getTotalGastos())}
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setActiveTab("reporte")}
+            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+              activeTab === "reporte"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+            }`}
+          >
+            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">Reporte Cobradores</span>
+          </button>
         </div>
+
+        {activeTab === "reporte" ? (
+          <ReporteCobradores userRole={session?.user?.role} />
+        ) : (
+          <>
+            {/* Filtros */}
+            <div className="mb-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <Input
+                    placeholder="Buscar por concepto, usuario u observaciones..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  <Input
+                    type="date"
+                    value={fechaFiltro}
+                    onChange={(e) => setFechaFiltro(e.target.value)}
+                    className="pl-10 bg-white dark:bg-[#0E1F1C] border-gray-300 dark:border-[#1F3A36] text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                  {filteredGastos.length} resultado{filteredGastos.length !== 1 ? 's' : ''}
+                </div>
+
+                {filteredGastos.length > 0 && (
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                    Total: {formatCurrency(getTotalGastos())}
+                  </div>
+                )}
+              </div>
+            </div>
 
         {/* Lista de gastos */}
         <div className="space-y-4">
@@ -418,6 +443,8 @@ export default function GastosClient({ session }: GastosClientProps) {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Modal de nuevo gasto */}

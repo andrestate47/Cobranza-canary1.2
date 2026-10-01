@@ -137,15 +137,16 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Registrar movimiento en caja chica como egreso general
-      // No afecta el saldo de ningún cobrador, solo se resta del saldo en caja
+      // Registrar movimiento en caja chica vinculado al usuario/cobrador
       await tx.movimientoCajaChica.create({
         data: {
-          tipo: "EGRESO_GENERAL",
+          cobradorId: session.user.id,
+          tipo: "GASTO",
           monto: montoNumerico,
           saldoAnterior: 0,
           saldoNuevo: 0,
-          observaciones: `Gasto: ${concepto.trim()}${observaciones ? ` - ${observaciones.trim()}` : ''}`,
+          descripcion: concepto.trim(),
+          observaciones: `[GASTO:${gasto.id}] ${concepto.trim()}${observaciones ? ` - ${observaciones.trim()}` : ''}`,
           asignadoPor: {
             connect: { id: session.user.id }
           }

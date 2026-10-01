@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     // Calculate totals and balances (up to specified maxFechaSaldo or all time)
     const allTimeMovements = await prisma.movimientoCajaChica.findMany({
       where: maxFechaSaldo ? { fecha: { lte: maxFechaSaldo } } : undefined,
-      select: { tipo: true, monto: true, cobradorId: true, fecha: true }
+      select: { tipo: true, monto: true, cobradorId: true, fecha: true, observaciones: true }
     })
     
     let totalApertura = 0
@@ -158,13 +158,14 @@ export async function GET(request: NextRequest) {
     allTimeMovements.forEach(m => {
       const montoNum = m.monto.toNumber()
       const tipo = m.tipo
+      const esGastoVinculado = m.observaciones && (m.observaciones.includes("[GASTO:") || m.observaciones.startsWith("Gasto:"))
 
       // Totales Globales Admin
       if (tipo === "APERTURA_CAJA") totalApertura += montoNum
       else if (tipo === "ENTREGA" || tipo === "ENTREGADO") totalEntregas += montoNum
       else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO") totalDevoluciones += montoNum
-      else if (tipo === "EGRESO_GENERAL") totalEgresosGenerales += montoNum
-      else if (tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") totalGastosCobradores += montoNum
+      else if (tipo === "EGRESO_GENERAL" && !esGastoVinculado) totalEgresosGenerales += montoNum
+      else if ((tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") && !esGastoVinculado) totalGastosCobradores += montoNum
 
       // Saldo de cada cobrador
       if (m.cobradorId) {
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest) {
         }
         if (tipo === "ENTREGA" || tipo === "ENTREGADO" || tipo === "INGRESO" || tipo === "APERTURA_CAJA") {
           saldosCobradores[m.cobradorId] += montoNum
-        } else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO" || tipo === "EGRESO") {
+        } else if ((tipo === "DEVOLUCION" || tipo === "DEVUELTO" || tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO" || tipo === "EGRESO") && !esGastoVinculado) {
           saldosCobradores[m.cobradorId] -= montoNum
         } else if (tipo === "AJUSTE") {
           saldosCobradores[m.cobradorId] += montoNum
@@ -280,7 +281,7 @@ export async function GET(request: NextRequest) {
       const gastosRutaDirectos = allGastos.filter(g => g.userId === cobrador.id && g.fecha >= fechaInicioRange && g.fecha <= fechaFinRange)
       const totalGastosDirectosDia = gastosRutaDirectos.reduce((sum, g) => sum + g.monto.toNumber(), 0)
       
-      const movsGastosRuta = allTimeMovements.filter(m => m.cobradorId === cobrador.id && ["GASTO", "GASTADO", "PAGO_SUELDO"].includes(m.tipo) && m.fecha >= fechaInicioRange && m.fecha <= fechaFinRange)
+      const movsGastosRuta = allTimeMovements.filter(m => m.cobradorId === cobrador.id && ["GASTO", "GASTADO", "PAGO_SUELDO"].includes(m.tipo) && !(m.observaciones && (m.observaciones.includes("[GASTO:") || m.observaciones.startsWith("Gasto:"))) && m.fecha >= fechaInicioRange && m.fecha <= fechaFinRange)
       const totalGastosMovsDia = movsGastosRuta.reduce((sum, m) => sum + m.monto.toNumber(), 0)
       
       const gastosDia = totalGastosDirectosDia + totalGastosMovsDia

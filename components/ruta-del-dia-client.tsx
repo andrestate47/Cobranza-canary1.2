@@ -222,76 +222,65 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
   const porcentajeEficiencia = totalClientes > 0 ? Math.round((cobrados.length / totalClientes) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 font-sans selection:bg-cyan-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 font-sans selection:bg-cyan-500 selection:text-white transition-colors duration-200">
       {/* Dynamic Ambient Background Glows */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/10 dark:bg-cyan-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* ─── STICKY HEADER WITH GLASSMORPHISM ─── */}
-      <header className="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800/80 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3.5 space-y-3">
           
           {/* Top Bar: Title & Action */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/50 transition-all">
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl bg-gray-100 dark:bg-slate-800/80 hover:bg-gray-200 dark:hover:bg-slate-700/80 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-slate-700/50 transition-all flex items-center justify-center">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-cyan-400" />
+                  <h1 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
+                    <Navigation className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                     Ruta del Día
                   </h1>
                   {savingOrder && (
-                    <Badge variant="outline" className="animate-pulse bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[10px] py-0">
+                    <Badge variant="outline" className="animate-pulse bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 text-[10px] py-0">
                       Sincronizando...
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-400">Organización y cobro en tiempo real</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Organización y cobro en tiempo real</p>
               </div>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadRuta}
-              disabled={loading}
-              className="h-9 px-3 text-xs bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300 hover:text-white rounded-xl transition-all"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin text-cyan-400" : ""}`} />
-              Actualizar
-            </Button>
           </div>
 
           {/* Filters Bar: Date + Collector Selector */}
           <div className="flex flex-wrap items-center gap-2.5 pt-1">
             {/* Date selector */}
-            <div className="flex items-center gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-slate-300 focus-within:border-cyan-500/60 transition-all">
-              <Calendar className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-950/70 border border-gray-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs text-gray-700 dark:text-slate-300 focus-within:border-cyan-500/60 transition-all shadow-sm">
+              <Calendar className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
               <input
                 type="date"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
-                className="bg-transparent text-slate-200 outline-none cursor-pointer text-xs font-medium"
+                className="bg-transparent text-gray-900 dark:text-slate-200 outline-none cursor-pointer text-xs font-medium"
               />
             </div>
 
             {/* Collector Selector (Admin / Supervisor) */}
             {(user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") && cobradores.length > 0 && (
-              <div className="flex items-center gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-slate-300 focus-within:border-cyan-500/60 transition-all flex-1 min-w-[200px] max-w-xs">
-                <Users className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-950/70 border border-gray-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs text-gray-700 dark:text-slate-300 focus-within:border-cyan-500/60 transition-all flex-1 min-w-[200px] max-w-xs shadow-sm">
+                <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <select
                   value={selectedCobradorId}
                   onChange={(e) => setSelectedCobradorId(e.target.value)}
-                  className="bg-transparent text-xs font-medium text-slate-200 outline-none cursor-pointer w-full"
+                  className="bg-transparent text-xs font-medium text-gray-900 dark:text-slate-200 outline-none cursor-pointer w-full"
                 >
-                  <option value="" className="bg-slate-900 text-slate-200">-- Seleccionar Ruta --</option>
+                  <option value="" className="bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-200">-- Seleccionar Ruta --</option>
                   {cobradores.map(ruta => (
-                    <option key={ruta.id} value={ruta.id} className="bg-slate-900 text-slate-200">
+                    <option key={ruta.id} value={ruta.id} className="bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-200">
                       {ruta.nombre} {ruta.numero ? `(${ruta.numero})` : ""}
                     </option>
                   ))}
@@ -302,13 +291,13 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
 
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Buscar cliente por nombre o documento..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-950/70 border border-gray-200 dark:border-slate-800 rounded-xl text-xs text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-sm"
             />
           </div>
 
@@ -319,72 +308,72 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
       <main className="max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
         {/* ─── KPI SUMMARY DASHBOARD ─── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
           {/* Card 1: Por Cobrar */}
-          <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-md">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Por Cobrar</span>
-                <span className="text-lg font-bold text-cyan-400 mt-0.5 block">{formatCurrency(totalPendienteCuotas)}</span>
-                <span className="text-[10px] text-slate-500">{porCobrar.length} clientes pendientes</span>
+          <Card className="bg-white dark:bg-slate-900/60 border-gray-200 dark:border-slate-800 backdrop-blur-md shadow-sm">
+            <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-slate-400 block uppercase tracking-wider truncate">Por Cobrar</span>
+                <span className="text-base sm:text-lg font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block truncate">{formatCurrency(totalPendienteCuotas)}</span>
+                <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">{porCobrar.length} pendientes</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400">
-                <Clock className="w-5 h-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-cyan-100 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </CardContent>
           </Card>
 
           {/* Card 2: Recaudado Hoy */}
-          <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-md">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Recaudado Hoy</span>
-                <span className="text-lg font-bold text-emerald-400 mt-0.5 block">{formatCurrency(totalRecaudadoHoy)}</span>
-                <span className="text-[10px] text-slate-500">{cobrados.length} cobros realizados</span>
+          <Card className="bg-white dark:bg-slate-900/60 border-gray-200 dark:border-slate-800 backdrop-blur-md shadow-sm">
+            <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-slate-400 block uppercase tracking-wider truncate">Recaudado Hoy</span>
+                <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block truncate">{formatCurrency(totalRecaudadoHoy)}</span>
+                <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">{cobrados.length} cobros</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-                <DollarSign className="w-5 h-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </CardContent>
           </Card>
 
           {/* Card 3: Avance */}
-          <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-md">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Progreso Día</span>
-                <span className="text-lg font-bold text-amber-400 mt-0.5 block">{porcentajeEficiencia}%</span>
-                <span className="text-[10px] text-slate-500">{cobrados.length} de {totalClientes} atendidos</span>
+          <Card className="bg-white dark:bg-slate-900/60 border-gray-200 dark:border-slate-800 backdrop-blur-md shadow-sm">
+            <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-slate-400 block uppercase tracking-wider truncate">Progreso Día</span>
+                <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5 block truncate">{porcentajeEficiencia}%</span>
+                <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">{cobrados.length}/{totalClientes} atendidos</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-                <TrendingUp className="w-5 h-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </CardContent>
           </Card>
 
           {/* Card 4: Clientes Totales */}
-          <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-md">
-            <CardContent className="p-3.5 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Total Clientes</span>
-                <span className="text-lg font-bold text-purple-400 mt-0.5 block">{totalClientes}</span>
-                <span className="text-[10px] text-slate-500">En ruta asignada</span>
+          <Card className="bg-white dark:bg-slate-900/60 border-gray-200 dark:border-slate-800 backdrop-blur-md shadow-sm">
+            <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-slate-400 block uppercase tracking-wider truncate">Total Clientes</span>
+                <span className="text-base sm:text-lg font-bold text-purple-600 dark:text-purple-400 mt-0.5 block truncate">{totalClientes}</span>
+                <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">En ruta</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
-                <Users className="w-5 h-5" />
+              <div className="p-2 sm:p-2.5 rounded-xl bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* ─── MOBILE TAB SWITCHER ─── */}
-        <div className="flex rounded-xl bg-slate-900/80 p-1 border border-slate-800 lg:hidden">
+        <div className="flex rounded-xl bg-gray-100 dark:bg-slate-900/80 p-1 border border-gray-200 dark:border-slate-800 lg:hidden shadow-sm">
           <button
             onClick={() => setActiveMobileTab('porCobrar')}
             className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
               activeMobileTab === 'porCobrar'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-gray-200 dark:border-cyan-500/30 shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -395,8 +384,8 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
             onClick={() => setActiveMobileTab('cobrados')}
             className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
               activeMobileTab === 'cobrados'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-gray-200 dark:border-emerald-500/30 shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -407,8 +396,8 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
         {/* ─── MAIN COLUMNS VIEW ─── */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-            <p className="text-slate-400 text-xs font-medium">Cargando información de la ruta...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-600 dark:text-cyan-400" />
+            <p className="text-gray-500 dark:text-slate-400 text-xs font-medium">Cargando información de la ruta...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -417,29 +406,29 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
             <div className={`${activeMobileTab === 'porCobrar' ? 'block' : 'hidden lg:block'} space-y-3`}>
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider">Por Cobrar</h2>
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-600 dark:bg-cyan-400" />
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Por Cobrar</h2>
                 </div>
-                <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs px-2.5 py-0.5 rounded-full">
+                <Badge className="bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 text-xs px-2.5 py-0.5 rounded-full">
                   {filteredPorCobrar.length} pendientes
                 </Badge>
               </div>
 
               {filteredPorCobrar.length === 0 ? (
-                <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
+                <div className="bg-white dark:bg-slate-900/40 border border-dashed border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3 shadow-sm">
                   {!selectedCobradorId && (user?.role === "ADMINISTRADOR" || user?.role === "SUPERVISOR") ? (
                     <>
-                      <MapPin className="h-10 w-10 text-slate-500 mx-auto" />
-                      <p className="text-slate-300 font-semibold text-xs">Selecciona una ruta</p>
-                      <p className="text-slate-500 text-[11px]">Usa el selector superior para cargar los cobros asignados.</p>
+                      <MapPin className="h-10 w-10 text-gray-400 dark:text-slate-500 mx-auto" />
+                      <p className="text-gray-800 dark:text-slate-300 font-semibold text-xs">Selecciona una ruta</p>
+                      <p className="text-gray-500 dark:text-slate-500 text-[11px]">Usa el selector superior para cargar los cobros asignados.</p>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto" />
-                      <p className="text-slate-200 font-semibold text-xs">
+                      <CheckCircle2 className="h-10 w-10 text-emerald-600 dark:text-emerald-400 mx-auto" />
+                      <p className="text-gray-800 dark:text-slate-200 font-semibold text-xs">
                         {searchQuery ? "No se encontraron coincidencias." : "¡Ruta completada!"}
                       </p>
-                      <p className="text-slate-400 text-[11px]">
+                      <p className="text-gray-500 dark:text-slate-400 text-[11px]">
                         {searchQuery ? "Intenta modificar el término de búsqueda." : "No quedan cobros pendientes para hoy."}
                       </p>
                     </>
@@ -456,13 +445,13 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, index)}
-                        className={`group bg-slate-900/80 backdrop-blur-md rounded-2xl border transition-all duration-200 hover:border-slate-700 overflow-hidden shadow-lg ${
-                          esMora ? "border-l-4 border-l-red-500 border-slate-800/80" : "border-l-4 border-l-cyan-500 border-slate-800/80"
+                        className={`group bg-white dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-700 overflow-hidden shadow-sm hover:shadow-md ${
+                          esMora ? "border-l-4 border-l-red-500 border-gray-200 dark:border-slate-800/80" : "border-l-4 border-l-cyan-500 border-gray-200 dark:border-slate-800/80"
                         }`}
                       >
                         <div className="flex">
                           {/* Drag handle */}
-                          <div className="flex flex-col items-center justify-center px-2.5 text-slate-600 hover:text-slate-300 border-r border-slate-800/80 cursor-grab active:cursor-grabbing flex-shrink-0 bg-slate-950/40">
+                          <div className="flex flex-col items-center justify-center px-2.5 text-gray-400 hover:text-gray-600 dark:text-slate-600 dark:hover:text-slate-300 border-r border-gray-100 dark:border-slate-800/80 cursor-grab active:cursor-grabbing flex-shrink-0 bg-gray-50 dark:bg-slate-950/40">
                             <GripVertical className="h-4 w-4" />
                           </div>
 
@@ -471,20 +460,20 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                             {/* Header: Name + Order buttons */}
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
-                                <h3 className="font-bold text-white text-sm leading-tight truncate group-hover:text-cyan-300 transition-colors">
+                                <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-tight truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                                   {item.cliente.nombre} {item.cliente.apellido}
                                 </h3>
                                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                                   {esMora ? (
-                                    <Badge className="bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] py-0 px-2 font-semibold">
+                                    <Badge className="bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30 text-[10px] py-0 px-2 font-semibold">
                                       Mora {item.diasMora}d
                                     </Badge>
                                   ) : (
-                                    <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] py-0 px-2 font-semibold">
+                                    <Badge className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[10px] py-0 px-2 font-semibold">
                                       Al día
                                     </Badge>
                                   )}
-                                  <span className="text-[10px] text-slate-400 bg-slate-950/60 px-2 py-0.5 rounded-md border border-slate-800 capitalize">
+                                  <span className="text-[10px] text-gray-600 dark:text-slate-400 bg-gray-100 dark:bg-slate-950/60 px-2 py-0.5 rounded-md border border-gray-200 dark:border-slate-800 capitalize">
                                     {item.tipoPago.toLowerCase().replace(/_/g, " ")}
                                   </span>
                                 </div>
@@ -495,7 +484,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-6 w-6 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-md"
+                                  className="h-6 w-6 text-gray-400 hover:text-gray-700 dark:text-slate-500 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md"
                                   onClick={() => moveUp(index)}
                                   disabled={index === 0}
                                 >
@@ -504,7 +493,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-6 w-6 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-md"
+                                  className="h-6 w-6 text-gray-400 hover:text-gray-700 dark:text-slate-500 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md"
                                   onClick={() => moveDown(index)}
                                   disabled={index === porCobrar.length - 1}
                                 >
@@ -514,48 +503,48 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                             </div>
 
                             {/* Montos Grid */}
-                            <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80 text-xs">
+                            <div className="grid grid-cols-2 gap-2 p-2.5 bg-gray-50 dark:bg-slate-950/60 rounded-xl border border-gray-100 dark:border-slate-800/80 text-xs">
                               <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Cuota del Día</span>
-                                <span className="font-bold text-cyan-300 text-sm">{formatCurrency(item.valorCuota)}</span>
+                                <span className="text-gray-500 dark:text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Cuota del Día</span>
+                                <span className="font-bold text-cyan-600 dark:text-cyan-300 text-sm">{formatCurrency(item.valorCuota)}</span>
                               </div>
                               <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Saldo Pendiente</span>
-                                <span className="font-bold text-red-400 text-sm">{formatCurrency(item.saldoPendiente)}</span>
+                                <span className="text-gray-500 dark:text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Saldo Pendiente</span>
+                                <span className="font-bold text-red-600 dark:text-red-400 text-sm">{formatCurrency(item.saldoPendiente)}</span>
                               </div>
                             </div>
 
                             {/* Dirección */}
                             {(item.cliente.direccionCobro || item.cliente.direccionCliente) && (
-                              <div className="flex items-start gap-1.5 text-xs text-slate-400">
-                                <MapPin className="h-3.5 w-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex items-start gap-1.5 text-xs text-gray-600 dark:text-slate-400">
+                                <MapPin className="h-3.5 w-3.5 text-gray-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
                                 <span className="line-clamp-1">{item.cliente.direccionCobro || item.cliente.direccionCliente}</span>
                               </div>
                             )}
 
                             {/* Actions Bar */}
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-2">
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800/80 gap-2">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {item.cliente.telefono && (
                                   <a href={`tel:${item.cliente.telefono}`}>
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-slate-950/60 border-slate-800 hover:bg-slate-800 text-slate-300 rounded-lg">
-                                      <Phone className="h-3 w-3 text-blue-400 mr-1" />
+                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-white dark:bg-slate-950/60 border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg">
+                                      <Phone className="h-3 w-3 text-blue-500 dark:text-blue-400 mr-1" />
                                       Llamar
                                     </Button>
                                   </a>
                                 )}
                                 {item.cliente.telefono && (
                                   <a href={`https://wa.me/${item.cliente.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-slate-950/60 border-slate-800 hover:bg-slate-800 text-slate-300 rounded-lg">
-                                      <MessageCircle className="h-3 w-3 text-emerald-400 mr-1" />
+                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-white dark:bg-slate-950/60 border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg">
+                                      <MessageCircle className="h-3 w-3 text-emerald-500 dark:text-emerald-400 mr-1" />
                                       WhatsApp
                                     </Button>
                                   </a>
                                 )}
                                 {item.cliente.mapLink && (
                                   <a href={item.cliente.mapLink} target="_blank" rel="noopener noreferrer">
-                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-slate-950/60 border-slate-800 hover:bg-slate-800 text-slate-300 rounded-lg">
-                                      <Navigation className="h-3 w-3 text-red-400 mr-1" />
+                                    <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] bg-white dark:bg-slate-950/60 border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg">
+                                      <Navigation className="h-3 w-3 text-red-500 dark:text-red-400 mr-1" />
                                       Mapa
                                     </Button>
                                   </a>
@@ -565,7 +554,7 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
                               <Button
                                 size="sm"
                                 onClick={() => handleRegistrarPago(item)}
-                                className="h-8 px-3.5 text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20 rounded-xl flex-shrink-0"
+                                className="h-8 px-3.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-500 dark:hover:from-emerald-400 dark:hover:to-teal-400 text-white dark:text-slate-950 shadow-md rounded-xl flex-shrink-0"
                               >
                                 <DollarSign className="h-4 w-4 mr-0.5" />
                                 Pagar
@@ -585,50 +574,50 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
             <div className={`${activeMobileTab === 'cobrados' ? 'block' : 'hidden lg:block'} space-y-3`}>
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider">Cobrados / Abonados</h2>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Cobrados / Abonados</h2>
                 </div>
-                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full">
+                <Badge className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full">
                   {filteredCobrados.length} realizados
                 </Badge>
               </div>
 
               {filteredCobrados.length === 0 ? (
-                <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
-                  <DollarSign className="h-10 w-10 text-slate-600 mx-auto" />
-                  <p className="text-slate-300 font-semibold text-xs">Sin cobros aún</p>
-                  <p className="text-slate-500 text-[11px]">Los cobros realizados en el día aparecerán aquí organizados.</p>
+                <div className="bg-white dark:bg-slate-900/40 border border-dashed border-gray-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3 shadow-sm">
+                  <DollarSign className="h-10 w-10 text-gray-400 dark:text-slate-600 mx-auto" />
+                  <p className="text-gray-800 dark:text-slate-300 font-semibold text-xs">Sin cobros aún</p>
+                  <p className="text-gray-500 dark:text-slate-500 text-[11px]">Los cobros realizados en el día aparecerán aquí organizados.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {filteredCobrados.map((item) => (
-                    <Card key={item.id} className="bg-slate-900/80 backdrop-blur-md border-l-4 border-l-emerald-500 border-slate-800/80 shadow-lg rounded-2xl overflow-hidden">
+                    <Card key={item.id} className="bg-white dark:bg-slate-900/80 backdrop-blur-md border-l-4 border-l-emerald-500 border-gray-200 dark:border-slate-800/80 shadow-sm rounded-2xl overflow-hidden">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-white text-sm leading-tight truncate">
+                            <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-tight truncate">
                               {item.cliente.nombre} {item.cliente.apellido}
                             </h3>
-                            <span className="text-xs text-slate-400 block mt-1">
+                            <span className="text-xs text-gray-500 dark:text-slate-400 block mt-1">
                               {item.cliente.telefono || `Doc: ${item.cliente.documento}`}
                             </span>
                           </div>
                           <div className="text-right flex-shrink-0 ml-2">
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider block">Abonado hoy</span>
-                            <span className="font-extrabold text-emerald-400 text-base">
+                            <span className="text-[10px] text-gray-500 dark:text-slate-400 uppercase font-semibold tracking-wider block">Abonado hoy</span>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">
                               {formatCurrency(item.pagadoHoyMonto)}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                          <div className="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-500/20">
-                            <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
-                            <span className="font-semibold">Pago Registrado</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 py-1 px-2.5 rounded-lg border border-emerald-200 dark:border-emerald-500/20 font-semibold">
+                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                            <span>Pago Registrado</span>
                           </div>
                           {item.saldoPendiente > 0 && (
-                            <span className="text-xs text-slate-400 font-medium">
-                              Saldo: <strong className="text-slate-200">{formatCurrency(item.saldoPendiente)}</strong>
+                            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">
+                              Saldo: <strong className="text-gray-800 dark:text-slate-200">{formatCurrency(item.saldoPendiente)}</strong>
                             </span>
                           )}
                         </div>

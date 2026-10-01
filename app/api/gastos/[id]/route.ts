@@ -34,9 +34,26 @@ export async function DELETE(
             )
         }
 
-        // Eliminar el gasto
-        await prisma.gasto.delete({
-            where: { id }
+        // Eliminar el gasto y su movimiento de caja chica en una transacción
+        await prisma.$transaction(async (tx) => {
+            await tx.movimientoCajaChica.deleteMany({
+                where: {
+                    OR: [
+                        { observaciones: { contains: `[GASTO:${id}]` } },
+                        {
+                            AND: [
+                                { tipo: { in: ["EGRESO_GENERAL", "GASTO", "GASTADO", "EGRESO"] } },
+                                { monto: gasto.monto },
+                                { observaciones: { contains: gasto.concepto } }
+                            ]
+                        }
+                    ]
+                }
+            })
+
+            await tx.gasto.delete({
+                where: { id }
+            })
         })
 
         return NextResponse.json({ message: "Gasto eliminado correctamente" })

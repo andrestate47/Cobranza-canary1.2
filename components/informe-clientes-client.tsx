@@ -405,18 +405,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Informe de Clientes</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">Informe de Clientes</h1>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchInforme(fechaSeleccionada)}
-              className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-[#1F3A36] hover:bg-gray-100 dark:hover:bg-[#1A3330]"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
-            </Button>
           </div>
         </div>
       </div>

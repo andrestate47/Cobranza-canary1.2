@@ -524,18 +524,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-[#F4FFFF]">Listado General</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-[#F4FFFF] whitespace-nowrap">Listado General</h1>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchClientes}
-              className="dark:bg-[#173333] dark:border-[#34766D] dark:text-[#F4FFFF] dark:hover:bg-[#34766D]"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
-            </Button>
           </div>
         </div>
       </div>

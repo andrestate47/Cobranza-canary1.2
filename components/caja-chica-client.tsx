@@ -29,10 +29,14 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Target
+  Target,
+  BarChart3
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import dynamic from "next/dynamic"
+
+const ReporteCobradores = dynamic(() => import("@/components/reporte-cobradores"), { ssr: false })
 import {
   Dialog,
   DialogContent,
@@ -77,6 +81,9 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const { format: formatCurrency } = useCurrency()
   const user = session?.user
   const isCobrador = user?.role === 'COBRADOR'
+
+  // Tab Principal: Movimientos o Reporte Cobradores
+  const [mainTab, setMainTab] = useState<"movimientos" | "reporte">("movimientos")
 
   // Estados de datos
   const [movimientos, setMovimientos] = useState<MovimientoItem[]>([])
@@ -353,380 +360,407 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
               Excel
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (isCobrador) {
-                  setTipoMovimiento("EGRESO")
-                  setOpenMovimientoDialog(true)
-                } else {
-                  setTipoMovimiento("EGRESO")
-                  setOpenMovimientoDialog(true)
-                }
-              }}
-              className="rounded-full border-red-200 dark:border-red-900/50 bg-white dark:bg-[#102525] text-red-600 dark:text-red-400 font-semibold px-4 h-9 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/30"
-            >
-              <Minus className="mr-1.5 h-4 w-4 rounded-full border border-red-600 p-0.5" />
-              Retirar
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={() => {
-                if (isCobrador) {
-                  setTipoMovimiento("INGRESO")
-                  setOpenMovimientoDialog(true)
-                } else {
-                  setOpenAsignarDialog(true)
-                }
-              }}
-              className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 h-9 shadow-sm"
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Ingresar
-            </Button>
-          </div>
-        </div>
-
-        {/* 2. Banner de Saldo Disponible en Caja */}
-        <div className="bg-[#eaf7f1] dark:bg-[#0c2b23] border border-emerald-100 dark:border-[#184d3e] p-6 sm:p-8 rounded-3xl space-y-6 shadow-sm">
-          {/* Label e icono wallet */}
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-              <Wallet className="h-5 w-5" />
-            </div>
-            <span className="text-sm font-bold text-emerald-900 dark:text-emerald-300 tracking-wide">
-              Saldo disponible en caja
-            </span>
-          </div>
-
-          {/* Hero Amount */}
-          <div className="text-4xl sm:text-5xl font-extrabold text-emerald-700 dark:text-emerald-400 tracking-tight">
-            {formatCurrency(saldoDisponible)}
-          </div>
-
-          {/* 4 Cards de estadísticas internas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-2">
-            {/* Capital Ingresado */}
-            <div className="bg-white dark:bg-[#102525] rounded-2xl p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block text-center">
-                Capital Ingresado
-              </span>
-              <span className="text-sm sm:text-base font-extrabold text-blue-600 dark:text-blue-400 block text-center truncate">
-                +{formatCurrency(capitalIngresado)}
-              </span>
-            </div>
-
-            {/* Retirado */}
-            <div className="bg-white dark:bg-[#102525] rounded-2xl p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block text-center">
-                Retirado
-              </span>
-              <span className="text-sm sm:text-base font-extrabold text-slate-600 dark:text-slate-300 block text-center truncate">
-                -{formatCurrency(totalRetirado)}
-              </span>
-            </div>
-
-            {/* Prestado */}
-            <div className="bg-white dark:bg-[#102525] rounded-2xl p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block text-center">
-                Prestado
-              </span>
-              <span className="text-sm sm:text-base font-extrabold text-rose-600 dark:text-rose-400 block text-center truncate">
-                -{formatCurrency(totalPrestado)}
-              </span>
-            </div>
-
-            {/* Cobrado */}
-            <div className="bg-white dark:bg-[#102525] rounded-2xl p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 block text-center">
-                Cobrado
-              </span>
-              <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 block text-center truncate">
-                +{formatCurrency(totalCobrado)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Fila de 3 Tarjetas Secundarias */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Capital recuperado */}
-          <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-2">
-            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-semibold">
-              <Landmark className="h-4 w-4 text-blue-600" />
-              <span>Capital recuperado</span>
-            </div>
-            <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
-              {formatCurrency(capitalRecuperado)}
-            </div>
-          </div>
-
-          {/* Interés ganado */}
-          <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-2">
-            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-semibold">
-              <TrendingUp className="h-4 w-4 text-rose-600" />
-              <span>Interés ganado</span>
-            </div>
-            <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
-              {formatCurrency(interesGanado)}
-            </div>
-          </div>
-
-          {/* Balance cobrado - prestado */}
-          <div className="bg-[#fdf2f2] dark:bg-[#2d1217] border border-rose-100 dark:border-rose-900/40 rounded-2xl p-5 shadow-sm space-y-2">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 text-xs font-semibold">
-              <DollarSign className="h-4 w-4 text-rose-600" />
-              <span>Balance cobrado - prestado</span>
-            </div>
-            <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
-              {balanceCobradoMenosPrestado < 0 ? "-" : "+"}{formatCurrency(Math.abs(balanceCobradoMenosPrestado))}
-            </div>
-          </div>
-        </div>
-
-        {/* Bar de Filtros Avanzados (Opcional colapsable) */}
-        {showAdvancedFilters && (
-          <div className="bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] rounded-2xl p-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Fecha Inicio</Label>
-                <Input
-                  type="date"
-                  value={filtroFechaInicio}
-                  onChange={(e) => setFiltroFechaInicio(e.target.value)}
-                  className="mt-1 h-9 cursor-pointer"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Fecha Fin</Label>
-                <Input
-                  type="date"
-                  value={filtroFechaFin}
-                  onChange={(e) => setFiltroFechaFin(e.target.value)}
-                  className="mt-1 h-9 cursor-pointer"
-                />
-              </div>
-              {!isCobrador && (
-                <div>
-                  <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Cobrador / Ruta</Label>
-                  <Select value={filtroCobrador} onValueChange={setFiltroCobrador}>
-                    <SelectTrigger className="mt-1 h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los cobradores</SelectItem>
-                      {cobradores.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setFiltroFechaInicio("")
-                  setFiltroFechaFin("")
-                  setFiltroCobrador("all")
-                }}
-                className="text-xs text-gray-500"
-              >
-                Limpiar Filtros
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* 4. Tab Bar de Filtros de Píldora + Contador */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-          {/* Píldoras de Filtro */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
-                activeTab === "all"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              Todos
-            </button>
-
-            <button
-              onClick={() => setActiveTab("INGRESO")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
-                activeTab === "INGRESO"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              Ingresos caja
-            </button>
-
-            <button
-              onClick={() => setActiveTab("RETIRO")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
-                activeTab === "RETIRO"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              Retiros
-            </button>
-
-            <button
-              onClick={() => setActiveTab("COBRO")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
-                activeTab === "COBRO"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              Cobros
-            </button>
-
-            <button
-              onClick={() => setActiveTab("PRESTAMO")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
-                activeTab === "PRESTAMO"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              Préstamos
-            </button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="rounded-full border border-gray-200 dark:border-[#1F3A36] shrink-0"
-              title="Filtros avanzados por fecha y cobrador"
-            >
-              <Filter className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-            </Button>
-          </div>
-
-          {/* Contador de Movimientos */}
-          <div className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 self-end sm:self-auto">
-            {movimientosFiltrados.length} movimientos
-          </div>
-        </div>
-
-        {/* 5. Lista de Movimientos en Tarjetas Elegantes */}
-        <div className="space-y-3">
-          {movimientosFiltrados.length === 0 ? (
-            <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-12 text-center text-gray-400">
-              <Wallet className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-semibold text-gray-600 dark:text-gray-300">No hay movimientos registrados</p>
-              <p className="text-xs text-gray-400 mt-1">Los cobros, créditos y entradas de caja aparecerán aquí</p>
-            </div>
-          ) : (
-            movimientosFiltrados.map((mov) => {
-              const esCobro = mov.tipo === "COBRO"
-              const esPrestamo = mov.tipo === "PRESTAMO"
-              const esIngreso = ["INGRESO", "ENTREGA", "ENTREGADO", "APERTURA_CAJA"].includes(mov.tipo)
-              const esPositivo = esCobro || esIngreso
-
-              let titleName = "Movimiento de Caja"
-              if (typeof mov.nombre === 'string' && mov.nombre.trim()) {
-                titleName = mov.nombre
-              } else if (typeof mov.clienteNombre === 'string' && mov.clienteNombre.trim()) {
-                titleName = mov.clienteNombre
-              } else if (typeof mov.cobrador === 'string' && mov.cobrador.trim()) {
-                titleName = mov.cobrador
-              } else if (mov.cobrador && typeof mov.cobrador === 'object') {
-                const cObj = mov.cobrador as any
-                titleName = `${cObj.nombre || cObj.firstName || ''} ${cObj.apellido || cObj.lastName || ''}`.trim() || "Movimiento de Caja"
-              }
-
-              const subtitleText = mov.subtipo || (
-                esCobro ? "Pago recibido" :
-                esPrestamo ? "Préstamo otorgado" :
-                esIngreso ? "Ingreso de caja" : "Retiro / Egreso de caja"
-              )
-
-              return (
-                <div
-                  key={mov.id}
-                  className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4"
+            {!isCobrador && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTipoMovimiento("EGRESO")
+                    setOpenMovimientoDialog(true)
+                  }}
+                  className="rounded-full border-red-200 dark:border-red-900/50 bg-white dark:bg-[#102525] text-red-600 dark:text-red-400 font-semibold px-4 h-9 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/30"
                 >
-                  {/* Lado Izquierdo: Icono + Detalles */}
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    {/* Circle Icon Badge */}
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-                      esPositivo 
-                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400" 
-                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
-                    }`}>
-                      {esCobro ? <Target className="h-5 w-5" /> :
-                       esPrestamo ? <DollarSign className="h-5 w-5" /> :
-                       esPositivo ? <TrendingUp className="h-5 w-5" /> :
-                       <TrendingDown className="h-5 w-5" />}
+                  <Minus className="mr-1.5 h-4 w-4 rounded-full border border-red-600 p-0.5" />
+                  Retirar
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setOpenAsignarDialog(true)
+                  }}
+                  className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 h-9 shadow-sm"
+                >
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Ingresar
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 2. Tabs de Navegación Principal (Movimientos | Reporte Cobradores) */}
+        <div className="grid grid-cols-2 gap-2 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
+          <button
+            onClick={() => setMainTab("movimientos")}
+            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+              mainTab === "movimientos"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+            }`}
+          >
+            <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="whitespace-nowrap">Movimientos</span>
+          </button>
+
+          <button
+            onClick={() => setMainTab("reporte")}
+            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+              mainTab === "reporte"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+            }`}
+          >
+            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="whitespace-nowrap">Reporte Cobradores</span>
+          </button>
+        </div>
+
+        {mainTab === "reporte" ? (
+          <ReporteCobradores userRole={user?.role} />
+        ) : (
+          <>
+            {/* 3. Banner de Saldo en Caja */}
+            <div className="bg-[#eaf7f1] dark:bg-[#0c2b23] border border-emerald-100 dark:border-[#184d3e] p-5 sm:p-7 rounded-3xl space-y-4 shadow-sm">
+              {/* Label e icono wallet */}
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-bold text-emerald-900 dark:text-emerald-300 tracking-wide">
+                  Caja
+                </span>
+              </div>
+
+              {/* Hero Amount */}
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-700 dark:text-emerald-400 tracking-tight break-all">
+                {formatCurrency(saldoDisponible)}
+              </div>
+
+              {/* 4 Cards de estadísticas internas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 pt-2">
+                {/* Capital Ingresado */}
+                <div className="bg-white dark:bg-[#102525] rounded-2xl p-2.5 sm:p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
+                  <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 block text-center leading-tight whitespace-normal">
+                    Capital Ingresado
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-blue-600 dark:text-blue-400 block text-center tracking-tight whitespace-nowrap sm:whitespace-normal">
+                    +{formatCurrency(capitalIngresado)}
+                  </span>
+                </div>
+
+                {/* Retirado */}
+                <div className="bg-white dark:bg-[#102525] rounded-2xl p-2.5 sm:p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
+                  <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 block text-center leading-tight whitespace-normal">
+                    Retirado
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-600 dark:text-slate-300 block text-center tracking-tight whitespace-nowrap sm:whitespace-normal">
+                    -{formatCurrency(totalRetirado)}
+                  </span>
+                </div>
+
+                {/* Prestado */}
+                <div className="bg-white dark:bg-[#102525] rounded-2xl p-2.5 sm:p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
+                  <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 block text-center leading-tight whitespace-normal">
+                    Prestado
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-rose-600 dark:text-rose-400 block text-center tracking-tight whitespace-nowrap sm:whitespace-normal">
+                    -{formatCurrency(totalPrestado)}
+                  </span>
+                </div>
+
+                {/* Cobrado */}
+                <div className="bg-white dark:bg-[#102525] rounded-2xl p-2.5 sm:p-4 shadow-sm border border-emerald-100/60 dark:border-[#1F3A36] space-y-1">
+                  <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 block text-center leading-tight whitespace-normal">
+                    Cobrado
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 block text-center tracking-tight whitespace-nowrap sm:whitespace-normal">
+                    +{formatCurrency(totalCobrado)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Fila de 3 Tarjetas Secundarias */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Capital recuperado */}
+              <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-semibold">
+                  <Landmark className="h-4 w-4 text-blue-600" />
+                  <span>Capital recuperado</span>
+                </div>
+                <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
+                  {formatCurrency(capitalRecuperado)}
+                </div>
+              </div>
+
+              {/* Interés ganado */}
+              <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-semibold">
+                  <TrendingUp className="h-4 w-4 text-rose-600" />
+                  <span>Interés ganado</span>
+                </div>
+                <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                  {formatCurrency(interesGanado)}
+                </div>
+              </div>
+
+              {/* Balance cobrado - prestado */}
+              <div className="bg-[#fdf2f2] dark:bg-[#2d1217] border border-rose-100 dark:border-rose-900/40 rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 text-xs font-semibold">
+                  <DollarSign className="h-4 w-4 text-rose-600" />
+                  <span>Balance cobrado - prestado</span>
+                </div>
+                <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                  {balanceCobradoMenosPrestado < 0 ? "-" : "+"}{formatCurrency(Math.abs(balanceCobradoMenosPrestado))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bar de Filtros Avanzados (Opcional colapsable) */}
+            {showAdvancedFilters && (
+              <div className="bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] rounded-2xl p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Fecha Inicio</Label>
+                    <Input
+                      type="date"
+                      value={filtroFechaInicio}
+                      onChange={(e) => setFiltroFechaInicio(e.target.value)}
+                      className="mt-1 h-9 cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Fecha Fin</Label>
+                    <Input
+                      type="date"
+                      value={filtroFechaFin}
+                      onChange={(e) => setFiltroFechaFin(e.target.value)}
+                      className="mt-1 h-9 cursor-pointer"
+                    />
+                  </div>
+                  {!isCobrador && (
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Cobrador / Ruta</Label>
+                      <Select value={filtroCobrador} onValueChange={setFiltroCobrador}>
+                        <SelectTrigger className="mt-1 h-9">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los cobradores</SelectItem>
+                          {cobradores.map(c => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setFiltroFechaInicio("")
+                      setFiltroFechaFin("")
+                      setFiltroCobrador("all")
+                    }}
+                    className="text-xs text-gray-500"
+                  >
+                    Limpiar Filtros
+                  </Button>
+                </div>
+              </div>
+            )}
 
-                    {/* Info text */}
-                    <div className="min-w-0 space-y-1">
-                      <h3 className="font-extrabold text-gray-900 dark:text-white text-base truncate leading-snug">
-                        {titleName}
-                      </h3>
+            {/* 5. Tab Bar de Filtros de Píldora + Contador */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+              {/* Píldoras de Filtro */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <button
+                  onClick={() => setActiveTab("all")}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
+                    activeTab === "all"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Todos
+                </button>
 
-                      <div className="flex items-center gap-2 flex-wrap text-xs">
-                        <span className="text-gray-400 dark:text-gray-500 font-medium">
-                          {subtitleText}
-                        </span>
+                <button
+                  onClick={() => setActiveTab("INGRESO")}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
+                    activeTab === "INGRESO"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Ingresos caja
+                </button>
 
-                        {/* Badges de Desglose de Capital e Interés si es cobro */}
-                        {esCobro && (mov.capital !== undefined || mov.interes !== undefined) && (
-                          <div className="flex items-center gap-1.5 ml-1">
-                            {mov.capital !== undefined && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40">
-                                Capital: {formatCurrency(mov.capital)}
-                              </span>
+                <button
+                  onClick={() => setActiveTab("RETIRO")}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
+                    activeTab === "RETIRO"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Retiros
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("COBRO")}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
+                    activeTab === "COBRO"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Cobros
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("PRESTAMO")}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-all shrink-0 ${
+                    activeTab === "PRESTAMO"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Préstamos
+                </button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="rounded-full border border-gray-200 dark:border-[#1F3A36] shrink-0"
+                  title="Filtros avanzados por fecha y cobrador"
+                >
+                  <Filter className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                </Button>
+              </div>
+
+              {/* Contador de Movimientos */}
+              <div className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 self-end sm:self-auto">
+                {movimientosFiltrados.length} movimientos
+              </div>
+            </div>
+
+            {/* 6. Lista de Movimientos en Tarjetas Elegantes */}
+            <div className="space-y-3">
+              {movimientosFiltrados.length === 0 ? (
+                <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-12 text-center text-gray-400">
+                  <Wallet className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="font-semibold text-gray-600 dark:text-gray-300">No hay movimientos registrados</p>
+                  <p className="text-xs text-gray-400 mt-1">Los cobros, créditos y entradas de caja aparecerán aquí</p>
+                </div>
+              ) : (
+                movimientosFiltrados.map((mov) => {
+                  const esCobro = mov.tipo === "COBRO"
+                  const esPrestamo = mov.tipo === "PRESTAMO"
+                  const esIngreso = ["INGRESO", "ENTREGA", "ENTREGADO", "APERTURA_CAJA"].includes(mov.tipo)
+                  const esPositivo = esCobro || esIngreso
+
+                  let titleName = "Movimiento de Caja"
+                  if (typeof mov.nombre === 'string' && mov.nombre.trim()) {
+                    titleName = mov.nombre
+                  } else if (typeof mov.clienteNombre === 'string' && mov.clienteNombre.trim()) {
+                    titleName = mov.clienteNombre
+                  } else if (typeof mov.cobrador === 'string' && mov.cobrador.trim()) {
+                    titleName = mov.cobrador
+                  } else if (mov.cobrador && typeof mov.cobrador === 'object') {
+                    const cObj = mov.cobrador as any
+                    titleName = `${cObj.nombre || cObj.firstName || ''} ${cObj.apellido || cObj.lastName || ''}`.trim() || "Movimiento de Caja"
+                  }
+
+                  const subtitleText = mov.subtipo || (
+                    esCobro ? "Pago recibido" :
+                    esPrestamo ? "Préstamo otorgado" :
+                    esIngreso ? "Ingreso de caja" : "Retiro / Egreso de caja"
+                  )
+
+                  return (
+                    <div
+                      key={mov.id}
+                      className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4"
+                    >
+                      {/* Lado Izquierdo: Icono + Detalles */}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* Circle Icon Badge */}
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+                          esPositivo 
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400" 
+                            : "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+                        }`}>
+                          {esCobro ? <Target className="h-5 w-5" /> :
+                           esPrestamo ? <DollarSign className="h-5 w-5" /> :
+                           esPositivo ? <TrendingUp className="h-5 w-5" /> :
+                           <TrendingDown className="h-5 w-5" />}
+                        </div>
+
+                        {/* Info text */}
+                        <div className="min-w-0 space-y-1">
+                          <h3 className="font-extrabold text-gray-900 dark:text-white text-base truncate leading-snug">
+                            {titleName}
+                          </h3>
+
+                          <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className="text-gray-400 dark:text-gray-500 font-medium">
+                              {subtitleText}
+                            </span>
+
+                            {/* Badges de Desglose de Capital e Interés si es cobro */}
+                            {esCobro && (mov.capital !== undefined || mov.interes !== undefined) && (
+                              <div className="flex items-center gap-1.5 ml-1">
+                                {mov.capital !== undefined && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40">
+                                    Capital: {formatCurrency(mov.capital)}
+                                  </span>
+                                )}
+                                {mov.interes !== undefined && mov.interes > 0 && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40">
+                                    Interés: {formatCurrency(mov.interes)}
+                                  </span>
+                                )}
+                              </div>
                             )}
-                            {mov.interes !== undefined && mov.interes > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40">
-                                Interés: {formatCurrency(mov.interes)}
+
+                            {/* Descripción extra si aplica */}
+                            {!esCobro && mov.descripcion && (
+                              <span className="text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                                • {mov.descripcion}
                               </span>
                             )}
                           </div>
-                        )}
+                        </div>
+                      </div>
 
-                        {/* Descripción extra si aplica */}
-                        {!esCobro && mov.descripcion && (
-                          <span className="text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                            • {mov.descripcion}
-                          </span>
-                        )}
+                      {/* Lado Derecho: Monto + Fecha */}
+                      <div className="text-right shrink-0">
+                        <div className={`text-base sm:text-lg font-extrabold ${
+                          esPositivo 
+                            ? "text-emerald-600 dark:text-emerald-400" 
+                            : "text-rose-600 dark:text-rose-400"
+                        }`}>
+                          {esPositivo ? "+" : "-"}{formatCurrency(mov.monto)}
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">
+                          {format(new Date(mov.fecha), "d MMM yyyy HH:mm", { locale: es })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Lado Derecho: Monto + Fecha */}
-                  <div className="text-right shrink-0">
-                    <div className={`text-base sm:text-lg font-extrabold ${
-                      esPositivo 
-                        ? "text-emerald-600 dark:text-emerald-400" 
-                        : "text-rose-600 dark:text-rose-400"
-                    }`}>
-                      {esPositivo ? "+" : "-"}{formatCurrency(mov.monto)}
-                    </div>
-                    <div className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">
-                      {format(new Date(mov.fecha), "d MMM yyyy HH:mm", { locale: es })}
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
 
       </div>
 
