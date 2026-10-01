@@ -138,6 +138,30 @@ export default function GastosClient({ session }: GastosClientProps) {
     })
   }, [searchTerm, gastos])
 
+  const totalGastos = useMemo(() => {
+    return filteredGastos.reduce((total, gasto) => total + gasto.monto, 0)
+  }, [filteredGastos])
+
+  const gastosHoy = useMemo(() => {
+    const hoyStr = new Date().toISOString().split('T')[0]
+    return gastos.filter(g => {
+      if (!g.fecha) return false
+      const gDate = new Date(g.fecha).toISOString().split('T')[0]
+      return gDate === hoyStr
+    }).reduce((total, g) => total + g.monto, 0)
+  }, [gastos])
+
+  const gastosMes = useMemo(() => {
+    const now = new Date()
+    const mes = now.getMonth()
+    const anio = now.getFullYear()
+    return gastos.filter(g => {
+      if (!g.fecha) return false
+      const d = new Date(g.fecha)
+      return d.getMonth() === mes && d.getFullYear() === anio
+    }).reduce((total, g) => total + g.monto, 0)
+  }, [gastos])
+
   const onGastoSuccess = () => {
     setShowNuevoGasto(false)
     fetchGastos() // Recargar lista
@@ -310,6 +334,45 @@ export default function GastosClient({ session }: GastosClientProps) {
           <ReporteCobradores userRole={session?.user?.role} />
         ) : (
           <>
+            {/* Tarjetas de Resumen de Gastos (Perfil Admin y Cobrador) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="bg-white dark:bg-[#0E1F1C] rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-[#1F3A36] space-y-1">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block">
+                  Total Gastos
+                </span>
+                <span className="text-base sm:text-lg font-extrabold text-red-600 dark:text-red-400 block tracking-tight">
+                  {formatCurrency(totalGastos)}
+                </span>
+              </div>
+
+              <div className="bg-white dark:bg-[#0E1F1C] rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-[#1F3A36] space-y-1">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block">
+                  Gastos de Hoy
+                </span>
+                <span className="text-base sm:text-lg font-extrabold text-amber-600 dark:text-amber-400 block tracking-tight">
+                  {formatCurrency(gastosHoy)}
+                </span>
+              </div>
+
+              <div className="bg-white dark:bg-[#0E1F1C] rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-[#1F3A36] space-y-1">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block">
+                  Gastos del Mes
+                </span>
+                <span className="text-base sm:text-lg font-extrabold text-blue-600 dark:text-blue-400 block tracking-tight">
+                  {formatCurrency(gastosMes)}
+                </span>
+              </div>
+
+              <div className="bg-white dark:bg-[#0E1F1C] rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-[#1F3A36] space-y-1">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block">
+                  Registros
+                </span>
+                <span className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white block tracking-tight">
+                  {filteredGastos.length}
+                </span>
+              </div>
+            </div>
+
             {/* Filtros */}
             <div className="mb-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -337,12 +400,6 @@ export default function GastosClient({ session }: GastosClientProps) {
                 <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                   {filteredGastos.length} resultado{filteredGastos.length !== 1 ? 's' : ''}
                 </div>
-
-                {filteredGastos.length > 0 && (
-                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                    Total: {formatCurrency(getTotalGastos())}
-                  </div>
-                )}
               </div>
             </div>
 
