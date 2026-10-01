@@ -498,10 +498,10 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
               {/* Interés ganado */}
               <div className="bg-white dark:bg-[#102525] border border-gray-100 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-2">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-semibold">
-                  <TrendingUp className="h-4 w-4 text-rose-600" />
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
                   <span>Interés ganado</span>
                 </div>
-                <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(interesGanado)}
                 </div>
               </div>
