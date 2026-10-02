@@ -80,7 +80,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const router = useRouter()
   const { format: formatCurrency } = useCurrency()
   const user = session?.user
-  const isCobrador = user?.role === 'COBRADOR'
+  const isAdminOrSupervisor = user?.role === 'ADMINISTRADOR' || user?.role === 'SUPERVISOR'
+  const isCobrador = !isAdminOrSupervisor
 
   // Tab Principal: Movimientos o Reporte Cobradores
   const [mainTab, setMainTab] = useState<"movimientos" | "reporte">("movimientos")
@@ -469,7 +470,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         </div>
 
         {/* 2. Tabs de Navegación Principal (Movimientos | Reporte Cobradores) */}
-        {!isCobrador && (
+        {isAdminOrSupervisor && (
           <div className="grid grid-cols-2 gap-2 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
             <button
               onClick={() => setMainTab("movimientos")}
@@ -497,7 +498,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
           </div>
         )}
 
-        {!isCobrador && mainTab === "reporte" ? (
+        {isAdminOrSupervisor && mainTab === "reporte" ? (
           <ReporteCobradores userRole={user?.role} />
         ) : (
           <>

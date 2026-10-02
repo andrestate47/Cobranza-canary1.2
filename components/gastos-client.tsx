@@ -57,7 +57,8 @@ interface GastosClientProps {
 }
 
 export default function GastosClient({ session }: GastosClientProps) {
-  const isCobrador = session?.user?.role === "COBRADOR"
+  const isAdminOrSupervisor = session?.user?.role === "ADMINISTRADOR" || session?.user?.role === "SUPERVISOR"
+  const isCobrador = !isAdminOrSupervisor
   const [activeTab, setActiveTab] = useState<"gastos" | "reporte">("gastos")
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [loading, setLoading] = useState(true)
@@ -305,7 +306,7 @@ export default function GastosClient({ session }: GastosClientProps) {
 
       <div className="container-mobile py-6">
         {/* Navigation Tabs */}
-        {!isCobrador && (
+        {isAdminOrSupervisor && (
           <div className="grid grid-cols-2 gap-2 mb-6 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
             <button
               onClick={() => setActiveTab("gastos")}
@@ -333,7 +334,7 @@ export default function GastosClient({ session }: GastosClientProps) {
           </div>
         )}
 
-        {!isCobrador && activeTab === "reporte" ? (
+        {isAdminOrSupervisor && activeTab === "reporte" ? (
           <ReporteCobradores userRole={session?.user?.role} />
         ) : (
           <>
