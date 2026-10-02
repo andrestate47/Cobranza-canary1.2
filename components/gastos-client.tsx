@@ -57,6 +57,7 @@ interface GastosClientProps {
 }
 
 export default function GastosClient({ session }: GastosClientProps) {
+  const isCobrador = session?.user?.role === "COBRADOR"
   const [activeTab, setActiveTab] = useState<"gastos" | "reporte">("gastos")
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [loading, setLoading] = useState(true)
@@ -304,33 +305,35 @@ export default function GastosClient({ session }: GastosClientProps) {
 
       <div className="container-mobile py-6">
         {/* Navigation Tabs */}
-        <div className="grid grid-cols-2 gap-2 mb-6 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
-          <button
-            onClick={() => setActiveTab("gastos")}
-            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
-              activeTab === "gastos"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
-            }`}
-          >
-            <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="truncate">Lista de Gastos</span>
-          </button>
+        {!isCobrador && (
+          <div className="grid grid-cols-2 gap-2 mb-6 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
+            <button
+              onClick={() => setActiveTab("gastos")}
+              className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+                activeTab === "gastos"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+              }`}
+            >
+              <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">Lista de Gastos</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab("reporte")}
-            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
-              activeTab === "reporte"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
-            }`}
-          >
-            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="truncate">Reporte Cobradores</span>
-          </button>
-        </div>
+            <button
+              onClick={() => setActiveTab("reporte")}
+              className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+                activeTab === "reporte"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">Reporte Cobradores</span>
+            </button>
+          </div>
+        )}
 
-        {activeTab === "reporte" ? (
+        {!isCobrador && activeTab === "reporte" ? (
           <ReporteCobradores userRole={session?.user?.role} />
         ) : (
           <>

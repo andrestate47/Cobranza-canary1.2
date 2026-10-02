@@ -469,33 +469,35 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         </div>
 
         {/* 2. Tabs de Navegación Principal (Movimientos | Reporte Cobradores) */}
-        <div className="grid grid-cols-2 gap-2 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
-          <button
-            onClick={() => setMainTab("movimientos")}
-            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
-              mainTab === "movimientos"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
-            }`}
-          >
-            <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="whitespace-nowrap">Movimientos</span>
-          </button>
+        {!isCobrador && (
+          <div className="grid grid-cols-2 gap-2 border-b border-gray-200 dark:border-[#1F3A36] pb-3 w-full">
+            <button
+              onClick={() => setMainTab("movimientos")}
+              className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+                mainTab === "movimientos"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+              }`}
+            >
+              <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="whitespace-nowrap">Movimientos</span>
+            </button>
 
-          <button
-            onClick={() => setMainTab("reporte")}
-            className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
-              mainTab === "reporte"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
-            }`}
-          >
-            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span className="whitespace-nowrap">Reporte Cobradores</span>
-          </button>
-        </div>
+            <button
+              onClick={() => setMainTab("reporte")}
+              className={`w-full py-2 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-center min-w-0 ${
+                mainTab === "reporte"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-white dark:bg-[#102525] border border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#152e2a]"
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="whitespace-nowrap">Reporte Cobradores</span>
+            </button>
+          </div>
+        )}
 
-        {mainTab === "reporte" ? (
+        {!isCobrador && mainTab === "reporte" ? (
           <ReporteCobradores userRole={user?.role} />
         ) : (
           <>
