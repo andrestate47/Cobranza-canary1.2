@@ -141,15 +141,13 @@ export async function POST(request: NextRequest) {
       await tx.movimientoCajaChica.create({
         data: {
           cobradorId: session.user.id,
+          asignadoPorId: session.user.id,
           tipo: "GASTO",
           monto: montoNumerico,
           saldoAnterior: 0,
           saldoNuevo: 0,
           descripcion: concepto.trim(),
           observaciones: `[GASTO:${gasto.id}] ${concepto.trim()}${observaciones ? ` - ${observaciones.trim()}` : ''}`,
-          asignadoPor: {
-            connect: { id: session.user.id }
-          }
         }
       })
 
