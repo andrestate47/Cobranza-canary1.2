@@ -186,7 +186,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       }
     ] : []),
     {
-      title: user?.role === 'COBRADOR' ? "Caja Chica" : "Viáticos / Caja",
+      title: user?.role === 'COBRADOR' ? "Caja Chica" : "Caja",
       description: user?.role === 'COBRADOR' ? "Balance y control de efectivo diario" : "Control general de ingresos y egresos de cobradores",
       icon: Wallet,
       href: user?.role === 'COBRADOR' ? "/caja-chica" : "/viaticos",

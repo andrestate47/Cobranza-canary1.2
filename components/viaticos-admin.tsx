@@ -296,7 +296,7 @@ export function ViaticosAdmin() {
                 Volver
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Viáticos / Caja Cobradores</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Caja</h1>
               </div>
             </div>
 
