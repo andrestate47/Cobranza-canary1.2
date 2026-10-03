@@ -134,8 +134,23 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
     !p.observaciones?.startsWith("Liquidación por renovación")
   )
 
-  // Obtener IDs únicos de clientes visitados (con abonos reales en el día)
-  const clientesVisitadosIds = new Set(pagosReales.map(p => p.prestamo.clienteId))
+  // Obtener registros de visitas del día
+  const visitasDia = await prisma.visitaCliente.findMany({
+    where: {
+      fecha: {
+        gte: fechaInicio,
+        lte: fechaFin
+      },
+      ...(userId ? { userId: userId } : {})
+    },
+    select: { clienteId: true }
+  })
+
+  // Obtener IDs únicos de clientes visitados (con abonos reales en el día O visitas registradas)
+  const clientesVisitadosIds = new Set([
+    ...pagosReales.map(p => p.prestamo.clienteId),
+    ...visitasDia.map(v => v.clienteId)
+  ])
 
   // Clientes únicos que tienen al menos un préstamo activo/vencido con saldo del cobrador
   const clientesConPrestamosActivosMap = new Map<string, { id: string }>()

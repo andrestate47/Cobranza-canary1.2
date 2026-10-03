@@ -93,19 +93,37 @@ export async function GET(request: NextRequest) {
           cliente: routeFilter
         }
       }),
-      // 3. CLIENTES VISITADOS HOY
+      // 3. CLIENTES VISITADOS HOY (tienen registros en visitas_cliente O han realizado un pago hoy)
       prisma.cliente.findMany({
         where: {
           activo: true,
           ...routeFilter,
-          visitas: {
-            some: {
-              fecha: {
-                gte: fechaInicio,
-                lte: fechaFin
+          OR: [
+            {
+              visitas: {
+                some: {
+                  fecha: {
+                    gte: fechaInicio,
+                    lte: fechaFin
+                  }
+                }
+              }
+            },
+            {
+              prestamos: {
+                some: {
+                  pagos: {
+                    some: {
+                      fecha: {
+                        gte: fechaInicio,
+                        lte: fechaFin
+                      }
+                    }
+                  }
+                }
               }
             }
-          }
+          ]
         },
         include: {
           visitas: {
@@ -129,34 +147,70 @@ export async function GET(request: NextRequest) {
             take: 1
           },
           prestamos: {
-            where: { estado: 'ACTIVO' },
+            where: {
+              OR: [
+                { estado: 'ACTIVO' },
+                { estado: 'VENCIDO' }
+              ]
+            },
             include: {
               pagos: {
                 select: {
-                  monto: true
+                  monto: true,
+                  devolucionSeguro: true,
+                  fecha: true,
+                  usuario: {
+                    select: {
+                      firstName: true,
+                      lastName: true
+                    }
+                  }
                 }
               }
             }
           }
         }
       }),
-      // 4. CLIENTES NO VISITADOS HOY (con préstamos activos)
+      // 4. CLIENTES NO VISITADOS HOY (con préstamos activos o vencidos con saldo pendiente y sin visitas ni pagos hoy)
       prisma.cliente.findMany({
         where: {
           activo: true,
           ...routeFilter,
           prestamos: {
-            some: { estado: 'ACTIVO' }
+            some: {
+              OR: [
+                { estado: 'ACTIVO' },
+                { estado: 'VENCIDO' }
+              ]
+            }
           },
           NOT: {
-            visitas: {
-              some: {
-                fecha: {
-                  gte: fechaInicio,
-                  lte: fechaFin
+            OR: [
+              {
+                visitas: {
+                  some: {
+                    fecha: {
+                      gte: fechaInicio,
+                      lte: fechaFin
+                    }
+                  }
+                }
+              },
+              {
+                prestamos: {
+                  some: {
+                    pagos: {
+                      some: {
+                        fecha: {
+                          gte: fechaInicio,
+                          lte: fechaFin
+                        }
+                      }
+                    }
+                  }
                 }
               }
-            }
+            ]
           }
         },
         include: {
@@ -167,11 +221,18 @@ export async function GET(request: NextRequest) {
             take: 1
           },
           prestamos: {
-            where: { estado: 'ACTIVO' },
+            where: {
+              OR: [
+                { estado: 'ACTIVO' },
+                { estado: 'VENCIDO' }
+              ]
+            },
             include: {
               pagos: {
                 select: {
-                  monto: true
+                  monto: true,
+                  devolucionSeguro: true,
+                  fecha: true
                 }
               }
             }
@@ -446,8 +507,10 @@ export async function GET(request: NextRequest) {
 
     // Function to check if a loan has actually missing payments
     const hasSaldoPendiente = (prestamo: any) => {
-      const pagado = prestamo.pagos?.reduce((sum: any, pago: any) => sum + Number(pago.monto), 0) || 0
-      return Number(prestamo.monto) - pagado > 0
+      if (prestamo.estado === 'CANCELADO' || prestamo.estado === 'RENOVADO') return false
+      const montoTotal = Math.round((Number(prestamo.monto || 0) * (1 + Number(prestamo.interes || 0) / 100)) * 100) / 100
+      const pagado = Math.round(((prestamo.pagos || []).reduce((sum: any, pago: any) => sum + Number(pago.monto || 0) + Number(pago.devolucionSeguro || 0), 0)) * 100) / 100
+      return (montoTotal - pagado) > 0.01
     }
 
     // Calcular totales de cobros
@@ -460,6 +523,11 @@ export async function GET(request: NextRequest) {
       prestamos: cliente.prestamos.filter(hasSaldoPendiente)
     })).filter(c => c.prestamos.length > 0)
 
+    // Filtrar clientes no visitados para que solo incluyan aquellos que tienen préstamos con saldo pendiente real
+    const clientesNoVisitadosReales = clientesNoVisitados.filter(c => 
+      c.prestamos.some(p => hasSaldoPendiente(p))
+    )
+
     // Construir respuesta
     const informe = {
       fecha,
@@ -467,7 +535,7 @@ export async function GET(request: NextRequest) {
         totalClientes,
         totalPrestamos: prestamosData._count.id,
         clientesVisitadosHoy: clientesVisitados.length,
-        clientesNoVisitadosHoy: clientesNoVisitados.length,
+        clientesNoVisitadosHoy: clientesNoVisitadosReales.length,
         prestamosVencidos: prestamosVencidosReales.length,
         // Filtramos para contar solo los realmente nuevos hoy
         nuevosClientesHoy: nuevosClientes.filter(c => {
@@ -486,12 +554,33 @@ export async function GET(request: NextRequest) {
       },
       detalles: {
         clientesVisitados: clientesVisitados.map(cliente => {
-          const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
+          const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto) * (1 + Number(p.interes) / 100), 0)
           const totalPagado = cliente.prestamos.reduce((sum, p) =>
-            sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
+            sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto) + Number(pago.devolucionSeguro || 0), 0), 0
           )
-          const saldoPendiente = totalPrestado - totalPagado
+          const saldoPendiente = Math.max(0, totalPrestado - totalPagado)
           const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date() && hasSaldoPendiente(p))
+
+          // Extraer información de la visita o del último abono registrado
+          let ultimaVisitaFecha = cliente.visitas[0]?.fecha || null
+          let visitadoPorNombre = cliente.visitas[0]?.usuario ?
+            `${cliente.visitas[0].usuario.firstName} ${cliente.visitas[0].usuario.lastName}` : null
+          let tipoVisitaNombre = cliente.visitas[0]?.tipo || null
+          let observacionesTexto = cliente.visitas[0]?.observaciones || null
+
+          const todosLosPagos = cliente.prestamos.flatMap(p => p.pagos)
+          if (!ultimaVisitaFecha && todosLosPagos.length > 0) {
+            const pagosOrdenados = [...todosLosPagos].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+            const ultimoPago = pagosOrdenados[0]
+            if (ultimoPago) {
+              ultimaVisitaFecha = ultimoPago.fecha
+              if ((ultimoPago as any).usuario) {
+                visitadoPorNombre = `${(ultimoPago as any).usuario.firstName} ${(ultimoPago as any).usuario.lastName}`
+              }
+              tipoVisitaNombre = 'COBRO'
+              observacionesTexto = 'Abono registrado'
+            }
+          }
 
           return {
             id: cliente.id,
@@ -499,12 +588,11 @@ export async function GET(request: NextRequest) {
             documento: cliente.documento,
             telefono: cliente.telefono,
             direccion: cliente.direccionCobro || cliente.direccionCliente,
-            ultimaVisita: cliente.visitas[0]?.fecha || null,
-            visitadoPor: cliente.visitas[0]?.usuario ?
-              `${cliente.visitas[0].usuario.firstName} ${cliente.visitas[0].usuario.lastName}` : null,
-            tipoVisita: cliente.visitas[0]?.tipo || null,
-            observaciones: cliente.visitas[0]?.observaciones || null,
-            prestamosActivos: cliente.prestamos.length,
+            ultimaVisita: ultimaVisitaFecha,
+            visitadoPor: visitadoPorNombre,
+            tipoVisita: tipoVisitaNombre,
+            observaciones: observacionesTexto,
+            prestamosActivos: cliente.prestamos.filter(hasSaldoPendiente).length,
             totalPrestado,
             totalPagado,
             saldoPendiente,
@@ -516,16 +604,25 @@ export async function GET(request: NextRequest) {
           }
         }),
 
-        clientesNoVisitados: clientesNoVisitados.map(cliente => {
-          const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto), 0)
+        clientesNoVisitados: clientesNoVisitadosReales.map(cliente => {
+          const totalPrestado = cliente.prestamos.reduce((sum, p) => sum + Number(p.monto) * (1 + Number(p.interes) / 100), 0)
           const totalPagado = cliente.prestamos.reduce((sum, p) =>
-            sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto), 0), 0
+            sum + p.pagos.reduce((pSum, pago) => pSum + Number(pago.monto) + Number(pago.devolucionSeguro || 0), 0), 0
           )
-          const saldoPendiente = totalPrestado - totalPagado
+          const saldoPendiente = Math.max(0, totalPrestado - totalPagado)
           const prestamosVencidos = cliente.prestamos.filter(p => new Date(p.fechaFin) < new Date() && hasSaldoPendiente(p))
-          const ultimaVisita = cliente.visitas[0]?.fecha || null
-          const diasSinVisita = ultimaVisita ?
-            Math.ceil((new Date().getTime() - new Date(ultimaVisita).getTime()) / (1000 * 60 * 60 * 24)) : null
+
+          let ultimaVisitaFecha = cliente.visitas[0]?.fecha || null
+          const todosLosPagos = cliente.prestamos.flatMap(p => p.pagos)
+          if (todosLosPagos.length > 0) {
+            const ultimoPagoFecha = [...todosLosPagos].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]?.fecha
+            if (ultimoPagoFecha && (!ultimaVisitaFecha || new Date(ultimoPagoFecha) > new Date(ultimaVisitaFecha))) {
+              ultimaVisitaFecha = ultimoPagoFecha
+            }
+          }
+
+          const diasSinVisita = ultimaVisitaFecha ?
+            Math.ceil((new Date().getTime() - new Date(ultimaVisitaFecha).getTime()) / (1000 * 60 * 60 * 24)) : null
 
           return {
             id: cliente.id,
@@ -533,13 +630,13 @@ export async function GET(request: NextRequest) {
             documento: cliente.documento,
             telefono: cliente.telefono,
             direccion: cliente.direccionCobro || cliente.direccionCliente,
-            prestamosActivos: cliente.prestamos.length,
+            prestamosActivos: cliente.prestamos.filter(hasSaldoPendiente).length,
             montoTotal: totalPrestado,
             totalPrestado,
             totalPagado,
             saldoPendiente,
             prestamosVencidos: prestamosVencidos.length,
-            ultimaVisita,
+            ultimaVisita: ultimaVisitaFecha,
             diasSinVisita,
             diasMora: prestamosVencidos.length > 0 ?
               Math.max(...prestamosVencidos.map(p =>
