@@ -30,7 +30,8 @@ import {
   XCircle,
   Clock,
   Target,
-  BarChart3
+  BarChart3,
+  Trash2
 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -104,6 +105,9 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   // Modales de acciones
   const [openIngresoDialog, setOpenIngresoDialog] = useState(false)
   const [openRetiroDialog, setOpenRetiroDialog] = useState(false)
+  const [openConfirmDelete, setOpenConfirmDelete] = useState(false)
+  const [movimientoAEliminar, setMovimientoAEliminar] = useState<MovimientoItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Forms state
   const [ingresoData, setIngresoData] = useState({
@@ -265,6 +269,49 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         description: "No se pudo registrar el retiro/gasto",
         variant: "destructive"
       })
+    }
+  }
+
+  const handleConfirmarEliminacion = async () => {
+    if (!movimientoAEliminar) return
+    try {
+      setDeleting(true)
+      const id = movimientoAEliminar.id
+      let endpoint = `/api/caja-chica/${id}`
+
+      if (id.startsWith("pago-")) {
+        endpoint = `/api/pagos/${id.replace("pago-", "")}`
+      } else if (id.startsWith("prestamo-")) {
+        endpoint = `/api/prestamos/${id.replace("prestamo-", "")}`
+      } else if (id.startsWith("gasto-")) {
+        endpoint = `/api/gastos/${id.replace("gasto-", "")}`
+      }
+
+      const response = await fetch(endpoint, {
+        method: "DELETE"
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || "No se pudo eliminar el movimiento")
+      }
+
+      toast({
+        title: "Movimiento eliminado",
+        description: "El registro ha sido eliminado correctamente de la caja"
+      })
+
+      setOpenConfirmDelete(false)
+      setMovimientoAEliminar(null)
+      cargarDatos()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al eliminar el movimiento",
+        variant: "destructive"
+      })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -928,18 +975,35 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                         </div>
                       </div>
 
-                      {/* Lado Derecho: Monto + Fecha */}
-                      <div className="text-right shrink-0">
-                        <div className={`text-base sm:text-lg font-extrabold ${
-                          esPositivo 
-                            ? "text-emerald-600 dark:text-emerald-400" 
-                            : "text-rose-600 dark:text-rose-400"
-                        }`}>
-                          {esPositivo ? "+" : "-"}{formatCurrency(mov.monto)}
+                      {/* Lado Derecho: Monto + Fecha + Botón Eliminar */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <div className={`text-base sm:text-lg font-extrabold ${
+                            esPositivo 
+                              ? "text-emerald-600 dark:text-emerald-400" 
+                              : "text-rose-600 dark:text-rose-400"
+                          }`}>
+                            {esPositivo ? "+" : "-"}{formatCurrency(mov.monto)}
+                          </div>
+                          <div className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">
+                            {format(new Date(mov.fecha), "d MMM yyyy HH:mm", { locale: es })}
+                          </div>
                         </div>
-                        <div className="text-[11px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5">
-                          {format(new Date(mov.fecha), "d MMM yyyy HH:mm", { locale: es })}
-                        </div>
+
+                        {!isCobrador && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setMovimientoAEliminar(mov)
+                              setOpenConfirmDelete(true)
+                            }}
+                            className="rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 h-8 w-8 shrink-0 transition-colors"
+                            title="Eliminar movimiento"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )
@@ -1126,6 +1190,47 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
               className="rounded-full bg-rose-600 hover:bg-rose-700 text-white"
             >
               Registrar {retiroData.tipoAccion === "GASTO" ? "Gasto" : "Retiro"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmar Eliminación de Movimiento */}
+      <Dialog open={openConfirmDelete} onOpenChange={setOpenConfirmDelete}>
+        <DialogContent className="rounded-2xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              ¿Eliminar movimiento de caja?
+            </DialogTitle>
+            <DialogDescription>
+              {movimientoAEliminar && (
+                <span>
+                  ¿Estás seguro de que deseas eliminar este movimiento de{" "}
+                  <strong>{formatCurrency(movimientoAEliminar.monto)}</strong> ({movimientoAEliminar.tipo})? Esta acción afectará el saldo total de la caja.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setOpenConfirmDelete(false)
+                setMovimientoAEliminar(null)
+              }}
+              className="rounded-full"
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarEliminacion}
+              disabled={deleting}
+              className="rounded-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? "Eliminando..." : "Sí, eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>
