@@ -79,7 +79,7 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
       datosRefinanciamiento: true,
       observaciones: true,
       pagos: {
-        select: { monto: true }
+        select: { monto: true, devolucionSeguro: true }
       },
       cliente: {
         select: {
@@ -93,10 +93,10 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
     }
   })
 
-  // Filtrar solo préstamos que mantienen saldo pendiente real > 0
+  // Filtrar solo préstamos que mantienen saldo pendiente real > 0.01 y no están cancelados/renovados
   const prestamosActivosConSaldo = prestamosActivos.filter(p => {
-    const montoTotal = parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)
-    const totalPagado = p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+    const montoTotal = Math.round((parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)) * 100) / 100
+    const totalPagado = Math.round((p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()) + parseFloat(pago.devolucionSeguro?.toString() || '0'), 0)) * 100) / 100
     return Math.max(0, montoTotal - totalPagado) > 0.01
   })
 
@@ -358,13 +358,18 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
   const clientesMoraIds = new Set<string>()
 
   // Usar prestamosActivosConSaldo para asegurar saldoPendiente > 0 y excluir cancelados/pagados
-  const prestamosMora = prestamosActivosConSaldo.filter(p => p.fechaFin < fecha)
+  const prestamosMora = prestamosActivosConSaldo.filter(p => {
+    const montoTotal = Math.round((parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)) * 100) / 100
+    const totalPagado = Math.round((p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()) + parseFloat(pago.devolucionSeguro?.toString() || '0'), 0)) * 100) / 100
+    const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+    return p.fechaFin < fecha && saldoPendiente > 0.01
+  })
   for (const prestamo of prestamosMora) {
     if (!clientesMoraIds.has(prestamo.cliente.id)) {
       clientesMoraIds.add(prestamo.cliente.id)
       
-      const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-      const totalPagado = prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()), 0)
+      const montoTotal = Math.round((parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)) * 100) / 100
+      const totalPagado = Math.round((prestamo.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()) + parseFloat(pago.devolucionSeguro?.toString() || '0'), 0)) * 100) / 100
       const saldoPendiente = Math.max(0, montoTotal - totalPagado)
       
       const diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, fecha, prestamo.tipoPago)

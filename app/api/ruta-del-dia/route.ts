@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
 
         // Dias de mora:
         let diasMora = 0
-        if (!estaAlDiaOAdelantado) {
+        if (!estaAlDiaOAdelantado && saldoPendiente > 0.01 && cuotasPagadasRaw < prestamo.cuotas) {
           if (esMora) {
             // Si el préstamo ya venció (fechaFin < inicio), contamos los días hábiles (sin domingos) desde fechaFin hasta inicio (hoy)
             diasMora = getDiasMoraSinDomingos(prestamo.fechaFin, inicio, prestamo.tipoPago)

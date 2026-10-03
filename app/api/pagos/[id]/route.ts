@@ -57,10 +57,36 @@ export async function DELETE(
             }
         }
 
+        const prestamoId = pago.prestamoId
+
         // Eliminar el pago
         await prisma.pago.delete({
             where: { id }
         })
+
+        // Recalcular el saldo pendiente del préstamo y reactivarlo si estaba CANCELADO y le vuelve a quedar saldo
+        const pagosRestantes = await prisma.pago.aggregate({
+            where: { prestamoId },
+            _sum: { monto: true, devolucionSeguro: true }
+        })
+
+        const prestamoActual = await prisma.prestamo.findUnique({
+            where: { id: prestamoId },
+            select: { monto: true, interes: true, estado: true }
+        })
+
+        if (prestamoActual) {
+            const montoTotal = Math.round((Number(prestamoActual.monto) * (1 + Number(prestamoActual.interes) / 100)) * 100) / 100
+            const totalPagado = Math.round((Number(pagosRestantes._sum.monto || 0) + Number(pagosRestantes._sum.devolucionSeguro || 0)) * 100) / 100
+            const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
+
+            if (saldoPendiente > 0.01 && prestamoActual.estado === 'CANCELADO') {
+                await prisma.prestamo.update({
+                    where: { id: prestamoId },
+                    data: { estado: 'ACTIVO' }
+                })
+            }
+        }
 
         return NextResponse.json({ message: "Pago eliminado exitosamente" })
 

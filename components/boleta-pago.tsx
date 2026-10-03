@@ -406,7 +406,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const totalPagadoHistorico = prestamoFlex.pagos?.reduce((sum: number, p: any) => sum + Number(p.monto), 0) || 0
     const montoTotalHistorico = Number(prestamoFlex.monto || 0) * (1 + Number(prestamoFlex.interes || 0) / 100)
     const saldoPendienteHistorico = prestamoFlex.saldoPendiente !== undefined ? Number(prestamoFlex.saldoPendiente) : Math.max(0, montoTotalHistorico - totalPagadoHistorico)
-    const estaCompletado = prestamoFlex.estado === 'CANCELADO' || saldoPendienteHistorico <= 0 || cuotasPagadas >= totalCuotas
+    const estaCompletado = prestamoFlex.estado === 'CANCELADO' || prestamoFlex.estado === 'COMPLETADO' || saldoPendienteHistorico <= 0.01 || cuotasPagadas >= totalCuotas
 
     const cuotasPendientes = estaCompletado ? 0 : ((prestamoFlex.cuotasPendientesManual !== null && prestamoFlex.cuotasPendientesManual !== undefined)
       ? Number(prestamoFlex.cuotasPendientesManual)
@@ -560,8 +560,8 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     <DollarSign className="h-5 w-5 text-blue-600 mr-2" />
                     <h3 className="text-lg font-semibold text-gray-900">Montos del Préstamo</h3>
                   </div>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    Activo
+                  <span className={`text-xs px-2 py-1 rounded-full ${estaCompletado ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                    {estaCompletado ? 'Completado' : 'Activo'}
                   </span>
                 </div>
 
@@ -715,7 +715,9 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Fecha próximo pago:</span>
-                    <span className="font-medium text-blue-600">{formatDateOnly(fechaProximoPago)}</span>
+                    <span className="font-medium text-blue-600">
+                      {estaCompletado ? "Préstamo Finalizado" : formatDateOnly(fechaProximoPago)}
+                    </span>
                   </div>
 
                   <Separator className="my-2" />

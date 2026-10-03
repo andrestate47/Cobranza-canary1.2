@@ -282,6 +282,15 @@ export async function POST(request: NextRequest) {
     console.log('  - Reducción de deuda:', pagoTotalVirtual)
     console.log('  - Nuevo saldo pendiente:', nuevoSaldoPendiente)
 
+    // Si el préstamo ha sido pagado completamente (saldoPendiente <= 0.01), marcar como CANCELADO (COMPLETADO)
+    if (nuevoSaldoPendiente <= 0.01) {
+      console.log('🎉 Préstamo pagado completamente. Actualizando estado a CANCELADO en BD...')
+      await prisma.prestamo.update({
+        where: { id: prestamoId },
+        data: { estado: 'CANCELADO' }
+      })
+    }
+
     const numeroBoleta = `BOL-${String(pago.id).padStart(6, '0')}`
     console.log('📄 Número de boleta generado:', numeroBoleta)
 
