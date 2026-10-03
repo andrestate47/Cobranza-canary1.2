@@ -184,7 +184,11 @@ export async function GET(request: NextRequest) {
       prestamosPorTransferencia,
       prestamosProximosVencer,
       transferencias,
-      usuarios
+      usuarios,
+      todosPagosHistoricos,
+      prestamosHistoricos,
+      gastosHistoricos,
+      movimientosHistoricos
     ] = await Promise.all([
       prisma.prestamo.findMany({
         where: { createdAt: { gte: fechaInicioDate, lte: fechaFinDate } },
@@ -264,6 +268,22 @@ export async function GET(request: NextRequest) {
           { role: 'asc' },
           { firstName: 'asc' }
         ]
+      }),
+      prisma.pago.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { id: true, userId: true, monto: true, fecha: true, metodoPago: true, observaciones: true }
+      }),
+      prisma.prestamo.findMany({
+        where: { createdAt: { gte: anualInicio } },
+        select: { id: true, userId: true, monto: true, createdAt: true, tipoCredito: true, observaciones: true }
+      }),
+      prisma.gasto.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { id: true, userId: true, monto: true, fecha: true }
+      }),
+      prisma.movimientoCajaChica.findMany({
+        where: { fecha: { gte: anualInicio } },
+        select: { id: true, cobradorId: true, monto: true, fecha: true, tipo: true }
       })
     ])
 
@@ -668,6 +688,36 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    const todosPagosHistoricosByCobrador = new Map<string, typeof todosPagosHistoricos>()
+    todosPagosHistoricos.forEach(p => {
+      const list = todosPagosHistoricosByCobrador.get(p.userId) || []
+      list.push(p)
+      todosPagosHistoricosByCobrador.set(p.userId, list)
+    })
+
+    const prestamosHistoricosByCobrador = new Map<string, typeof prestamosHistoricos>()
+    prestamosHistoricos.forEach(p => {
+      const list = prestamosHistoricosByCobrador.get(p.userId) || []
+      list.push(p)
+      prestamosHistoricosByCobrador.set(p.userId, list)
+    })
+
+    const gastosHistoricosByCobrador = new Map<string, typeof gastosHistoricos>()
+    gastosHistoricos.forEach(g => {
+      const list = gastosHistoricosByCobrador.get(g.userId) || []
+      list.push(g)
+      gastosHistoricosByCobrador.set(g.userId, list)
+    })
+
+    const movsHistoricosByCobrador = new Map<string, typeof movimientosHistoricos>()
+    movimientosHistoricos.forEach(m => {
+      if (m.cobradorId) {
+        const list = movsHistoricosByCobrador.get(m.cobradorId) || []
+        list.push(m)
+        movsHistoricosByCobrador.set(m.cobradorId, list)
+      }
+    })
+
     const prestamosByCobrador = new Map<string, typeof prestamos>()
     prestamos.forEach(p => {
       const list = prestamosByCobrador.get(p.userId) || []
@@ -847,12 +897,65 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        const metricasRuta = { cobrado: totalCobradoEfectivo, gastos: gastosOperativos + otrosGastos + gastosSueldos, perdidas: perdidasRutaPeriodo, invertido: totalPrestadoEfectivo }
+        const getMetricasHistorico = (desdeFecha: Date) => {
+          const cobrosList = todosPagosHistoricosByCobrador.get(cobrador.id) || []
+          const cobradoPeriodo = cobrosList
+            .filter(p => {
+              const f = new Date(p.fecha)
+              return f >= desdeFecha && f <= hoy && p.metodoPago === 'EFECTIVO' && !p.observaciones?.startsWith("Liquidación por refinanciamiento") && !p.observaciones?.startsWith("Liquidación por renovacion") && !p.observaciones?.startsWith("Liquidación por renovación")
+            })
+            .reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+          const prestamosList = prestamosHistoricosByCobrador.get(cobrador.id) || []
+          const invertidoPeriodo = prestamosList
+            .filter(p => {
+              const f = new Date(p.createdAt)
+              return f >= desdeFecha && f <= hoy && (p.tipoCredito === 'EFECTIVO' || p.tipoCredito == null) && !p.observaciones?.startsWith("REFINANCIAMIENTO") && !p.observaciones?.startsWith("RENOVACION") && !p.observaciones?.startsWith("RENOVACIÓN")
+            })
+            .reduce((sum, p) => sum + parseFloat(p.monto.toString()), 0)
+
+          const gastosList = gastosHistoricosByCobrador.get(cobrador.id) || []
+          const gastosDirectos = gastosList
+            .filter(g => {
+              const f = new Date(g.fecha)
+              return f >= desdeFecha && f <= hoy
+            })
+            .reduce((sum, g) => sum + parseFloat(g.monto.toString()), 0)
+
+          const movsList = movsHistoricosByCobrador.get(cobrador.id) || []
+          const otrosGastos = movsList
+            .filter(m => {
+              const f = new Date(m.fecha)
+              return f >= desdeFecha && f <= hoy && (m.tipo === 'GASTO' || m.tipo === 'GASTADO' || m.tipo === 'PAGO_SUELDO')
+            })
+            .reduce((sum, m) => sum + parseFloat(m.monto.toString()), 0)
+
+          const gastosPeriodo = gastosDirectos + otrosGastos
+
+          let perdidasPeriodo = 0
+          prestamosConSaldoCobrador.forEach((p) => {
+            const fFin = new Date((p as any).fechaFin)
+            if (fFin >= desdeFecha && fFin <= hoy) {
+              const montoTotal = parseFloat((p as any).monto.toString()) * (1 + parseFloat((p as any).interes.toString()) / 100)
+              const totalPagado = getTotalPagado((p as any).id)
+              const saldoPendiente = Math.max(0, montoTotal - totalPagado)
+              perdidasPeriodo += saldoPendiente
+            }
+          })
+
+          return {
+            invertido: Number(invertidoPeriodo.toFixed(2)),
+            cobrado: Number(cobradoPeriodo.toFixed(2)),
+            gastos: Number(gastosPeriodo.toFixed(2)),
+            perdidas: Number(perdidasPeriodo.toFixed(2))
+          }
+        }
+
         const historico = {
-          semanal: metricasRuta,
-          mensual: metricasRuta,
-          semestral: metricasRuta,
-          anual: metricasRuta,
+          semanal: getMetricasHistorico(semanaInicio),
+          mensual: getMetricasHistorico(mesInicio),
+          semestral: getMetricasHistorico(semestreInicio),
+          anual: getMetricasHistorico(anualInicio),
         }
 
         return {
