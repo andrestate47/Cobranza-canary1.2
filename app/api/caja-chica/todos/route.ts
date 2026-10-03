@@ -161,10 +161,10 @@ export async function GET(request: NextRequest) {
       const esGastoVinculado = m.observaciones && (m.observaciones.includes("[GASTO:") || m.observaciones.startsWith("Gasto:"))
 
       // Totales Globales Admin
-      if (tipo === "APERTURA_CAJA") totalApertura += montoNum
-      else if (tipo === "ENTREGA" || tipo === "ENTREGADO") totalEntregas += montoNum
+      if (tipo === "APERTURA_CAJA" || (tipo === "INGRESO" && !m.cobradorId)) totalApertura += montoNum
+      else if (tipo === "ENTREGA" || tipo === "ENTREGADO" || (tipo === "INGRESO" && m.cobradorId)) totalEntregas += montoNum
       else if (tipo === "DEVOLUCION" || tipo === "DEVUELTO") totalDevoluciones += montoNum
-      else if (tipo === "EGRESO_GENERAL" && !esGastoVinculado) totalEgresosGenerales += montoNum
+      else if ((tipo === "EGRESO_GENERAL" || (tipo === "EGRESO" && !m.cobradorId)) && !esGastoVinculado) totalEgresosGenerales += montoNum
       else if ((tipo === "GASTO" || tipo === "GASTADO" || tipo === "PAGO_SUELDO") && !esGastoVinculado) totalGastosCobradores += montoNum
 
       // Saldo de cada cobrador

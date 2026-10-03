@@ -343,27 +343,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validaciones - APERTURA_CAJA y EGRESO_GENERAL no requieren cobradorId
-    if (tipo === "APERTURA_CAJA" || tipo === "EGRESO_GENERAL") {
-      if (!tipo || !monto) {
-        return NextResponse.json(
-          { error: "Faltan datos requeridos" },
-          { status: 400 }
-        )
-      }
-      if (isCobrador) {
-        return NextResponse.json(
-          { error: "No tienes permisos para registrar egresos generales ni apertura de caja" },
-          { status: 403 }
-        )
-      }
-    } else {
-      if (!cobradorId || !tipo || !monto) {
-        return NextResponse.json(
-          { error: "Faltan datos requeridos" },
-          { status: 400 }
-        )
-      }
+    // Normalizar cobradorId si viene vacío o "all"
+    if (!cobradorId || cobradorId === "all" || cobradorId === "") {
+      cobradorId = null
+    }
+
+    if (!tipo || !monto) {
+      return NextResponse.json(
+        { error: "Faltan datos requeridos" },
+        { status: 400 }
+      )
+    }
+
+    if (!cobradorId && tipo === "EGRESO") {
+      tipo = "EGRESO_GENERAL"
     }
 
     const montoDecimal = new Decimal(String(monto))

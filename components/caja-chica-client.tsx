@@ -102,20 +102,21 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   // Modales de acciones
-  const [openAsignarDialog, setOpenAsignarDialog] = useState(false)
-  const [openMovimientoDialog, setOpenMovimientoDialog] = useState(false)
-  const [tipoMovimiento, setTipoMovimiento] = useState<"GASTO" | "INGRESO" | "EGRESO">("INGRESO")
+  const [openIngresoDialog, setOpenIngresoDialog] = useState(false)
+  const [openRetiroDialog, setOpenRetiroDialog] = useState(false)
 
   // Forms state
-  const [asignarData, setAsignarData] = useState({
-    cobradorId: "",
+  const [ingresoData, setIngresoData] = useState({
     monto: "",
+    cobradorId: "",
     descripcion: "",
     fecha: ""
   })
 
-  const [movimientoData, setMovimientoData] = useState({
+  const [retiroData, setRetiroData] = useState({
+    tipoAccion: "EGRESO" as "EGRESO" | "GASTO",
     monto: "",
+    cobradorId: "",
     descripcion: "",
     fecha: ""
   })
@@ -177,50 +178,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
     }
   }
 
-  const handleAsignarEfectivo = async () => {
-    if (!asignarData.cobradorId || !asignarData.monto) {
-      toast({
-        title: "Error",
-        description: "Complete todos los campos requeridos",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      const response = await fetch("/api/caja-chica", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tipo: "ENTREGADO",
-          monto: parseFloat(asignarData.monto),
-          descripcion: asignarData.descripcion,
-          fecha: asignarData.fecha || undefined,
-          cobradorId: asignarData.cobradorId
-        })
-      })
-
-      if (!response.ok) throw new Error("Error al ingresar/asignar efectivo")
-
-      toast({
-        title: "Éxito",
-        description: "Efectivo ingresado correctamente"
-      })
-
-      setOpenAsignarDialog(false)
-      setAsignarData({ cobradorId: "", monto: "", descripcion: "", fecha: "" })
-      cargarDatos()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo realizar el ingreso",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleRegistrarMovimiento = async () => {
-    if (!movimientoData.monto) {
+  const handleRegistrarIngreso = async () => {
+    if (!ingresoData.monto) {
       toast({
         title: "Error",
         description: "Debe ingresar un monto",
@@ -234,28 +193,76 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tipo: tipoMovimiento,
-          monto: parseFloat(movimientoData.monto),
-          descripcion: movimientoData.descripcion,
-          fecha: movimientoData.fecha || undefined,
-          cobradorId: user?.id
+          tipo: ingresoData.cobradorId ? "ENTREGADO" : "INGRESO",
+          monto: parseFloat(ingresoData.monto),
+          descripcion: ingresoData.descripcion,
+          fecha: ingresoData.fecha || undefined,
+          cobradorId: ingresoData.cobradorId || undefined
         })
       })
 
-      if (!response.ok) throw new Error("Error al registrar movimiento")
+      if (!response.ok) throw new Error("Error al registrar ingreso")
 
       toast({
         title: "Éxito",
-        description: "Movimiento registrado correctamente"
+        description: "Ingreso registrado correctamente"
       })
 
-      setOpenMovimientoDialog(false)
-      setMovimientoData({ monto: "", descripcion: "", fecha: "" })
+      setOpenIngresoDialog(false)
+      setIngresoData({ cobradorId: "", monto: "", descripcion: "", fecha: "" })
       cargarDatos()
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo registrar el movimiento",
+        description: "No se pudo realizar el ingreso",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleRegistrarRetiro = async () => {
+    if (!retiroData.monto) {
+      toast({
+        title: "Error",
+        description: "Debe ingresar un monto",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const tipoFinal = retiroData.tipoAccion === "GASTO"
+        ? "GASTO"
+        : (retiroData.cobradorId ? "EGRESO" : "EGRESO_GENERAL")
+
+      const response = await fetch("/api/caja-chica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: tipoFinal,
+          monto: parseFloat(retiroData.monto),
+          descripcion: retiroData.descripcion,
+          fecha: retiroData.fecha || undefined,
+          cobradorId: retiroData.cobradorId || undefined
+        })
+      })
+
+      if (!response.ok) throw new Error("Error al registrar retiro/gasto")
+
+      toast({
+        title: "Éxito",
+        description: retiroData.tipoAccion === "GASTO" 
+          ? "Gasto registrado correctamente" 
+          : "Retiro registrado correctamente"
+      })
+
+      setOpenRetiroDialog(false)
+      setRetiroData({ tipoAccion: "EGRESO", cobradorId: "", monto: "", descripcion: "", fecha: "" })
+      cargarDatos()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo registrar el retiro/gasto",
         variant: "destructive"
       })
     }
@@ -445,8 +452,14 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setTipoMovimiento("EGRESO")
-                    setOpenMovimientoDialog(true)
+                    setRetiroData({
+                      tipoAccion: "EGRESO",
+                      monto: "",
+                      cobradorId: filtroCobrador !== "all" ? filtroCobrador : "",
+                      fecha: "",
+                      descripcion: ""
+                    })
+                    setOpenRetiroDialog(true)
                   }}
                   className="rounded-full border-red-200 dark:border-red-900/50 bg-white dark:bg-[#102525] text-red-600 dark:text-red-400 font-semibold px-4 h-9 shadow-sm hover:bg-red-50 dark:hover:bg-red-950/30"
                 >
@@ -457,7 +470,13 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                 <Button
                   size="sm"
                   onClick={() => {
-                    setOpenAsignarDialog(true)
+                    setIngresoData({
+                      monto: "",
+                      cobradorId: filtroCobrador !== "all" ? filtroCobrador : "",
+                      fecha: "",
+                      descripcion: ""
+                    })
+                    setOpenIngresoDialog(true)
                   }}
                   className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 h-9 shadow-sm"
                 >
@@ -932,128 +951,181 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
 
       </div>
 
-      {/* Modal Asignar / Ingresar Efectivo */}
-      <Dialog open={openAsignarDialog} onOpenChange={setOpenAsignarDialog}>
-        <DialogContent className="rounded-2xl">
+      {/* Modal Ingresar Efectivo / Subir Ingresos */}
+      <Dialog open={openIngresoDialog} onOpenChange={setOpenIngresoDialog}>
+        <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle>Ingresar / Asignar Efectivo a Caja</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+              <Plus className="h-5 w-5" />
+              Ingresar Efectivo a Caja
+            </DialogTitle>
             <DialogDescription>
-              Registra la entrada de efectivo a la caja o cobrador
+              Registra la entrada o aporte de dinero a la caja
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label className="text-xs font-semibold">Cobrador / Destino</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Monto ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={ingresoData.monto}
+                onChange={(e) => setIngresoData({...ingresoData, monto: e.target.value})}
+                placeholder="0.00"
+                className="mt-1 font-bold text-lg"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Cobrador / Ruta (Opcional)</Label>
               <Select 
-                value={asignarData.cobradorId} 
-                onValueChange={(value) => setAsignarData({...asignarData, cobradorId: value})}
+                value={ingresoData.cobradorId || "all"} 
+                onValueChange={(val) => setIngresoData({...ingresoData, cobradorId: val === "all" ? "" : val})}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Seleccione cobrador" />
+                  <SelectValue placeholder="Caja General (Sin asignar)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cobradores.map(cobrador => (
-                    <SelectItem key={cobrador.id} value={cobrador.id}>
-                      {cobrador.nombre}
+                  <SelectItem value="all">Caja General (Sin cobrador)</SelectItem>
+                  {cobradores.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-semibold">Monto</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={asignarData.monto}
-                onChange={(e) => setAsignarData({...asignarData, monto: e.target.value})}
-                placeholder="0.00"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-semibold">Fecha (Opcional - hoy por defecto)</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Fecha (Opcional - hoy por defecto)</Label>
               <Input
                 type="date"
-                value={asignarData.fecha}
-                onChange={(e) => setAsignarData({...asignarData, fecha: e.target.value})}
+                value={ingresoData.fecha}
+                onChange={(e) => setIngresoData({...ingresoData, fecha: e.target.value})}
                 className="mt-1 cursor-pointer"
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold">Descripción / Observación</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Motivo / Descripción</Label>
               <Textarea
-                value={asignarData.descripcion}
-                onChange={(e) => setAsignarData({...asignarData, descripcion: e.target.value})}
-                placeholder="Motivo del ingreso..."
+                value={ingresoData.descripcion}
+                onChange={(e) => setIngresoData({...ingresoData, descripcion: e.target.value})}
+                placeholder="Ej. Aporte de capital, depósito inicial, ingreso de efectivo..."
                 className="mt-1"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenAsignarDialog(false)} className="rounded-full">
+            <Button variant="outline" onClick={() => setOpenIngresoDialog(false)} className="rounded-full">
               Cancelar
             </Button>
-            <Button onClick={handleAsignarEfectivo} className="rounded-full bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleRegistrarIngreso} className="rounded-full bg-emerald-600 hover:bg-emerald-700">
               Ingresar Efectivo
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Registrar Movimiento (Ingreso / Egreso / Gasto) */}
-      <Dialog open={openMovimientoDialog} onOpenChange={setOpenMovimientoDialog}>
-        <DialogContent className="rounded-2xl">
+      {/* Modal Retirar Dinero / Registrar Egreso o Gasto */}
+      <Dialog open={openRetiroDialog} onOpenChange={setOpenRetiroDialog}>
+        <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {tipoMovimiento === "INGRESO" ? "Ingresar Efectivo" : "Retirar / Registrar Egreso"}
+            <DialogTitle className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+              <Minus className="h-5 w-5" />
+              Retirar Dinero / Egreso o Gasto
             </DialogTitle>
             <DialogDescription>
-              {tipoMovimiento === "INGRESO" ? "Registra una entrada de dinero a la caja" : "Registra un retiro o gasto de efectivo de la caja"}
+              Sacar efectivo de la caja o registrar un gasto
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label className="text-xs font-semibold">Monto</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Tipo de Operación</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRetiroData({ ...retiroData, tipoAccion: "EGRESO" })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border text-center ${
+                    retiroData.tipoAccion === "EGRESO"
+                      ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                      : "bg-white dark:bg-[#102525] border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Sacar Dinero (Retiro)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRetiroData({ ...retiroData, tipoAccion: "GASTO" })}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border text-center ${
+                    retiroData.tipoAccion === "GASTO"
+                      ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                      : "bg-white dark:bg-[#102525] border-gray-200 dark:border-[#1F3A36] text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Agregar Gasto
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Monto ($)</Label>
               <Input
                 type="number"
                 step="0.01"
-                value={movimientoData.monto}
-                onChange={(e) => setMovimientoData({...movimientoData, monto: e.target.value})}
+                value={retiroData.monto}
+                onChange={(e) => setRetiroData({...retiroData, monto: e.target.value})}
                 placeholder="0.00"
-                className="mt-1"
+                className="mt-1 font-bold text-lg"
               />
             </div>
+
             <div>
-              <Label className="text-xs font-semibold">Fecha del movimiento (Opcional - hoy por defecto)</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Cobrador / Ruta (Opcional)</Label>
+              <Select 
+                value={retiroData.cobradorId || "all"} 
+                onValueChange={(val) => setRetiroData({...retiroData, cobradorId: val === "all" ? "" : val})}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Caja General (Sin asignar)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Caja General (Sin cobrador)</SelectItem>
+                  {cobradores.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Fecha (Opcional - hoy por defecto)</Label>
               <Input
                 type="date"
-                value={movimientoData.fecha}
-                onChange={(e) => setMovimientoData({...movimientoData, fecha: e.target.value})}
+                value={retiroData.fecha}
+                onChange={(e) => setRetiroData({...retiroData, fecha: e.target.value})}
                 className="mt-1 cursor-pointer"
               />
             </div>
+
             <div>
-              <Label className="text-xs font-semibold">Motivo / Descripción</Label>
+              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Motivo / Descripción</Label>
               <Textarea
-                value={movimientoData.descripcion}
-                onChange={(e) => setMovimientoData({...movimientoData, descripcion: e.target.value})}
-                placeholder={tipoMovimiento === "INGRESO" ? "Motivo del ingreso..." : "Ej. Retiro de caja, gasto de viáticos, gasolina..."}
+                value={retiroData.descripcion}
+                onChange={(e) => setRetiroData({...retiroData, descripcion: e.target.value})}
+                placeholder={retiroData.tipoAccion === "GASTO" ? "Ej. Gasolina, viáticos, repuestos..." : "Ej. Retiro de caja, banco..."}
                 className="mt-1"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenMovimientoDialog(false)} className="rounded-full">
+            <Button variant="outline" onClick={() => setOpenRetiroDialog(false)} className="rounded-full">
               Cancelar
             </Button>
             <Button 
-              onClick={handleRegistrarMovimiento} 
-              className={`rounded-full ${
-                tipoMovimiento === "INGRESO" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
-              }`}
+              onClick={handleRegistrarRetiro} 
+              className="rounded-full bg-rose-600 hover:bg-rose-700 text-white"
             >
-              Registrar {tipoMovimiento === "INGRESO" ? "Ingreso" : "Retiro"}
+              Registrar {retiroData.tipoAccion === "GASTO" ? "Gasto" : "Retiro"}
             </Button>
           </DialogFooter>
         </DialogContent>
