@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useDeferredValue, memo } from "react"
 import { Session } from "next-auth"
 import Link from "next/link"
 import {
@@ -10,7 +9,6 @@ import {
   Phone,
   MapPin,
   DollarSign,
-  Calendar,
   User,
   Filter,
   RefreshCw,
@@ -86,10 +84,542 @@ interface ListadoGeneralClientProps {
   session: Session
 }
 
+// Map estático para días por tipo de pago
+const DIAS_POR_TIPO_PAGO: Record<string, number> = {
+  'DIARIO': 1,
+  'SEMANAL': 7,
+  'LUNES_A_VIERNES': 1,
+  'LUNES_A_SABADO': 1,
+  'QUINCENAL': 15,
+  'CATORCENAL': 14,
+  'FIN_DE_MES': 30,
+  'MENSUAL': 30,
+  'TRIMESTRAL': 90,
+  'CUATRIMESTRAL': 120,
+  'SEMESTRAL': 180,
+  'ANUAL': 365
+}
+
+// Obtener badge del tipo de pago de forma inmutable y rápida
+const getTipoPagoBadge = (clienteData: ClienteConPrestamos) => {
+  if (!clienteData.prestamos || clienteData.prestamos.length === 0) {
+    return { texto: 'Sin préstamos', color: 'bg-gray-100 text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-gray-200' }
+  }
+
+  let masReciente = clienteData.prestamos[0]
+  let maxTime = new Date(masReciente.fechaActividadReciente).getTime()
+
+  for (let i = 1; i < clienteData.prestamos.length; i++) {
+    const time = new Date(clienteData.prestamos[i].fechaActividadReciente).getTime()
+    if (time > maxTime) {
+      maxTime = time
+      masReciente = clienteData.prestamos[i]
+    }
+  }
+
+  const tipoPago = masReciente.tipoPago
+  const badges = {
+    'DIARIO': { texto: 'Diario', color: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-700' },
+    'SEMANAL': { texto: 'Semanal', color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-700' },
+    'LUNES_A_VIERNES': { texto: 'Lun-Vie', color: 'bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-200 dark:border-cyan-700' },
+    'LUNES_A_SABADO': { texto: 'Lun-Sáb', color: 'bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/80 dark:text-sky-200 dark:border-sky-700' },
+    'QUINCENAL': { texto: 'Quincenal', color: 'bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-950/80 dark:text-orange-200 dark:border-orange-700' },
+    'CATORCENAL': { texto: 'Catorcenal', color: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' },
+    'FIN_DE_MES': { texto: 'Fin de Mes', color: 'bg-teal-100 text-teal-900 border-teal-300 dark:bg-teal-950/80 dark:text-teal-200 dark:border-teal-700' },
+    'MENSUAL': { texto: 'Mensual', color: 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700' },
+    'TRIMESTRAL': { texto: 'Trimestral', color: 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-200 dark:border-indigo-700' },
+    'CUATRIMESTRAL': { texto: 'Cuatrimestral', color: 'bg-violet-100 text-violet-900 border-violet-300 dark:bg-violet-950/80 dark:text-violet-200 dark:border-violet-700' },
+    'SEMESTRAL': { texto: 'Semestral', color: 'bg-pink-100 text-pink-900 border-pink-300 dark:bg-pink-950/80 dark:text-pink-200 dark:border-pink-700' },
+    'ANUAL': { texto: 'Anual', color: 'bg-yellow-100 text-yellow-900 border-yellow-300 dark:bg-yellow-950/80 dark:text-yellow-200 dark:border-yellow-700' }
+  }
+
+  return badges[tipoPago as keyof typeof badges] || {
+    texto: tipoPago,
+    color: 'bg-gray-100 text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-gray-200'
+  }
+}
+
+// Función para calcular el estado de alerta del cliente
+const calcularEstadoCliente = (
+  clienteData: ClienteConPrestamos,
+  hoy: Date,
+  hoyMidnight: Date,
+  ayerMidnight: Date
+) => {
+  const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.saldoPendiente <= 0.01 || p.cuotasPagadas >= p.cuotas
+
+  // Si no tiene préstamos o todos están pagados, está Inactivo
+  const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(esPrestamoCompletado)
+  if (inactivo) {
+    return {
+      estado: 'INACTIVO',
+      icono: User,
+      color: 'bg-gray-400',
+      texto: 'Inactivo',
+      colorTexto: 'text-white'
+    }
+  }
+
+  const hoyTime = hoy.getTime()
+  const hoyMidnightTime = hoyMidnight.getTime()
+
+  // Verificar si algún préstamo está completamente vencido y no ha sido pagado
+  const tienePrestamoVencido = clienteData.prestamos.some(prestamo => {
+    if (esPrestamoCompletado(prestamo)) return false
+    return prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin).getTime() < hoyTime
+  })
+
+  if (tienePrestamoVencido) {
+    return {
+      estado: 'VENCIDO',
+      icono: XCircle,
+      color: 'bg-red-500',
+      texto: 'Vencido',
+      colorTexto: 'text-white'
+    }
+  }
+
+  // Verificar morosidad (préstamos con pagos atrasados)
+  const tieneAtraso = clienteData.prestamos.some(prestamo => {
+    if (esPrestamoCompletado(prestamo)) return false
+
+    const diasEsperados = DIAS_POR_TIPO_PAGO[prestamo.tipoPago] || 1
+    const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
+    const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
+    const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
+
+    let pagosEsperados = 0
+    if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
+      pagosEsperados = countDiasHabiles(fechaInicioMidnight, hoyMidnight, prestamo.tipoPago)
+    } else {
+      pagosEsperados = Math.floor((hoyMidnightTime - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+    }
+
+    const cuotasVencidasEfectivas = Math.max(0, pagosEsperados)
+    return prestamo.cuotasPagadas < cuotasVencidasEfectivas
+  })
+
+  if (tieneAtraso) {
+    return {
+      estado: 'MOROSO',
+      icono: AlertTriangle,
+      color: 'bg-orange-500',
+      texto: 'Moroso',
+      colorTexto: 'text-white'
+    }
+  }
+
+  // Verificar si el préstamo está próximo a vencer (su fechaFin es en los próximos 3 días)
+  const proximoAVencer = clienteData.prestamos.some(prestamo => {
+    if (esPrestamoCompletado(prestamo)) return false
+
+    const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
+    const [year, month, day] = fechaFinStr.split('-').map(Number)
+    const fechaFinMidnight = new Date(year, month - 1, day)
+
+    const diferenciaDias = Math.ceil((fechaFinMidnight.getTime() - hoyMidnightTime) / (1000 * 60 * 60 * 24))
+    return diferenciaDias <= 3 && diferenciaDias >= 0
+  })
+
+  if (proximoAVencer) {
+    return {
+      estado: 'PROXIMO_A_VENCER',
+      icono: Clock,
+      color: 'bg-yellow-500',
+      texto: 'Próximo a vencer',
+      colorTexto: 'text-white'
+    }
+  }
+
+  // Cliente al día
+  return {
+    estado: 'OK',
+    icono: CheckCircle,
+    color: 'bg-green-500',
+    texto: 'Al día',
+    colorTexto: 'text-white'
+  }
+}
+
+// Componente memoizado para renderizar cada tarjeta de cliente sin re-renders innecesarios
+const ClienteCard = memo(function ClienteCard({
+  clienteData,
+  isExpanded,
+  toggleCardExpansion,
+  abrirImagenModal,
+  abrirMapa,
+  copiarDireccion,
+  handlePagoRapido,
+  formatCurrency
+}: {
+  clienteData: ClienteConPrestamos & { estadoAlerta: any, tipoPagoInfo: any }
+  isExpanded: boolean
+  toggleCardExpansion: (id: string) => void
+  abrirImagenModal: (cliente: any) => void
+  abrirMapa: (dir: string, tipo: string, link?: string | null) => void
+  copiarDireccion: (dir: string, tipo: string) => void
+  handlePagoRapido: (prestamo: Prestamo, cliente: ClienteConPrestamos) => void
+  formatCurrency: (val: number) => string
+}) {
+  const estadoAlerta = clienteData.estadoAlerta
+  const tipoPagoInfo = clienteData.tipoPagoInfo
+  const IconoAlerta = estadoAlerta.icono
+
+  return (
+    <Card className="block list-none [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden">
+      <Collapsible
+        open={isExpanded}
+        onOpenChange={() => toggleCardExpansion(clienteData.cliente.id)}
+      >
+        <CardContent className="p-4">
+          {/* Vista compacta del cliente - siempre visible y completamente clickeable */}
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between w-full cursor-pointer select-none">
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
+                <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex flex-col items-center justify-center flex-shrink-0 p-0.5 shadow-sm">
+                  {clienteData.cliente.foto ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        abrirImagenModal(clienteData.cliente)
+                      }}
+                      className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 active:scale-90 transition-all duration-200 touch-manipulation group"
+                      title="Ver foto del cliente en pantalla completa"
+                    >
+                      <img
+                        src={clienteData.cliente.foto}
+                        alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                      />
+                    </button>
+                  ) : (
+                    <User className="h-6 w-6 text-gray-400 dark:text-gray-300" />
+                  )}
+                  {/* Ícono de alerta superpuesto */}
+                  <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${estadoAlerta.color}`}>
+                    <IconoAlerta className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex flex-col mb-1 w-full">
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
+                      {clienteData.cliente.nombre} {clienteData.cliente.apellido}
+                    </h3>
+                    <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
+                      <Badge
+                        className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${
+                          estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                        }`}
+                      >
+                        {estadoAlerta.texto}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${tipoPagoInfo.color}`}
+                      >
+                        {tipoPagoInfo.texto}
+                      </Badge>
+                      {clienteData.prestamos.length > 1 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 min-h-[16px] leading-[14px] bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700 font-bold">
+                          {clienteData.prestamos.length} ptmos
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
+                    <span className="text-[13px] sm:text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap truncate block">
+                      Saldo: <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
+                    </span>
+                    <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden sm:block">
+                      {Number(clienteData.cuotasTotalesPagadas.toFixed(2))} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 truncate">
+                      Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button variant="ghost" size="sm" className="ml-1 p-1 sm:p-2 sm:ml-2 flex-shrink-0">
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </CollapsibleTrigger>
+
+          {/* Vista expandida - historial de préstamos */}
+          <CollapsibleContent className="space-y-3">
+            <div className="pt-3 border-t mt-3">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                  Préstamos de {clienteData.cliente.nombre} ({clienteData.prestamos.length})
+                </h4>
+
+                {clienteData.prestamos.map((prestamo, prestamoIndex) => {
+                  const formatFechaUTC = (dateString: string) => {
+                    try {
+                      const [y, m, d] = String(dateString).split('T')[0].split('-').map(Number)
+                      const date = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
+                      return date.toLocaleDateString('es-CO', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        timeZone: 'UTC'
+                      })
+                    } catch (e) {
+                      return String(dateString).split('T')[0]
+                    }
+                  }
+
+                  const fechaInicio = formatFechaUTC(prestamo.fechaInicio)
+                  const fechaFin = formatFechaUTC(prestamo.fechaFin)
+
+                  const getProgressPercentage = (cuotasPagadas: number, totalCuotas: number) => {
+                    return Math.min((cuotasPagadas / totalCuotas) * 100, 100)
+                  }
+
+                  return (
+                    <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div className="flex items-center flex-wrap gap-1.5 min-w-0">
+                          <Badge variant="outline" className="text-xs font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
+                            Préstamo #{prestamoIndex + 1}
+                          </Badge>
+                          <Badge
+                            variant="default"
+                            className={`text-xs font-bold text-slate-950 ${
+                              prestamo.tipoPago === 'DIARIO' ? 'bg-blue-300' :
+                              prestamo.tipoPago === 'SEMANAL' ? 'bg-emerald-400' :
+                              prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-300' :
+                              prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-300' :
+                              prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-300' :
+                              prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-300' :
+                              prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-300' :
+                              prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-300' :
+                              prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-300' :
+                              prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-300' :
+                              prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-300' :
+                              prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-300' : 'bg-slate-300'
+                            }`}
+                          >
+                            {prestamo.tipoPago === 'FIN_DE_MES' ? 'Fin de Mes' :
+                              prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'Lun-Vie' :
+                              prestamo.tipoPago === 'LUNES_A_SABADO' ? 'Lun-Sáb' :
+                              prestamo.tipoPago === 'CATORCENAL' ? 'Catorcenal' :
+                              prestamo.tipoPago === 'CUATRIMESTRAL' ? 'Cuatrimestral' :
+                              prestamo.tipoPago}
+                          </Badge>
+                          {prestamo.tipoCredito && (
+                            <Badge variant="secondary" className="text-xs font-semibold bg-slate-900 text-white dark:bg-slate-700">
+                              {prestamo.tipoCredito === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia'}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                          <Button
+                            size="sm"
+                            onClick={() => handlePagoRapido(prestamo, clienteData)}
+                            className="btn-primary text-xs h-8 px-3 rounded-lg shadow-sm"
+                            disabled={prestamo.saldoPendiente <= 0}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            <DollarSign className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+                            Pago
+                          </Button>
+                          <Button asChild variant="outline" size="sm" className="text-xs h-8 px-3 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <Link href={`/prestamos/${prestamo.id}`}>
+                              Ver
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-3 border border-gray-300 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            {clienteData.cliente.nombre} {clienteData.cliente.apellido}
+                          </h5>
+                          <span className="text-xs text-gray-500">
+                            {clienteData.cliente.codigoCliente} • {clienteData.cliente.documento}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {clienteData.cliente.telefono && (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-green-600" />
+                              <a href={`tel:${clienteData.cliente.telefono}`} className="text-blue-600 hover:underline">
+                                {clienteData.cliente.telefono}
+                              </a>
+                            </div>
+                          )}
+                          {(clienteData.cliente.pais || clienteData.cliente.ciudad) && (
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <MapPin className="h-3 w-3" />
+                              <span>{clienteData.cliente.ciudad || clienteData.cliente.pais}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-start gap-1 text-xs min-w-0">
+                            <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <button
+                                onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente', clienteData.cliente.mapLink)}
+                                className="text-blue-600 hover:underline text-left break-all font-medium block leading-tight max-w-full"
+                              >
+                                {clienteData.cliente.direccionCliente.startsWith('http') 
+                                  ? "Ubicación en Google Maps" 
+                                  : clienteData.cliente.direccionCliente}
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => copiarDireccion(clienteData.cliente.direccionCliente, 'cliente')}
+                              className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
+                              title="Copiar"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+
+                          {clienteData.cliente.direccionCobro && (
+                            <div className="flex items-start gap-1 text-xs min-w-0">
+                              <MapPin className="h-3 w-3 mt-0.5 text-orange-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-gray-500 mr-1 shrink-0 font-medium">Cobro:</span>
+                                <button
+                                  onClick={() => abrirMapa(clienteData.cliente.direccionCobro!, 'cobro')}
+                                  className="text-orange-600 hover:underline text-left break-all font-medium inline-block leading-tight max-w-full"
+                                >
+                                  {clienteData.cliente.direccionCobro.startsWith('http') 
+                                    ? "Ubicación en Google Maps" 
+                                    : clienteData.cliente.direccionCobro}
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => copiarDireccion(clienteData.cliente.direccionCobro!, 'cobro')}
+                                className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
+                                title="Copiar"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {clienteData.cliente.referenciasPersonales && (
+                          <div className="text-xs bg-amber-50 p-2 rounded border border-amber-200">
+                            <span className="font-medium text-amber-800">📋 Referencias:</span>
+                            <p className="text-gray-700 mt-0.5">{clienteData.cliente.referenciasPersonales}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <p className="text-xs text-gray-600 mb-1">Monto prestado</p>
+                          <p className="text-lg font-bold text-blue-700">{formatCurrency(prestamo.monto)}</p>
+                          <p className="text-xs text-gray-500">Interés: {prestamo.interes}%</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <p className="text-xs text-gray-600 mb-1">Saldo pendiente</p>
+                          <p className="text-lg font-bold text-red-600">{formatCurrency(prestamo.saldoPendiente)}</p>
+                          <p className="text-xs text-gray-500">Total: {formatCurrency(prestamo.montoTotal)}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-white rounded-lg p-3 border border-gray-200">
+                        <div>
+                          <span className="text-gray-600">Valor por cuota:</span>
+                          <p className="font-semibold text-green-700">{formatCurrency(prestamo.valorCuota)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Progreso:</span>
+                          <p className="font-semibold text-gray-900">
+                            {prestamo.cuotasPagadas}/{prestamo.cuotas} cuotas
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Fecha inicio:</span>
+                          <p className="font-medium text-gray-900">{fechaInicio}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Fecha fin:</span>
+                          <p className="font-medium text-gray-900">{fechaFin}</p>
+                        </div>
+                        {prestamo.diasGracia !== undefined && prestamo.diasGracia > 0 && (
+                          <div>
+                            <span className="text-gray-600">Días de gracia:</span>
+                            <p className="font-medium text-blue-600">{prestamo.diasGracia} días</p>
+                          </div>
+                        )}
+                        {prestamo.moraCredito !== undefined && prestamo.moraCredito > 0 && (
+                          <div>
+                            <span className="text-gray-600">Mora:</span>
+                            <p className="font-medium text-orange-600">{prestamo.moraCredito}%</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal && (
+                        <div className="bg-purple-50 rounded-lg p-2 border border-purple-200 text-xs">
+                          <span className="text-purple-700 font-medium">🛡️ Microseguro: </span>
+                          <span className="font-bold text-purple-900">{formatCurrency(prestamo.microseguroTotal)}</span>
+                          <span className="text-purple-600 ml-1">
+                            ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : 'Porcentaje'})
+                          </span>
+                        </div>
+                      )}
+
+                      {prestamo.observaciones && (
+                        <div className="bg-yellow-50 rounded-lg p-2 border border-yellow-200 text-xs">
+                          <span className="text-yellow-700 font-medium">📝 Observaciones: </span>
+                          <p className="text-gray-700 mt-1">{prestamo.observaciones}</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>Progreso del préstamo</span>
+                          <span className="font-semibold">
+                            {getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500 shadow-sm"
+                            style={{
+                              width: `${getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </CardContent>
+      </Collapsible>
+    </Card>
+  )
+})
+
 export default function ListadoGeneralClient({ session }: ListadoGeneralClientProps) {
   const [clientes, setClientes] = useState<ClienteConPrestamos[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const deferredSearchTerm = useDeferredValue(searchTerm)
   const [activeTab, setActiveTab] = useState<'OK' | 'PROXIMO_A_VENCER' | 'MOROSO' | 'VENCIDO' | 'INACTIVO'>('OK')
   const [soloConSaldo, setSoloConSaldo] = useState(true)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
@@ -117,9 +647,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   // Resetear el conteo visible al cambiar los filtros
   useEffect(() => {
     setVisibleCount(20)
-  }, [searchTerm, activeTab, soloConSaldo])
+  }, [deferredSearchTerm, activeTab, soloConSaldo])
 
-  const fetchClientes = async () => {
+  const fetchClientes = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/prestamos?conSaldo=${soloConSaldo}`)
@@ -143,11 +673,11 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     } finally {
       setLoading(false)
     }
-  }
+  }, [soloConSaldo, toast])
 
   useEffect(() => {
     fetchClientes()
-  }, [soloConSaldo])
+  }, [fetchClientes])
 
   // Refrescar al recibir eventos de modificación de clientes
   useEffect(() => {
@@ -165,186 +695,38 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       window.removeEventListener('clienteActualizado', handleRefresh)
       window.removeEventListener('clienteEliminado', handleRefresh)
     }
-  }, [soloConSaldo])
+  }, [fetchClientes])
 
-
-  const handlePagoRapido = (prestamo: Prestamo, cliente: ClienteConPrestamos) => {
+  const handlePagoRapido = useCallback((prestamo: Prestamo, cliente: ClienteConPrestamos) => {
     setSelectedPrestamo(prestamo)
     setSelectedCliente(cliente)
     setShowPagoModal(true)
-  }
+  }, [])
 
-  const onPagoSuccess = () => {
+  const onPagoSuccess = useCallback(() => {
     setShowPagoModal(false)
     setSelectedPrestamo(null)
     setSelectedCliente(null)
-    fetchClientes() // Recargar lista
+    fetchClientes()
     toast({
       title: "Pago registrado",
       description: "El pago se ha registrado exitosamente",
     })
-  }
+  }, [fetchClientes, toast])
 
-  const toggleCardExpansion = (clienteId: string) => {
-    const newExpanded = new Set(expandedCards)
-    if (newExpanded.has(clienteId)) {
-      newExpanded.delete(clienteId)
-    } else {
-      newExpanded.add(clienteId)
-    }
-    setExpandedCards(newExpanded)
-  }
-
-  const getProgressPercentage = (cuotasPagadas: number, totalCuotas: number) => {
-    return Math.min((cuotasPagadas / totalCuotas) * 100, 100)
-  }
-
-  // Map estático para evitar recrearlo en cada iteración
-  const DIAS_POR_TIPO_PAGO: Record<string, number> = {
-    'DIARIO': 1,
-    'SEMANAL': 7,
-    'LUNES_A_VIERNES': 1,
-    'LUNES_A_SABADO': 1,
-    'QUINCENAL': 15,
-    'CATORCENAL': 14,
-    'FIN_DE_MES': 30,
-    'MENSUAL': 30,
-    'TRIMESTRAL': 90,
-    'CUATRIMESTRAL': 120,
-    'SEMESTRAL': 180,
-    'ANUAL': 365
-  }
-
-  // Función para calcular el estado de alerta del cliente
-  const calcularEstadoCliente = (
-    clienteData: ClienteConPrestamos,
-    hoy: Date,
-    hoyMidnight: Date,
-    ayerMidnight: Date
-  ) => {
-    const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.saldoPendiente <= 0 || p.cuotasPagadas >= p.cuotas
-
-    // Si no tiene préstamos o todos están pagados, está Inactivo
-    const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(p => esPrestamoCompletado(p))
-    if (inactivo) {
-      return {
-        estado: 'INACTIVO',
-        icono: User,
-        color: 'bg-gray-400',
-        texto: 'Inactivo',
-        colorTexto: 'text-white'
-      }
-    }
-
-    // Verificar si algún préstamo está completamente vencido y no ha sido pagado
-    const tienePrestamoVencido = clienteData.prestamos.some(prestamo =>
-      !esPrestamoCompletado(prestamo) && (prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin) < hoy)
-    )
-
-    if (tienePrestamoVencido) {
-      return {
-        estado: 'VENCIDO',
-        icono: XCircle,
-        color: 'bg-red-500',
-        texto: 'Vencido',
-        colorTexto: 'text-white'
-      }
-    }
-
-    // Verificar morosidad (préstamos con pagos atrasados)
-    const prestamosConAtraso = clienteData.prestamos.filter(prestamo => {
-      if (esPrestamoCompletado(prestamo)) return false // Ya está pagado
-
-      const diasEsperados = DIAS_POR_TIPO_PAGO[prestamo.tipoPago] || 1
-      const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
-      const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
-      const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
-
-      let pagosEsperados = 0
-
-      if (prestamo.tipoPago === 'LUNES_A_SABADO' || prestamo.tipoPago === 'LUNES_A_VIERNES' || prestamo.tipoPago === 'DIARIO') {
-        pagosEsperados = countDiasHabiles(fechaInicioMidnight, hoyMidnight, prestamo.tipoPago)
+  const toggleCardExpansion = useCallback((clienteId: string) => {
+    setExpandedCards(prev => {
+      const newExpanded = new Set(prev)
+      if (newExpanded.has(clienteId)) {
+        newExpanded.delete(clienteId)
       } else {
-        pagosEsperados = Math.floor((hoyMidnight.getTime() - fechaInicioMidnight.getTime()) / (1000 * 60 * 60 * 24 * diasEsperados))
+        newExpanded.add(clienteId)
       }
-
-      const cuotasVencidasEfectivas = Math.max(0, pagosEsperados)
-      return prestamo.cuotasPagadas < cuotasVencidasEfectivas
+      return newExpanded
     })
+  }, [])
 
-    if (prestamosConAtraso.length > 0) {
-      return {
-        estado: 'MOROSO',
-        icono: AlertTriangle,
-        color: 'bg-orange-500',
-        texto: 'Moroso',
-        colorTexto: 'text-white'
-      }
-    }
-
-    // Verificar si el préstamo está próximo a vencer (su fechaFin es en los próximos 3 días)
-    const proximoAVencer = clienteData.prestamos.some(prestamo => {
-      if (esPrestamoCompletado(prestamo)) return false
-
-      const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
-      const [year, month, day] = fechaFinStr.split('-').map(Number)
-      const fechaFinMidnight = new Date(year, month - 1, day)
-
-      const diferenciaDias = Math.ceil((fechaFinMidnight.getTime() - hoyMidnight.getTime()) / (1000 * 60 * 60 * 24))
-
-      return diferenciaDias <= 3 && diferenciaDias >= 0
-    })
-
-    if (proximoAVencer) {
-      return {
-        estado: 'PROXIMO_A_VENCER',
-        icono: Clock,
-        color: 'bg-yellow-500',
-        texto: 'Próximo a vencer',
-        colorTexto: 'text-white'
-      }
-    }
-
-    // Cliente al día
-    return {
-      estado: 'OK',
-      icono: CheckCircle,
-      color: 'bg-green-500',
-      texto: 'Al día',
-      colorTexto: 'text-white'
-    }
-  }
-
-  // Función para obtener información adicional del tipo de pago
-  const getTipoPagoBadge = (clienteData: ClienteConPrestamos) => {
-    const prestamoMasReciente = clienteData.prestamos.sort((a, b) =>
-      new Date(b.fechaActividadReciente).getTime() - new Date(a.fechaActividadReciente).getTime()
-    )[0]
-
-    const tipoPago = prestamoMasReciente.tipoPago
-    const badges = {
-      'DIARIO': { texto: 'Diario', color: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-700' },
-      'SEMANAL': { texto: 'Semanal', color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-700' },
-      'LUNES_A_VIERNES': { texto: 'Lun-Vie', color: 'bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-200 dark:border-cyan-700' },
-      'LUNES_A_SABADO': { texto: 'Lun-Sáb', color: 'bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/80 dark:text-sky-200 dark:border-sky-700' },
-      'QUINCENAL': { texto: 'Quincenal', color: 'bg-orange-100 text-orange-900 border-orange-300 dark:bg-orange-950/80 dark:text-orange-200 dark:border-orange-700' },
-      'CATORCENAL': { texto: 'Catorcenal', color: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-700' },
-      'FIN_DE_MES': { texto: 'Fin de Mes', color: 'bg-teal-100 text-teal-900 border-teal-300 dark:bg-teal-950/80 dark:text-teal-200 dark:border-teal-700' },
-      'MENSUAL': { texto: 'Mensual', color: 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700' },
-      'TRIMESTRAL': { texto: 'Trimestral', color: 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-200 dark:border-indigo-700' },
-      'CUATRIMESTRAL': { texto: 'Cuatrimestral', color: 'bg-violet-100 text-violet-900 border-violet-300 dark:bg-violet-950/80 dark:text-violet-200 dark:border-violet-700' },
-      'SEMESTRAL': { texto: 'Semestral', color: 'bg-pink-100 text-pink-900 border-pink-300 dark:bg-pink-950/80 dark:text-pink-200 dark:border-pink-700' },
-      'ANUAL': { texto: 'Anual', color: 'bg-yellow-100 text-yellow-900 border-yellow-300 dark:bg-yellow-950/80 dark:text-yellow-200 dark:border-yellow-700' }
-    }
-
-    return badges[tipoPago as keyof typeof badges] || {
-      texto: tipoPago,
-      color: 'bg-gray-100 text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-gray-200'
-    }
-  }
-
-  // Función para abrir Google Maps con la dirección
-  const abrirImagenModal = (cliente: ClienteConPrestamos['cliente']) => {
+  const abrirImagenModal = useCallback((cliente: ClienteConPrestamos['cliente']) => {
     if (cliente.foto) {
       setSelectedImage({
         url: cliente.foto,
@@ -353,11 +735,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
       })
       setShowImageModal(true)
     }
-  }
+  }, [])
 
-  const abrirMapa = (direccion: string, tipo: string, mapLink?: string | null) => {
+  const abrirMapa = useCallback((direccion: string, tipo: string, mapLink?: string | null) => {
     try {
-      // Si hay un mapLink o la dirección ya es un enlace, abrirlo directamente
       if (mapLink && mapLink.startsWith('http')) {
         const nuevaVentana = window.open(mapLink, '_blank', 'noopener,noreferrer')
         if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
@@ -379,7 +760,6 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         return
       }
 
-      // Limpiar y formatear la dirección
       const direccionLimpia = direccion.trim()
       if (!direccionLimpia) {
         toast({
@@ -411,23 +791,18 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         return
       }
 
-      // Crear URL de Google Maps
       const direccionFormateada = encodeURIComponent(direccionLimpia)
       const url = `https://www.google.com/maps/search/?api=1&query=${direccionFormateada}`
 
-      // Intentar abrir en nueva pestaña
       const nuevaVentana = window.open(url, '_blank', 'noopener,noreferrer')
 
-      // Verificar si se bloqueó la popup
       if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed === 'undefined') {
-        // Si se bloqueó, intentar navegar en la misma pestaña
         toast({
           title: "Ventana bloqueada",
           description: "Tu navegador bloqueó la ventana emergente. Abriendo en la misma pestaña...",
           variant: "default",
         })
 
-        // Usar un timeout para que el usuario vea el mensaje
         setTimeout(() => {
           window.location.href = url
         }, 2000)
@@ -446,10 +821,9 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         variant: "destructive",
       })
     }
-  }
+  }, [toast])
 
-  // Función para copiar dirección al portapapeles
-  const copiarDireccion = async (direccion: string, tipo: string) => {
+  const copiarDireccion = useCallback(async (direccion: string, tipo: string) => {
     try {
       await navigator.clipboard.writeText(direccion)
       toast({
@@ -465,7 +839,7 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         variant: "destructive",
       })
     }
-  }
+  }, [toast])
 
   // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
   const clientesConEstados = useMemo(() => {
@@ -483,24 +857,25 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   }, [clientes])
 
   const clientesFiltradosActivos = useMemo(() => {
-    const searchLower = searchTerm.toLowerCase()
+    const searchLower = deferredSearchTerm.toLowerCase().trim()
     
     return clientesConEstados.filter(c => {
-      const matchBusqueda = (
+      if (c.estadoAlerta.estado !== activeTab) return false
+      if (!searchLower) return true
+
+      return (
         c.cliente.nombre.toLowerCase().includes(searchLower) ||
         c.cliente.apellido.toLowerCase().includes(searchLower) ||
-        c.cliente.documento.includes(searchTerm) ||
+        c.cliente.documento.includes(searchLower) ||
         c.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
-        (c.cliente.telefono && c.cliente.telefono.includes(searchTerm))
+        (c.cliente.telefono && c.cliente.telefono.includes(searchLower))
       )
-      
-      return matchBusqueda && c.estadoAlerta.estado === activeTab
     })
-  }, [clientesConEstados, searchTerm, activeTab])
+  }, [clientesConEstados, deferredSearchTerm, activeTab])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#071313]">
         <div className="container-mobile py-4">
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -619,369 +994,19 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
 
         {/* Lista de préstamos */}
         <div className="space-y-3">
-          {clientesFiltradosActivos.slice(0, visibleCount).map((clienteData, index) => {
-            const isExpanded = expandedCards.has(clienteData.cliente.id)
-            const estadoAlerta = clienteData.estadoAlerta!
-            const tipoPagoInfo = clienteData.tipoPagoInfo!
-            const IconoAlerta = estadoAlerta.icono
-
-            return (
-              <Card
-                key={clienteData.cliente.id}
-                className="block list-none animate-fadeInScale [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden"
-                style={{ animationDelay: `${Math.min(index * 0.02, 0.2)}s`, display: 'block', listStyle: 'none', listStyleType: 'none' }}
-              >
-                <Collapsible
-                  open={isExpanded}
-                  onOpenChange={() => toggleCardExpansion(clienteData.cliente.id)}
-                >
-                  <CardContent className="p-4">
-                    {/* Vista compacta del cliente - siempre visible y completamente clickeable */}
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between w-full cursor-pointer select-none">
-                        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-1">
-                          <div className="relative w-11 h-11 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex flex-col items-center justify-center flex-shrink-0 p-0.5 shadow-sm">
-                            {clienteData.cliente.foto ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  abrirImagenModal(clienteData.cliente)
-                                }}
-                                className="w-full h-full rounded-full overflow-hidden hover:ring-2 hover:ring-blue-500 active:scale-90 transition-all duration-200 touch-manipulation group"
-                                title="Ver foto del cliente en pantalla completa"
-                              >
-                                <img
-                                  src={clienteData.cliente.foto}
-                                  alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
-                                />
-                              </button>
-                            ) : (
-                              <User className="h-6 w-6 text-gray-400 dark:text-gray-300" />
-                            )}
-                            {/* Ícono de alerta superpuesto */}
-                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 ${estadoAlerta.color}`}>
-                              <IconoAlerta className="h-3 w-3 text-white" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0 overflow-hidden">
-                            <div className="flex flex-col mb-1 w-full">
-                              <h3 className="font-semibold text-gray-900 dark:text-white truncate w-full" title={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}>
-                                {clienteData.cliente.nombre} {clienteData.cliente.apellido}
-                              </h3>
-                              <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
-                                <Badge
-                                  className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
-                                    }`}
-                                >
-                                  {estadoAlerta.texto}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${tipoPagoInfo.color}`}
-                                >
-                                  {tipoPagoInfo.texto}
-                                </Badge>
-                                {clienteData.prestamos.length > 1 && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 min-h-[16px] leading-[14px] bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700 font-bold">
-                                    {clienteData.prestamos.length} ptmos
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
-                              <span className="text-[13px] sm:text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap truncate block">
-                                Saldo: <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(clienteData.saldoTotalPendiente)}</span>
-                              </span>
-                              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap hidden sm:block">
-                                {Number(clienteData.cuotasTotalesPagadas.toFixed(2))} {clienteData.cuotasTotalesPagadas === 1 ? 'cuota' : 'cuotas'}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between mt-0.5">
-                              <span className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-400 truncate">
-                                Total prestado: {formatCurrency(clienteData.montoTotalPrestado)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button variant="ghost" size="sm" className="ml-1 p-1 sm:p-2 sm:ml-2 flex-shrink-0">
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </CollapsibleTrigger>
-
-
-                    {/* Vista expandida - historial de préstamos */}
-                    <CollapsibleContent className="space-y-3">
-                      <div className="pt-3 border-t mt-3">
-                        {/* Historial de préstamos */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                            Préstamos de {clienteData.cliente.nombre} ({clienteData.prestamos.length})
-                          </h4>
-
-                          {clienteData.prestamos.map((prestamo, prestamoIndex) => {
-                            const formatFechaUTC = (dateString: string) => {
-                              try {
-                                const [y, m, d] = String(dateString).split('T')[0].split('-').map(Number)
-                                // Usamos mediodía UTC como punto medio seguro
-                                const date = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
-                                return date.toLocaleDateString('es-CO', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  timeZone: 'UTC'
-                                })
-                              } catch (e) {
-                                return String(dateString).split('T')[0]
-                              }
-                            }
-
-                            const fechaInicio = formatFechaUTC(prestamo.fechaInicio)
-                            const fechaFin = formatFechaUTC(prestamo.fechaFin)
-
-                            return (
-                              <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
-                                {/* Header del préstamo */}
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                                  <div className="flex items-center flex-wrap gap-1.5 min-w-0">
-                                    <Badge variant="outline" className="text-xs font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
-                                      Préstamo #{prestamoIndex + 1}
-                                    </Badge>
-                                    <Badge
-                                      variant="default"
-                                      className={`text-xs font-bold text-slate-950 ${prestamo.tipoPago === 'DIARIO' ? 'bg-blue-300' :
-                                        prestamo.tipoPago === 'SEMANAL' ? 'bg-emerald-400' :
-                                          prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'bg-cyan-300' :
-                                            prestamo.tipoPago === 'LUNES_A_SABADO' ? 'bg-sky-300' :
-                                              prestamo.tipoPago === 'QUINCENAL' ? 'bg-orange-300' :
-                                                prestamo.tipoPago === 'CATORCENAL' ? 'bg-amber-300' :
-                                                  prestamo.tipoPago === 'FIN_DE_MES' ? 'bg-teal-300' :
-                                                    prestamo.tipoPago === 'MENSUAL' ? 'bg-purple-300' :
-                                                      prestamo.tipoPago === 'TRIMESTRAL' ? 'bg-indigo-300' :
-                                                        prestamo.tipoPago === 'CUATRIMESTRAL' ? 'bg-violet-300' :
-                                                          prestamo.tipoPago === 'SEMESTRAL' ? 'bg-pink-300' :
-                                                            prestamo.tipoPago === 'ANUAL' ? 'bg-yellow-300' : 'bg-slate-300'
-                                        }`}
-                                    >
-                                      {prestamo.tipoPago === 'FIN_DE_MES' ? 'Fin de Mes' :
-                                        prestamo.tipoPago === 'LUNES_A_VIERNES' ? 'Lun-Vie' :
-                                          prestamo.tipoPago === 'LUNES_A_SABADO' ? 'Lun-Sáb' :
-                                            prestamo.tipoPago === 'CATORCENAL' ? 'Catorcenal' :
-                                              prestamo.tipoPago === 'CUATRIMESTRAL' ? 'Cuatrimestral' :
-                                                prestamo.tipoPago}
-                                    </Badge>
-                                    {prestamo.tipoCredito && (
-                                      <Badge variant="secondary" className="text-xs font-semibold bg-slate-900 text-white dark:bg-slate-700">
-                                        {prestamo.tipoCredito === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia'}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handlePagoRapido(prestamo, clienteData)}
-                                      className="btn-primary text-xs h-8 px-3 rounded-lg shadow-sm"
-                                      disabled={prestamo.saldoPendiente <= 0}
-                                    >
-                                      <Plus className="h-3.5 w-3.5 mr-1" />
-                                      <DollarSign className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-                                      Pago
-                                    </Button>
-                                    <Button asChild variant="outline" size="sm" className="text-xs h-8 px-3 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                      <Link href={`/prestamos/${prestamo.id}`}>
-                                        Ver
-                                      </Link>
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                {/* Información del cliente en la card */}
-                                <div className="bg-white rounded-lg p-3 border border-gray-300 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <h5 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
-                                      <User className="h-4 w-4" />
-                                      {clienteData.cliente.nombre} {clienteData.cliente.apellido}
-                                    </h5>
-                                    <span className="text-xs text-gray-500">
-                                      {clienteData.cliente.codigoCliente} • {clienteData.cliente.documento}
-                                    </span>
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    {clienteData.cliente.telefono && (
-                                      <div className="flex items-center gap-1">
-                                        <Phone className="h-3 w-3 text-green-600" />
-                                        <a href={`tel:${clienteData.cliente.telefono}`} className="text-blue-600 hover:underline">
-                                          {clienteData.cliente.telefono}
-                                        </a>
-                                      </div>
-                                    )}
-                                    {(clienteData.cliente.pais || clienteData.cliente.ciudad) && (
-                                      <div className="flex items-center gap-1 text-gray-600">
-                                        <MapPin className="h-3 w-3" />
-                                        <span>{clienteData.cliente.ciudad || clienteData.cliente.pais}</span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="space-y-1">
-                                    <div className="flex items-start gap-1 text-xs min-w-0">
-                                      <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
-                                      <div className="flex-1 min-w-0">
-                                        <button
-                                          onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente', clienteData.cliente.mapLink)}
-                                          className="text-blue-600 hover:underline text-left break-all font-medium block leading-tight max-w-full"
-                                        >
-                                          {clienteData.cliente.direccionCliente.startsWith('http') 
-                                            ? "Ubicación en Google Maps" 
-                                            : clienteData.cliente.direccionCliente}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => copiarDireccion(clienteData.cliente.direccionCliente, 'cliente')}
-                                        className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
-                                        title="Copiar"
-                                      >
-                                        <Copy className="h-3 w-3" />
-                                      </button>
-                                    </div>
-
-                                    {clienteData.cliente.direccionCobro && (
-                                      <div className="flex items-start gap-1 text-xs min-w-0">
-                                        <MapPin className="h-3 w-3 mt-0.5 text-orange-600 flex-shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                          <span className="text-gray-500 mr-1 shrink-0 font-medium">Cobro:</span>
-                                          <button
-                                            onClick={() => abrirMapa(clienteData.cliente.direccionCobro!, 'cobro')}
-                                            className="text-orange-600 hover:underline text-left break-all font-medium inline-block leading-tight max-w-full"
-                                          >
-                                            {clienteData.cliente.direccionCobro.startsWith('http') 
-                                              ? "Ubicación en Google Maps" 
-                                              : clienteData.cliente.direccionCobro}
-                                          </button>
-                                        </div>
-                                        <button
-                                          onClick={() => copiarDireccion(clienteData.cliente.direccionCobro!, 'cobro')}
-                                          className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
-                                          title="Copiar"
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {clienteData.cliente.referenciasPersonales && (
-                                    <div className="text-xs bg-amber-50 p-2 rounded border border-amber-200">
-                                      <span className="font-medium text-amber-800">📋 Referencias:</span>
-                                      <p className="text-gray-700 mt-0.5">{clienteData.cliente.referenciasPersonales}</p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Información financiera principal */}
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                                    <p className="text-xs text-gray-600 mb-1">Monto prestado</p>
-                                    <p className="text-lg font-bold text-blue-700">{formatCurrency(prestamo.monto)}</p>
-                                    <p className="text-xs text-gray-500">Interés: {prestamo.interes}%</p>
-                                  </div>
-                                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                                    <p className="text-xs text-gray-600 mb-1">Saldo pendiente</p>
-                                    <p className="text-lg font-bold text-red-600">{formatCurrency(prestamo.saldoPendiente)}</p>
-                                    <p className="text-xs text-gray-500">Total: {formatCurrency(prestamo.montoTotal)}</p>
-                                  </div>
-                                </div>
-
-                                {/* Detalles del pago */}
-                                <div className="grid grid-cols-2 gap-2 text-xs bg-white rounded-lg p-3 border border-gray-200">
-                                  <div>
-                                    <span className="text-gray-600">Valor por cuota:</span>
-                                    <p className="font-semibold text-green-700">{formatCurrency(prestamo.valorCuota)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Progreso:</span>
-                                    <p className="font-semibold text-gray-900">
-                                      {prestamo.cuotasPagadas}/{prestamo.cuotas} cuotas
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Fecha inicio:</span>
-                                    <p className="font-medium text-gray-900">{fechaInicio}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Fecha fin:</span>
-                                    <p className="font-medium text-gray-900">{fechaFin}</p>
-                                  </div>
-                                  {prestamo.diasGracia !== undefined && prestamo.diasGracia > 0 && (
-                                    <div>
-                                      <span className="text-gray-600">Días de gracia:</span>
-                                      <p className="font-medium text-blue-600">{prestamo.diasGracia} días</p>
-                                    </div>
-                                  )}
-                                  {prestamo.moraCredito !== undefined && prestamo.moraCredito > 0 && (
-                                    <div>
-                                      <span className="text-gray-600">Mora:</span>
-                                      <p className="font-medium text-orange-600">{prestamo.moraCredito}%</p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Microseguro */}
-                                {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal && (
-                                  <div className="bg-purple-50 rounded-lg p-2 border border-purple-200 text-xs">
-                                    <span className="text-purple-700 font-medium">🛡️ Microseguro: </span>
-                                    <span className="font-bold text-purple-900">{formatCurrency(prestamo.microseguroTotal)}</span>
-                                    <span className="text-purple-600 ml-1">
-                                      ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : 'Porcentaje'})
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* Observaciones */}
-                                {prestamo.observaciones && (
-                                  <div className="bg-yellow-50 rounded-lg p-2 border border-yellow-200 text-xs">
-                                    <span className="text-yellow-700 font-medium">📝 Observaciones: </span>
-                                    <p className="text-gray-700 mt-1">{prestamo.observaciones}</p>
-                                  </div>
-                                )}
-
-                                {/* Barra de progreso individual */}
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-xs text-gray-600">
-                                    <span>Progreso del préstamo</span>
-                                    <span className="font-semibold">
-                                      {getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas).toFixed(1)}%
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500 shadow-sm"
-                                      style={{
-                                        width: `${getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas)}%`
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </CardContent>
-                </Collapsible>
-              </Card>
-            )
-          })}
+          {clientesFiltradosActivos.slice(0, visibleCount).map((clienteData) => (
+            <ClienteCard
+              key={clienteData.cliente.id}
+              clienteData={clienteData}
+              isExpanded={expandedCards.has(clienteData.cliente.id)}
+              toggleCardExpansion={toggleCardExpansion}
+              abrirImagenModal={abrirImagenModal}
+              abrirMapa={abrirMapa}
+              copiarDireccion={copiarDireccion}
+              handlePagoRapido={handlePagoRapido}
+              formatCurrency={formatCurrency}
+            />
+          ))}
 
           {visibleCount < clientesFiltradosActivos.length && (
             <div ref={observerRef} className="py-6 flex justify-center items-center text-sm text-gray-500">
@@ -993,10 +1018,10 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
           {clientesFiltradosActivos.length === 0 && (
             <div className="text-center py-12">
               <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No hay clientes
               </h3>
-              <p className="text-gray-500 mb-6">
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {soloConSaldo
                   ? "No se encontraron préstamos con saldo pendiente"
                   : "No se encontraron préstamos que coincidan con la búsqueda"
