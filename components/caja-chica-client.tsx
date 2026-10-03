@@ -1039,25 +1039,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
                 className="mt-1 font-bold text-lg"
               />
             </div>
-            <div>
-              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Cobrador / Ruta (Opcional)</Label>
-              <Select 
-                value={ingresoData.cobradorId || "all"} 
-                onValueChange={(val) => setIngresoData({...ingresoData, cobradorId: val === "all" ? "" : val})}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Caja General (Sin asignar)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Caja General (Sin cobrador)</SelectItem>
-                  {cobradores.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
             <div>
               <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Fecha (Opcional - hoy por defecto)</Label>
               <Input
@@ -1141,25 +1123,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
               />
             </div>
 
-            <div>
-              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Cobrador / Ruta (Opcional)</Label>
-              <Select 
-                value={retiroData.cobradorId || "all"} 
-                onValueChange={(val) => setRetiroData({...retiroData, cobradorId: val === "all" ? "" : val})}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Caja General (Sin asignar)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Caja General (Sin cobrador)</SelectItem>
-                  {cobradores.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nombre} {c.numeroRuta ? `(Ruta ${c.numeroRuta})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div>
               <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300">Fecha (Opcional - hoy por defecto)</Label>
