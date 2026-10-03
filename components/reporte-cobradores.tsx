@@ -234,9 +234,9 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
           </div>
         </div>
 
-        {/* Acciones de Recarga */}
-        {fecha && (
-          <div className="flex items-center gap-2 justify-end pt-2 sm:pt-0">
+        {/* Acciones principales / Cargar Entrega */}
+        <div className="flex items-center gap-2 justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-800">
+          {fecha && (
             <Button
               variant="ghost"
               size="sm"
@@ -245,8 +245,25 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
             >
               Hoy
             </Button>
-          </div>
-        )}
+          )}
+
+          {!isCobrador && (
+            <Button
+              type="button"
+              onClick={() => {
+                if (reporteSeleccionado) {
+                  handleOpenEntregaModal(reporteSeleccionado.cobradorId, reporteSeleccionado.cobradorNombre, reporteSeleccionado.numeroRuta, reporteSeleccionado.entregaHoy)
+                } else if (cobradores.length > 0) {
+                  handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-10 px-4 rounded-xl shadow-sm flex items-center gap-1.5 transition-all w-full sm:w-auto justify-center"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Cargar Entrega Manual</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Banner Principal / Hero Financial Cards (4 Cards Grid) */}
@@ -271,7 +288,7 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
             <span>Entrega hoy</span>
             <Wallet className="h-4 w-4" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between gap-2">
+          <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-baseline justify-between gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               {formatCurrency(reporteSeleccionado ? reporteSeleccionado.entregaHoy : resumenGlobal?.totalEntregaHoy || 0)}
             </span>
@@ -286,10 +303,10 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
                     handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
                   }
                 }}
-                className="bg-white/20 hover:bg-white/30 text-white border border-white/30 text-[11px] font-bold h-7 px-2.5 rounded-lg shrink-0 backdrop-blur-sm transition-all shadow-xs"
+                className="bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-[11px] h-7 px-3 rounded-lg shrink-0 shadow-sm transition-all"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Cargar
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Cargar Entrega
               </Button>
             )}
           </div>
@@ -505,16 +522,16 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
                     {!isCobrador && (
                       <Button
                         type="button"
-                        size="icon"
-                        variant="ghost"
+                        size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleOpenEntregaModal(r.cobradorId, r.cobradorNombre, r.numeroRuta, r.entregaHoy)
                         }}
-                        title="Registrar / editar entrega de caja"
-                        className="h-7 w-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shrink-0 transition-all shadow-xs"
+                        title="Registrar o editar entrega de caja"
+                        className="h-7 text-[11px] font-bold px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shrink-0 transition-all shadow-xs"
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Plus className="h-3 w-3 mr-1" />
+                        Entrega
                       </Button>
                     )}
                   </div>
