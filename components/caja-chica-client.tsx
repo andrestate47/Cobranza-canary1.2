@@ -419,7 +419,7 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
             </Button>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                Movimientos
+                Caja
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">
                 Seguimiento de capital, cobros y caja
