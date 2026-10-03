@@ -833,19 +833,21 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                   </div>
 
                                   <div className="space-y-1">
-                                    <div className="flex items-start gap-1 text-xs">
+                                    <div className="flex items-start gap-1 text-xs min-w-0">
                                       <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
-                                      <div className="flex-1">
+                                      <div className="flex-1 min-w-0">
                                         <button
                                           onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente', clienteData.cliente.mapLink)}
-                                          className="text-blue-600 hover:underline text-left"
+                                          className="text-blue-600 hover:underline text-left break-all font-medium block leading-tight max-w-full"
                                         >
-                                          {clienteData.cliente.direccionCliente}
+                                          {clienteData.cliente.direccionCliente.startsWith('http') 
+                                            ? "Ubicación en Google Maps" 
+                                            : clienteData.cliente.direccionCliente}
                                         </button>
                                       </div>
                                       <button
                                         onClick={() => copiarDireccion(clienteData.cliente.direccionCliente, 'cliente')}
-                                        className="text-gray-400 hover:text-gray-600"
+                                        className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
                                         title="Copiar"
                                       >
                                         <Copy className="h-3 w-3" />
@@ -853,20 +855,22 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
                                     </div>
 
                                     {clienteData.cliente.direccionCobro && (
-                                      <div className="flex items-start gap-1 text-xs">
+                                      <div className="flex items-start gap-1 text-xs min-w-0">
                                         <MapPin className="h-3 w-3 mt-0.5 text-orange-600 flex-shrink-0" />
-                                        <div className="flex-1">
-                                          <span className="text-gray-500 mr-1">Cobro:</span>
+                                        <div className="flex-1 min-w-0">
+                                          <span className="text-gray-500 mr-1 shrink-0 font-medium">Cobro:</span>
                                           <button
                                             onClick={() => abrirMapa(clienteData.cliente.direccionCobro!, 'cobro')}
-                                            className="text-orange-600 hover:underline text-left"
+                                            className="text-orange-600 hover:underline text-left break-all font-medium inline-block leading-tight max-w-full"
                                           >
-                                            {clienteData.cliente.direccionCobro}
+                                            {clienteData.cliente.direccionCobro.startsWith('http') 
+                                              ? "Ubicación en Google Maps" 
+                                              : clienteData.cliente.direccionCobro}
                                           </button>
                                         </div>
                                         <button
                                           onClick={() => copiarDireccion(clienteData.cliente.direccionCobro!, 'cobro')}
-                                          className="text-gray-400 hover:text-gray-600"
+                                          className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
                                           title="Copiar"
                                         >
                                           <Copy className="h-3 w-3" />

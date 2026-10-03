@@ -1575,10 +1575,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         <span className="font-medium text-gray-500 dark:text-gray-400 text-xs block">Dirección Principal</span>
                         <button
                           onClick={() => abrirMapa(prestamo.cliente.direccionCliente, 'cliente', prestamo.cliente.mapLink)}
-                          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-words w-full font-semibold transition-colors mt-0.5"
+                          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-all w-full font-semibold transition-colors mt-0.5"
                           title="Click para abrir en Google Maps"
                         >
-                          {prestamo.cliente.direccionCliente}
+                          {prestamo.cliente.direccionCliente.startsWith('http')
+                            ? "Ubicación en Google Maps"
+                            : prestamo.cliente.direccionCliente}
                         </button>
                       </div>
                     </div>
@@ -1591,10 +1593,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                           <span className="font-medium text-amber-700 dark:text-amber-400 text-xs block">Dirección de Cobro</span>
                           <button
                             onClick={() => abrirMapa(prestamo.cliente.direccionCobro!, 'cobro')}
-                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-words w-full font-semibold transition-colors mt-0.5"
+                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 text-left leading-snug break-all w-full font-semibold transition-colors mt-0.5"
                             title="Click para abrir en Google Maps"
                           >
-                            {prestamo.cliente.direccionCobro}
+                            {prestamo.cliente.direccionCobro.startsWith('http')
+                              ? "Ubicación en Google Maps"
+                              : prestamo.cliente.direccionCobro}
                           </button>
                         </div>
                       </div>
