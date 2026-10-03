@@ -247,22 +247,22 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
             </Button>
           )}
 
-          {!isCobrador && (
-            <Button
-              type="button"
-              onClick={() => {
-                if (reporteSeleccionado) {
-                  handleOpenEntregaModal(reporteSeleccionado.cobradorId, reporteSeleccionado.cobradorNombre, reporteSeleccionado.numeroRuta, reporteSeleccionado.entregaHoy)
-                } else if (cobradores.length > 0) {
-                  handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-10 px-4 rounded-xl shadow-sm flex items-center gap-1.5 transition-all w-full sm:w-auto justify-center"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Cargar Entrega Manual</span>
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={() => {
+              if (reporteSeleccionado) {
+                handleOpenEntregaModal(reporteSeleccionado.cobradorId, reporteSeleccionado.cobradorNombre, reporteSeleccionado.numeroRuta, reporteSeleccionado.entregaHoy)
+              } else if (reportes.length > 0) {
+                handleOpenEntregaModal(reportes[0].cobradorId, reportes[0].cobradorNombre, reportes[0].numeroRuta, reportes[0].entregaHoy)
+              } else if (cobradores.length > 0) {
+                handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold h-10 px-4 rounded-xl shadow-sm flex items-center gap-1.5 transition-all w-full sm:w-auto justify-center"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Cargar Entrega Manual</span>
+          </Button>
         </div>
       </div>
 
@@ -292,23 +292,23 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               {formatCurrency(reporteSeleccionado ? reporteSeleccionado.entregaHoy : resumenGlobal?.totalEntregaHoy || 0)}
             </span>
-            {!isCobrador && (
-              <Button
-                size="sm"
-                type="button"
-                onClick={() => {
-                  if (reporteSeleccionado) {
-                    handleOpenEntregaModal(reporteSeleccionado.cobradorId, reporteSeleccionado.cobradorNombre, reporteSeleccionado.numeroRuta, reporteSeleccionado.entregaHoy)
-                  } else if (cobradores.length > 0) {
-                    handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
-                  }
-                }}
-                className="bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-[11px] h-7 px-3 rounded-lg shrink-0 shadow-sm transition-all"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Cargar Entrega
-              </Button>
-            )}
+            <Button
+              size="sm"
+              type="button"
+              onClick={() => {
+                if (reporteSeleccionado) {
+                  handleOpenEntregaModal(reporteSeleccionado.cobradorId, reporteSeleccionado.cobradorNombre, reporteSeleccionado.numeroRuta, reporteSeleccionado.entregaHoy)
+                } else if (reportes.length > 0) {
+                  handleOpenEntregaModal(reportes[0].cobradorId, reportes[0].cobradorNombre, reportes[0].numeroRuta, reportes[0].entregaHoy)
+                } else if (cobradores.length > 0) {
+                  handleOpenEntregaModal(cobradores[0].id, cobradores[0].nombre, cobradores[0].numeroRuta)
+                }
+              }}
+              className="bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-[11px] h-7 px-3 rounded-lg shrink-0 shadow-sm transition-all"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Cargar Entrega
+            </Button>
           </div>
           <span className="text-[11px] text-blue-100/90 mt-1 font-medium">
             Efectivo asignado de caja
@@ -519,21 +519,19 @@ export default function ReporteCobradores({ userRole }: ReporteCobradoresProps) 
                         +{formatCurrency(r.entregaHoy)}
                       </span>
                     </div>
-                    {!isCobrador && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOpenEntregaModal(r.cobradorId, r.cobradorNombre, r.numeroRuta, r.entregaHoy)
-                        }}
-                        title="Registrar o editar entrega de caja"
-                        className="h-7 text-[11px] font-bold px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shrink-0 transition-all shadow-xs"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Entrega
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenEntregaModal(r.cobradorId, r.cobradorNombre, r.numeroRuta, r.entregaHoy)
+                      }}
+                      title="Registrar o editar entrega de caja"
+                      className="h-7 text-[11px] font-bold px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shrink-0 transition-all shadow-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Entrega
+                    </Button>
                   </div>
 
                   <div>

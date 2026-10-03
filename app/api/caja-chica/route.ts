@@ -319,10 +319,13 @@ export async function POST(request: NextRequest) {
 
     const isCobrador = session.user.role === "COBRADOR"
     if (isCobrador) {
-      return NextResponse.json(
-        { error: "Los cobradores no tienen permisos para realizar movimientos de caja" },
-        { status: 403 }
-      )
+      cobradorId = session.user.id
+      if (tipo === "APERTURA_CAJA" || tipo === "EGRESO_GENERAL") {
+        return NextResponse.json(
+          { error: "No tienes permisos para registrar egresos generales ni apertura de caja" },
+          { status: 403 }
+        )
+      }
     }
 
     // Verificar permisos específicos de gastos e ingresos
