@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
+import { cargarIdsRenovados, esVencido as calcEsVencido } from "@/lib/prestamo-calc"
 
 export const dynamic = "force-dynamic"
 
@@ -136,6 +137,9 @@ export async function GET(request: NextRequest) {
       pagosHoyMap.set(p.prestamoId, arr)
     })
 
+    // Préstamos que ya fueron reemplazados por una renovación/refinanciamiento no se cobran
+    const idsRenovados = await cargarIdsRenovados(prisma)
+
     // Procesar TODOS los préstamos activos: calcular saldos y pagos de hoy
     const procesados = prestamos
       .filter(p => new Date(p.fechaInicio) <= fin) // solo los que ya iniciaron
@@ -158,7 +162,7 @@ export async function GET(request: NextRequest) {
         const yaPagoHoy = pagosHoy.length > 0
 
         // ¿Corresponde cobrar hoy según frecuencia o mora?
-        const esMora = prestamo.fechaFin < inicio
+        const esMora = calcEsVencido({ ...prestamo, pagos: [{ monto: totalPagado }] }, idsRenovados, inicio)
         const esHoy = esDiaDePago(prestamo.tipoPago, prestamo.fechaInicio, inicio)
         
         // Calcular si está adelantado
@@ -211,7 +215,7 @@ export async function GET(request: NextRequest) {
     const cobrados = procesados.filter(p => p.yaPagoHoy)
 
     // POR COBRAR: los que corresponden a hoy (frecuencia/mora), NO pagaron hoy, y tienen saldo
-    const porCobrar = procesados.filter(p => !p.yaPagoHoy && p.enRutaHoy && p.saldoPendiente > 0)
+    const porCobrar = procesados.filter(p => !p.yaPagoHoy && p.enRutaHoy && p.saldoPendiente > 0.01 && !idsRenovados.has(p.id))
 
     // Obtener orden guardado para hoy (asociado a la ruta)
     // Usamos el targetRutaId, o el userId si no hay ruta

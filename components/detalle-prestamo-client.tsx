@@ -58,6 +58,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
 import dynamic from "next/dynamic"
+import { diaCalendario, diaReferencia } from "@/lib/prestamo-calc"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const CameraModal = dynamic(() => import("@/components/camera-modal"), { ssr: false })
@@ -739,10 +740,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   // Función para calcular el estado de alerta del préstamo
-  // Función para calcular el estado de alerta del préstamo
   const calcularEstadoPrestamo = () => {
-    // Si ya está completamente pagado
-    if (saldoPendiente <= 0) {
+    // Si ya está completamente pagado o cancelado/renovado
+    if (saldoPendiente <= 0 || prestamo.estado === 'CANCELADO' || prestamo.estado === 'RENOVADO') {
       return {
         estado: 'COMPLETADO',
         icono: CheckCircle,
@@ -753,13 +753,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     }
 
     // Verificar si el préstamo está completamente vencido por fecha
-    const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
-    const [finYear, finMonth, finDay] = fechaFinStr.split('-').map(Number)
-    const fechaFinMidnight = new Date(finYear, finMonth - 1, finDay)
-    const hoy = new Date()
-    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    const diaHoyEcuador = diaReferencia()
 
-    if (prestamo.estado === 'VENCIDO' || fechaFinMidnight < hoyMidnight) {
+    if (prestamo.estado === 'VENCIDO' || diaCalendario(prestamo.fechaFin) < diaHoyEcuador) {
       return {
         estado: 'VENCIDO',
         icono: XCircle,

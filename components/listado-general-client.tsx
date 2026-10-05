@@ -31,6 +31,7 @@ import { useCurrency } from "@/hooks/use-currency"
 import dynamic from "next/dynamic"
 import { useInView } from "react-intersection-observer"
 import { countDiasHabiles } from "@/lib/date-utils"
+import { diaCalendario, diaReferencia } from "@/lib/prestamo-calc"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
@@ -146,9 +147,9 @@ const calcularEstadoCliente = (
   hoyMidnight: Date,
   ayerMidnight: Date
 ) => {
-  const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.saldoPendiente <= 0.01 || p.cuotasPagadas >= p.cuotas
+  const esPrestamoCompletado = (p: Prestamo) => p.estado === 'CANCELADO' || p.estado === 'RENOVADO' || p.saldoPendiente <= 0.01 || p.cuotasPagadas >= p.cuotas
 
-  // Si no tiene préstamos o todos están pagados, está Inactivo
+  // Si no tiene préstamos o todos están pagados/renovados, está Inactivo
   const inactivo = clienteData.prestamos.length === 0 || clienteData.prestamos.every(esPrestamoCompletado)
   if (inactivo) {
     return {
@@ -160,13 +161,15 @@ const calcularEstadoCliente = (
     }
   }
 
-  const hoyTime = hoy.getTime()
-  const hoyMidnightTime = hoyMidnight.getTime()
+  const diaHoyEcuador = diaReferencia()
 
   // Verificar si algún préstamo está completamente vencido y no ha sido pagado
   const tienePrestamoVencido = clienteData.prestamos.some(prestamo => {
     if (esPrestamoCompletado(prestamo)) return false
-    return prestamo.estado === 'VENCIDO' || new Date(prestamo.fechaFin).getTime() < hoyTime
+    if (prestamo.estado === 'VENCIDO') return true
+    
+    // Un préstamo está vencido si su fecha fin es menor (anterior) a "hoy" en Ecuador
+    return diaCalendario(prestamo.fechaFin) < diaHoyEcuador
   })
 
   if (tienePrestamoVencido) {
@@ -180,11 +183,12 @@ const calcularEstadoCliente = (
   }
 
   // Verificar morosidad (préstamos con pagos atrasados)
+  const hoyMidnightTime = hoyMidnight.getTime()
   const tieneAtraso = clienteData.prestamos.some(prestamo => {
     if (esPrestamoCompletado(prestamo)) return false
 
     const diasEsperados = DIAS_POR_TIPO_PAGO[prestamo.tipoPago] || 1
-    const fechaInicioStr = String(prestamo.fechaInicio).split('T')[0]
+    const fechaInicioStr = diaCalendario(prestamo.fechaInicio)
     const [inicioYear, inicioMonth, inicioDay] = fechaInicioStr.split('-').map(Number)
     const fechaInicioMidnight = new Date(inicioYear, inicioMonth - 1, inicioDay)
 
@@ -213,7 +217,7 @@ const calcularEstadoCliente = (
   const proximoAVencer = clienteData.prestamos.some(prestamo => {
     if (esPrestamoCompletado(prestamo)) return false
 
-    const fechaFinStr = String(prestamo.fechaFin).split('T')[0]
+    const fechaFinStr = diaCalendario(prestamo.fechaFin)
     const [year, month, day] = fechaFinStr.split('-').map(Number)
     const fechaFinMidnight = new Date(year, month - 1, day)
 

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getEcuadorDayRange, getEcuadorRange, esDiaDePago } from "@/lib/date-utils"
+import { calcularSaldo, esVigente as calcEsVigente, esVencido as calcEsVencido, cargarIdsRenovados } from "@/lib/prestamo-calc"
 
 export const dynamic = "force-dynamic"
 
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
           fechaFin: true,
           moraCredito: true,
           pagos: {
-            select: { monto: true }
+            select: { monto: true, devolucionSeguro: true }
           }
         }
       }),
@@ -166,7 +167,7 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    const hoyDate = new Date()
+    const idsRenovados = await cargarIdsRenovados(prisma)
 
     // Procesar reporte individual por cobrador
     const reportes = cobradoresRaw.map(cobrador => {
@@ -239,18 +240,14 @@ export async function GET(request: NextRequest) {
       const clientesPorVisitarSet = new Set<string>()
 
       prestamosActivosCobrador.forEach(p => {
-        const montoBase = parseFloat(p.monto.toString())
-        const tasaInt = parseFloat(p.interes.toString()) / 100
-        const totalConInt = montoBase * (1 + tasaInt)
-        const totalPagado = p.pagos.reduce((s, pg) => s + parseFloat(pg.monto.toString()), 0)
-        const saldoRestante = Math.max(0, totalConInt - totalPagado)
+        const saldoRestante = calcularSaldo(p as any).saldo
 
-        if (saldoRestante > 0.01) {
+        if (calcEsVigente(p as any, idsRenovados)) {
           saldoPendienteTotal += saldoRestante
           clientesConPrestamosActivosSet.add(p.clienteId)
 
-          // Evaluar si tiene mora
-          const tieneMoraFlag = parseFloat(p.moraCredito.toString()) > 0 || (new Date(p.fechaFin) < hoyDate && saldoRestante > 1)
+          // Mora = préstamo vencido (regla central). La tasa moraCredito NO indica mora.
+          const tieneMoraFlag = calcEsVencido(p as any, idsRenovados, fechaFin)
           if (tieneMoraFlag) {
             clientesConMoraSet.add(p.clienteId)
           }

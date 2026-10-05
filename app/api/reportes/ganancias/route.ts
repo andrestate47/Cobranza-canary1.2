@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db"
 import { Decimal } from "@prisma/client/runtime/library"
 import { getEcuadorDayRange, getEcuadorRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
 import { requirePermission } from "@/lib/permissions"
+import { inicioDeHoy } from "@/lib/prestamo-calc"
 
 export const dynamic = "force-dynamic"
 
@@ -344,6 +345,8 @@ export async function GET(request: NextRequest) {
     })
 
     const getTotalPagado = (prestamoId: string) => totalPagadoMap.get(prestamoId) || 0
+    // Regla central: vencido si la fecha fin es anterior al inicio de hoy (Ecuador)
+    const inicioHoy = inicioDeHoy()
 
     // 2. Balance Pendiente (suma de todos los saldos pendientes)
     let balancePendiente = 0
@@ -363,7 +366,7 @@ export async function GET(request: NextRequest) {
     // 4. Capital No Recuperado (préstamos vencidos sin pagar)
     let capitalNoRecuperado = 0
     ;(prestamosConSaldo as any[])
-      .filter((prestamo) => new Date(prestamo.fechaFin) < hoy)
+      .filter((prestamo) => new Date(prestamo.fechaFin) < inicioHoy)
       .forEach((prestamo) => {
         const baseTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
         const montoTotal = baseTotal
@@ -423,8 +426,8 @@ export async function GET(request: NextRequest) {
     const cantidadClientesActivos = new Set((todosPagos as PagoConPrestamo[]).map((p) => p.prestamo.clienteId)).size
 
     // Préstamos por estado
-    const prestamosAlDia = (prestamosConSaldo as PrestamoConCliente[]).filter((p) => new Date(p.fechaFin) >= hoy).length
-    const prestamosVencidos = (prestamosConSaldo as PrestamoConCliente[]).filter((p) => new Date(p.fechaFin) < hoy).length
+    const prestamosAlDia = (prestamosConSaldo as PrestamoConCliente[]).filter((p) => new Date(p.fechaFin) >= inicioHoy).length
+    const prestamosVencidos = (prestamosConSaldo as PrestamoConCliente[]).filter((p) => new Date(p.fechaFin) < inicioHoy).length
 
     // ROI (Return on Investment)
     const roi = capitalInvertido > 0 ? ((utilidadNeta / capitalInvertido) * 100) : 0

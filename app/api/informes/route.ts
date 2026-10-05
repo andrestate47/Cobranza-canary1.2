@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db"
 import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos } from "@/lib/date-utils"
 import { obtenerSaldoInicialParaDia } from "@/lib/cierre-utils"
 import { requirePermission } from "@/lib/permissions"
+import { esVigente as calcEsVigente, esVencido as calcEsVencido, calcularSaldo, cargarIdsRenovados } from "@/lib/prestamo-calc"
 
 export const dynamic = "force-dynamic"
 
@@ -93,12 +94,9 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
     }
   })
 
-  // Filtrar solo préstamos que mantienen saldo pendiente real > 0.01 y no están cancelados/renovados
-  const prestamosActivosConSaldo = prestamosActivos.filter(p => {
-    const montoTotal = Math.round((parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)) * 100) / 100
-    const totalPagado = Math.round((p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()) + parseFloat(pago.devolucionSeguro?.toString() || '0'), 0)) * 100) / 100
-    return Math.max(0, montoTotal - totalPagado) > 0.01
-  })
+  // Filtrar solo préstamos vigentes (regla central: saldo > 0.01, no cancelados/renovados)
+  const idsRenovados = await cargarIdsRenovados(prisma)
+  const prestamosActivosConSaldo = prestamosActivos.filter(p => calcEsVigente(p as any, idsRenovados))
 
   // Obtener gastos del día (filtrados por usuario si se especifica)
   const gastos = await prisma.gasto.findMany({
@@ -215,7 +213,7 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
   const clientesPorRenovarIds = Array.from(clientesPorRenovarSet)
 
   // Refinanciamientos pendientes (préstamos VENCIDOS activos con saldo pendiente del cobrador)
-  const prestamosVencidosPendientes = prestamosActivosConSaldo.filter(p => p.fechaFin < fecha)
+  const prestamosVencidosPendientes = prestamosActivosConSaldo.filter(p => calcEsVencido(p as any, idsRenovados, fecha))
   const prestamosVencidosPendientesIds = prestamosVencidosPendientes.map(p => p.id)
   const prestamosActivosConSaldoIds = prestamosActivosConSaldo.map(p => p.id)
 
@@ -351,12 +349,7 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
 
   let totalPorCobrar = 0
   for (const prestamo of prestamosActivosConSaldo) {
-    const montoTotal = parseFloat(prestamo.monto.toString()) * (1 + parseFloat(prestamo.interes.toString()) / 100)
-    const totalPagado = prestamo.pagos.reduce((sum, pago) => 
-      sum + parseFloat(pago.monto.toString()), 0
-    )
-    const saldoPendiente = Math.max(0, montoTotal - totalPagado)
-    totalPorCobrar += saldoPendiente
+    totalPorCobrar += calcularSaldo(prestamo as any).saldo
   }
 
   let expectativaCobroHoy = 0
@@ -373,12 +366,7 @@ async function getInformeForUser(userId: string | null, fechaInicio: Date, fecha
   const clientesMoraIds = new Set<string>()
 
   // Usar prestamosActivosConSaldo para asegurar saldoPendiente > 0 y excluir cancelados/pagados
-  const prestamosMora = prestamosActivosConSaldo.filter(p => {
-    const montoTotal = Math.round((parseFloat(p.monto.toString()) * (1 + parseFloat(p.interes.toString()) / 100)) * 100) / 100
-    const totalPagado = Math.round((p.pagos.reduce((sum, pago) => sum + parseFloat(pago.monto.toString()) + parseFloat(pago.devolucionSeguro?.toString() || '0'), 0)) * 100) / 100
-    const saldoPendiente = Math.max(0, montoTotal - totalPagado)
-    return p.fechaFin < fecha && saldoPendiente > 0.01
-  })
+  const prestamosMora = prestamosActivosConSaldo.filter(p => calcEsVencido(p as any, idsRenovados, fecha))
   for (const prestamo of prestamosMora) {
     if (!clientesMoraIds.has(prestamo.cliente.id)) {
       clientesMoraIds.add(prestamo.cliente.id)
