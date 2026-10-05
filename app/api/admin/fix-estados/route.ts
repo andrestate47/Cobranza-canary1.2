@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       const saldoInfo = calcularSaldo({
         monto: Number(p.monto),
         interes: Number(p.interes),
+        fechaFin: p.fechaFin,
         pagos: p.pagos.map(pago => ({
           monto: Number(pago.monto),
           devolucionSeguro: Number(pago.devolucionSeguro || 0)
