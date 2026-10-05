@@ -741,6 +741,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
   // Función para calcular el estado de alerta del préstamo
   const calcularEstadoPrestamo = () => {
+    const hoy = new Date()
+    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    
     // Si ya está completamente pagado o cancelado/renovado
     if (saldoPendiente <= 0 || prestamo.estado === 'CANCELADO' || prestamo.estado === 'RENOVADO') {
       return {
