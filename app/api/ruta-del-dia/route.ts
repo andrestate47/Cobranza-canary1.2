@@ -78,11 +78,27 @@ export async function GET(request: NextRequest) {
     if (targetRutaId || !isAdminOrSupervisor) {
       prestamos = await prisma.prestamo.findMany({
         where: {
-          estado: "ACTIVO",
-          ...(targetRutaId 
+          AND: [
+            {
+              OR: [
+                { estado: "ACTIVO" },
+                {
+                  estado: "CANCELADO",
+                  pagos: {
+                    some: {
+                      fecha: {
+                        gte: inicio,
+                        lte: fin
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            targetRutaId 
               ? { cliente: { rutaId: targetRutaId } } 
               : { userId: session.user.id }
-          )
+          ]
         },
         include: {
           cliente: {
