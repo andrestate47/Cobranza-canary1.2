@@ -426,6 +426,7 @@ export async function GET(request: NextRequest) {
           pagos: {
             select: {
               monto: true,
+              devolucionSeguro: true,
               fecha: true
             },
             orderBy: {
@@ -492,6 +493,7 @@ export async function GET(request: NextRequest) {
           pagos: {
             select: {
               monto: true,
+              devolucionSeguro: true,
               fecha: true
             },
             orderBy: {
@@ -516,8 +518,24 @@ export async function GET(request: NextRequest) {
     // Calcular totales de cobros
     const totalCobrado = cobrosHoy.reduce((sum, pago) => sum + Number(pago.monto), 0)
 
-    const prestamosVencidosReales = prestamosVencidos.filter(hasSaldoPendiente)
-    const prestamosEnMoraListaReales = prestamosEnMoraLista.filter(hasSaldoPendiente)
+    // IDs de préstamos que ya fueron renovados/refinanciados (otro préstamo apunta a ellos)
+    const renovados = await prisma.prestamo.findMany({
+      where: { renovadoDeId: { not: null } },
+      select: { renovadoDeId: true }
+    })
+    const idsRenovados = new Set(renovados.map(r => r.renovadoDeId as string))
+    const esVigente = (p: any) => !idsRenovados.has(p.id) && hasSaldoPendiente(p)
+    const calcSaldo = (p: any) => {
+      const montoTotal = Number(p.monto || 0) * (1 + Number(p.interes || 0) / 100)
+      const pagado = (p.pagos || []).reduce((s: number, x: any) => s + Number(x.monto || 0) + Number(x.devolucionSeguro || 0), 0)
+      return { montoTotal, pagado, saldo: Math.max(0, Math.round((montoTotal - pagado) * 100) / 100) }
+    }
+    // Un préstamo está vencido solo si su fecha fin es anterior al inicio de hoy (Ecuador)
+    const estaVencidoHoy = (p: any) => new Date(p.fechaFin) < fechaInicio
+
+    const todosPrestamosReales = todosPrestamosTotales.filter(esVigente)
+    const prestamosVencidosReales = prestamosVencidos.filter(esVigente)
+    const prestamosEnMoraListaReales = prestamosEnMoraLista.filter(p => esVigente(p) && estaVencidoHoy(p))
     const clientesConMoraReales = clientesConMora.map(cliente => ({
       ...cliente,
       prestamos: cliente.prestamos.filter(hasSaldoPendiente)
@@ -533,7 +551,7 @@ export async function GET(request: NextRequest) {
       fecha,
       resumen: {
         totalClientes,
-        totalPrestamos: prestamosData._count.id,
+        totalPrestamos: todosPrestamosReales.length,
         clientesVisitadosHoy: clientesVisitados.length,
         clientesNoVisitadosHoy: clientesNoVisitadosReales.length,
         prestamosVencidos: prestamosVencidosReales.length,
@@ -779,13 +797,12 @@ export async function GET(request: NextRequest) {
         }),
 
         // NUEVAS LISTAS PARA LAS SUB-PESTAÑAS DE PRÉSTAMOS
-        todosPrestamosTotales: todosPrestamosTotales.map(prestamo => {
-          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
-          const saldoPendiente = Number(prestamo.monto) - totalPagado
+        todosPrestamosTotales: todosPrestamosReales.map(prestamo => {
+          const { montoTotal, pagado: totalPagado, saldo: saldoPendiente } = calcSaldo(prestamo)
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
+          const porcentajePagado = (totalPagado / (montoTotal || 1) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
-          const estaVencido = new Date(prestamo.fechaFin) < new Date()
+          const estaVencido = estaVencidoHoy(prestamo)
           const diasVencido = estaVencido ?
             getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago) : 0
 
@@ -838,10 +855,9 @@ export async function GET(request: NextRequest) {
         }),
 
         prestamosEnMoraLista: prestamosEnMoraListaReales.map(prestamo => {
-          const totalPagado = prestamo.pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0
-          const saldoPendiente = Number(prestamo.monto) - totalPagado
+          const { montoTotal, pagado: totalPagado, saldo: saldoPendiente } = calcSaldo(prestamo)
           const cuotasPagadas = Math.floor(totalPagado / Number(prestamo.valorCuota || 1))
-          const porcentajePagado = (totalPagado / Number(prestamo.monto || 1) * 100).toFixed(1)
+          const porcentajePagado = (totalPagado / (montoTotal || 1) * 100).toFixed(1)
           const ultimoPago = prestamo.pagos?.length > 0 ? prestamo.pagos[0].fecha : null
           const diasVencido = getDiasMoraSinDomingos(prestamo.fechaFin, new Date(), prestamo.tipoPago)
 
