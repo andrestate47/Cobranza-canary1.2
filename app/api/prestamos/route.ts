@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         where: {
           prestamoId: { in: prestamoIds }
         }
-      });
+      } as any);
     }
 
     const pagosAgrupadosMap = new Map()
