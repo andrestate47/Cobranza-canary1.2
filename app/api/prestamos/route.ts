@@ -27,8 +27,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Construir filtro según el rol
-    const whereClause: any = {
-      estado: "ACTIVO"
+    const whereClause: any = {}
+    if (conSaldo) {
+      whereClause.estado = { in: ["ACTIVO", "VENCIDO"] }
     }
 
     // Si no es ADMINISTRADOR, filtrar por la ruta del cliente
@@ -45,42 +46,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Obtener préstamos activos y agregaciones de pagos en paralelo con Promise.all
-    const [prestamos, agregacionPagos] = await Promise.all([
-      prisma.prestamo.findMany({
-        where: whereClause,
-        include: {
-          cliente: {
-            select: {
-              id: true,
-              codigoCliente: true,
-              documento: true,
-              nombre: true,
-              apellido: true,
-              direccionCliente: true,
-              direccionCobro: true,
-              telefono: true,
-              foto: true,
-              pais: true,
-              ciudad: true,
-              referenciasPersonales: true,
-              mapLink: true
-            }
+    const prestamos = await prisma.prestamo.findMany({
+      where: whereClause,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            codigoCliente: true,
+            documento: true,
+            nombre: true,
+            apellido: true,
+            direccionCliente: true,
+            direccionCobro: true,
+            telefono: true,
+            foto: true,
+            pais: true,
+            ciudad: true,
+            referenciasPersonales: true,
+            mapLink: true
           }
-        },
-        orderBy: [
-          { fechaInicio: "desc" }
-        ]
-      }),
-      prisma.pago.groupBy({
+        }
+      },
+      orderBy: [
+        { fechaInicio: "desc" }
+      ]
+    });
+
+    const prestamoIds = prestamos.map(p => p.id);
+
+    let agregacionPagos: any[] = [];
+    if (prestamoIds.length > 0) {
+      agregacionPagos = await prisma.pago.groupBy({
         by: ["prestamoId"],
         _sum: { monto: true, devolucionSeguro: true },
         _max: { fecha: true },
         where: {
-          prestamo: whereClause
+          prestamoId: { in: prestamoIds }
         }
-      })
-    ])
+      });
+    }
 
     const pagosAgrupadosMap = new Map()
     agregacionPagos.forEach(agg => {
