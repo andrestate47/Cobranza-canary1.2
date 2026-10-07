@@ -584,7 +584,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
               <TabsContent value="visitados" className="space-y-4 mt-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Clientes Visitados Hoy</h3>
-                  <Badge variant="secondary">{informe.detalles.clientesVisitados.length}</Badge>
+                  <Badge variant="secondary" className="whitespace-nowrap">{informe.detalles.clientesVisitados.length}</Badge>
                 </div>
                 <div className="space-y-3">
                   {informe.detalles.clientesVisitados
@@ -628,8 +628,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <Badge variant="secondary">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <Badge variant="secondary" className="whitespace-nowrap">
                                   {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
@@ -768,8 +768,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <Badge variant="secondary">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <Badge variant="secondary" className="whitespace-nowrap">
                                   {cliente.prestamosActivos} préstamo{cliente.prestamosActivos !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
@@ -889,8 +889,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 Venció: {new Date(prestamo.fechaVencimiento).toLocaleDateString('es-CO')}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-red-600">
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <p className="text-lg font-bold text-red-600 whitespace-nowrap">
                                 {formatCurrency(prestamo.monto)}
                               </p>
                               <p className="text-sm text-gray-600">
@@ -927,7 +927,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold">Listado de Clientes</h3>
-                      <Badge variant="secondary">{informe.detalles.nuevosClientes.length}</Badge>
+                      <Badge variant="secondary" className="whitespace-nowrap">{informe.detalles.nuevosClientes.length}</Badge>
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {informe.detalles.nuevosClientes.map((cliente, index) => (
@@ -983,7 +983,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Cobros de Hoy</h3>
                   <div className="flex items-center space-x-2">
-                    <Badge variant="secondary">{informe.detalles.cobrosHoy.length}</Badge>
+                    <Badge variant="secondary" className="whitespace-nowrap">{informe.detalles.cobrosHoy.length}</Badge>
                     <Badge variant="outline" className="bg-green-50 text-green-700">
                       {formatCurrency(informe.resumen.totalCobradoHoy)}
                     </Badge>
@@ -1022,8 +1022,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 </p>
                               )}
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-green-600">
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <p className="text-lg font-bold text-green-600 whitespace-nowrap">
                                 {formatCurrency(cobro.monto)}
                               </p>
                             </div>
@@ -1102,8 +1102,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <Badge variant="outline" className="mb-2">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <Badge variant="outline" className="mb-2 whitespace-nowrap">
                                   {cliente.prestamosEnMora} préstamo{cliente.prestamosEnMora !== 1 ? 's' : ''} en mora
                                 </Badge>
                               </div>
@@ -1264,8 +1264,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </p>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-teal-600">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-lg font-bold text-teal-600 whitespace-nowrap">
                                   {formatCurrency(prestamo.monto)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Monto total</p>
@@ -1299,7 +1299,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
                                   <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
-                                  <Badge variant="secondary">Activo</Badge>
+                                  <Badge variant="secondary" className="whitespace-nowrap">Activo</Badge>
                                   {prestamo.estaVencido && (
                                     <Badge variant="destructive" className="text-xs">
                                       <AlertTriangle className="h-3 w-3 mr-1" />
@@ -1339,8 +1339,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-blue-600">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-lg font-bold text-blue-600 whitespace-nowrap">
                                   {formatCurrency(prestamo.monto)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Monto total</p>
@@ -1413,8 +1413,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   )}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-green-600">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-lg font-bold text-green-600 whitespace-nowrap">
                                   {formatCurrency(prestamo.monto)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Monto total</p>
@@ -1485,8 +1485,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-orange-600">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-lg font-bold text-orange-600 whitespace-nowrap">
                                   {formatCurrency(prestamo.monto)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Monto total</p>
@@ -1572,8 +1572,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-red-600">
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-lg font-bold text-red-600 whitespace-nowrap">
                                   {formatCurrency(prestamo.monto)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Monto total</p>
