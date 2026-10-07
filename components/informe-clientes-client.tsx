@@ -600,9 +600,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                           <div className="space-y-3">
                             {/* Encabezado del cliente */}
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap">
-                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{cliente.nombre}</h4>
                                   <Badge variant="outline" className="bg-green-50 text-green-700">
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Visitado
@@ -614,7 +614,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{cliente.documento}</p>
                                 {cliente.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -624,7 +624,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {cliente.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{cliente.direccion}</span>
                                   </div>
                                 )}
                               </div>
@@ -735,9 +735,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                           <div className="space-y-3">
                             {/* Encabezado del cliente */}
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{cliente.nombre}</h4>
                                   <Badge variant="destructive">
                                     <XCircle className="h-3 w-3 mr-1" />
                                     Pendiente
@@ -754,7 +754,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{cliente.documento}</p>
                                 {cliente.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -764,7 +764,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {cliente.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{cliente.direccion}</span>
                                   </div>
                                 )}
                               </div>
@@ -864,15 +864,15 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0 pr-2">
                               <div className="flex items-center space-x-2">
-                                <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                 <Badge variant="destructive">
                                   <AlertTriangle className="h-3 w-3 mr-1" />
                                   {prestamo.diasVencido} días vencido
                                 </Badge>
                               </div>
-                              <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                              <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                               {prestamo.telefono && (
                                 <div className="flex items-center space-x-1 mt-1">
                                   <Phone className="h-3 w-3 text-gray-400" />
@@ -882,7 +882,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                               {prestamo.direccion && (
                                 <div className="flex items-center space-x-1 mt-1">
                                   <MapPin className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                  <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                 </div>
                               )}
                               <p className="text-sm text-red-600 mt-1">
@@ -934,12 +934,12 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={cliente.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.1}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2">
-                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{cliente.nombre}</h4>
 
                                 </div>
-                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{cliente.documento}</p>
                                 {cliente.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1001,15 +1001,15 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                       <Card key={cobro.id} className="animate-fadeInScale border-l-4 border-l-green-400" style={{ animationDelay: `${index * 0.1}s` }}>
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0 pr-2">
                               <div className="flex items-center space-x-2">
-                                <h4 className="font-semibold text-gray-900">{cobro.cliente}</h4>
+                                <h4 className="font-semibold text-gray-900 truncate">{cobro.cliente}</h4>
                                 <Badge variant="outline" className="bg-green-50 text-green-700">
                                   <DollarSign className="h-3 w-3 mr-1" />
                                   Cobro
                                 </Badge>
                               </div>
-                              <p className="text-sm text-gray-600">{cobro.documento}</p>
+                              <p className="text-sm text-gray-600 truncate">{cobro.documento}</p>
                               <p className="text-sm text-gray-500">
                                 Por: {cobro.cobradoPor}
                               </p>
@@ -1070,9 +1070,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                           <div className="space-y-3">
                             {/* Encabezado del cliente */}
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{cliente.nombre}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{cliente.nombre}</h4>
                                   <Badge variant="destructive">
                                     <AlertCircle className="h-3 w-3 mr-1" />
                                     {cliente.diasMora} días mora
@@ -1088,7 +1088,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">{cliente.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{cliente.documento}</p>
                                 {cliente.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1098,7 +1098,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {cliente.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{cliente.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{cliente.direccion}</span>
                                   </div>
                                 )}
                               </div>
@@ -1227,15 +1227,15 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={prestamo.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.05}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                   <Badge variant="outline" className="bg-teal-50 text-teal-700">
                                     <CreditCard className="h-3 w-3 mr-1" />
                                     Nuevo
                                   </Badge>
                                 </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                                 {prestamo.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1245,7 +1245,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {prestamo.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                   </div>
                                 )}
                                 <div className="mt-2 space-y-1">
@@ -1296,9 +1296,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={prestamo.id} className="animate-fadeInScale" style={{ animationDelay: `${index * 0.05}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                   <Badge variant="secondary" className="whitespace-nowrap">Activo</Badge>
                                   {prestamo.estaVencido && (
                                     <Badge variant="destructive" className="text-xs">
@@ -1307,7 +1307,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                                 {prestamo.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1317,7 +1317,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {prestamo.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                   </div>
                                 )}
                                 <div className="mt-2 grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded">
@@ -1374,15 +1374,15 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-green-400" style={{ animationDelay: `${index * 0.05}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                   <Badge variant="outline" className="bg-green-50 text-green-700">
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Completado
                                   </Badge>
                                 </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                                 {prestamo.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1392,7 +1392,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {prestamo.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                   </div>
                                 )}
                                 <div className="mt-2 space-y-1">
@@ -1445,15 +1445,15 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-orange-400" style={{ animationDelay: `${index * 0.05}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                   <Badge variant="destructive">
                                     <AlertTriangle className="h-3 w-3 mr-1" />
                                     {prestamo.diasVencido} días vencido
                                   </Badge>
                                 </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                                 {prestamo.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1463,7 +1463,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {prestamo.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                   </div>
                                 )}
                                 <div className="mt-2 grid grid-cols-2 gap-2 p-2 bg-orange-50 rounded">
@@ -1520,9 +1520,9 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                         <Card key={prestamo.id} className="animate-fadeInScale border-l-4 border-l-red-500" style={{ animationDelay: `${index * 0.05}s` }}>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex items-center space-x-2 flex-wrap gap-1">
-                                  <h4 className="font-semibold text-gray-900">{prestamo.cliente}</h4>
+                                  <h4 className="font-semibold text-gray-900 truncate">{prestamo.cliente}</h4>
                                   <Badge variant="destructive">
                                     <AlertCircle className="h-3 w-3 mr-1" />
                                     Mora {prestamo.diasVencido} días
@@ -1533,7 +1533,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600">{prestamo.documento}</p>
+                                <p className="text-sm text-gray-600 truncate">{prestamo.documento}</p>
                                 {prestamo.telefono && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <Phone className="h-3 w-3 text-gray-400" />
@@ -1543,7 +1543,7 @@ export default function InformeClientesClient({ session }: InformeClientesClient
                                 {prestamo.direccion && (
                                   <div className="flex items-center space-x-1 mt-1">
                                     <MapPin className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm text-gray-600">{prestamo.direccion}</span>
+                                    <span className="text-sm text-gray-600 break-all">{prestamo.direccion}</span>
                                   </div>
                                 )}
                                 <div className="mt-2 grid grid-cols-2 gap-2 p-2 bg-red-50 rounded border border-red-200">
