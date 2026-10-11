@@ -63,7 +63,8 @@ export async function GET(request: NextRequest) {
             pais: true,
             ciudad: true,
             referenciasPersonales: true,
-            mapLink: true
+            mapLink: true,
+            createdAt: true
           }
         }
       },

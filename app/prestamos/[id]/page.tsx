@@ -80,9 +80,64 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
       }
     }
 
+    // Obtener todos los préstamos históricos del cliente para calcular con exactitud su score crediticio
+    const prestamosClienteRaw = await prisma.prestamo.findMany({
+      where: { clienteId: prestamo.clienteId },
+      include: {
+        pagos: {
+          select: {
+            id: true,
+            monto: true,
+            devolucionSeguro: true,
+            fecha: true
+          },
+          orderBy: { fecha: "desc" }
+        }
+      },
+      orderBy: { fechaInicio: "desc" }
+    })
+
+    const prestamosClienteFormatted = prestamosClienteRaw.map((p) => {
+      const pMonto = parseFloat(p.monto.toString())
+      const pInteres = parseFloat(p.interes.toString())
+      const pValorCuota = parseFloat(p.valorCuota.toString())
+      const pPagosSum = p.pagos.reduce(
+        (sum, pg) => sum + parseFloat(pg.monto.toString()) + (pg.devolucionSeguro ? parseFloat(pg.devolucionSeguro.toString()) : 0),
+        0
+      )
+      const pMontoTotal = pMonto * (1 + pInteres / 100)
+      const pSaldoPendiente = Math.max(0, Math.round((pMontoTotal - pPagosSum) * 100) / 100)
+      const pCuotasPagadas = pValorCuota > 0 ? pPagosSum / pValorCuota : 0
+
+      return {
+        id: p.id,
+        monto: pMonto,
+        interes: pInteres,
+        valorCuota: pValorCuota,
+        cuotas: p.cuotas,
+        cuotasPagadas: p.cuotasPagadasManual !== null ? parseFloat(p.cuotasPagadasManual.toString()) : pCuotasPagadas,
+        saldoPendiente: pSaldoPendiente,
+        fechaInicio: p.fechaInicio.toISOString(),
+        fechaFin: p.fechaFin.toISOString(),
+        estado: p.estado,
+        tipoPago: p.tipoPago,
+        cuotasAtrasadasManual: p.cuotasAtrasadasManual ? parseFloat(p.cuotasAtrasadasManual.toString()) : null,
+        diasVencidosManual: p.diasVencidosManual,
+        pagos: p.pagos.map((pg) => ({
+          monto: parseFloat(pg.monto.toString()),
+          devolucionSeguro: pg.devolucionSeguro ? parseFloat(pg.devolucionSeguro.toString()) : 0,
+          fecha: pg.fecha.toISOString()
+        }))
+      }
+    })
+
     // Convertir Decimal a números para evitar errores de serialización
     const prestamoFormatted = {
       ...prestamo,
+      cliente: {
+        ...prestamo.cliente,
+        createdAt: prestamo.cliente.createdAt.toISOString()
+      },
       monto: parseFloat(prestamo.monto.toString()),
       interes: parseFloat(prestamo.interes.toString()),
       valorCuota: parseFloat(prestamo.valorCuota.toString()),
@@ -114,7 +169,8 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
         createdAt: pago.createdAt.toISOString(),
         updatedAt: pago.updatedAt.toISOString(),
       })),
-      prestamoAnteriorInfo: formatAnterior(prestamoAnteriorRaw)
+      prestamoAnteriorInfo: formatAnterior(prestamoAnteriorRaw),
+      prestamosCliente: prestamosClienteFormatted
     }
 
     return <DetallePrestamoClient prestamo={prestamoFormatted as unknown as Parameters<typeof DetallePrestamoClient>[0]['prestamo']} session={session} />

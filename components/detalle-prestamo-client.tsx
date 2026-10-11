@@ -59,6 +59,9 @@ import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
 import dynamic from "next/dynamic"
 import { diaCalendario, diaReferencia } from "@/lib/prestamo-calc"
+import { calcularCreditScore } from "@/lib/credit-score"
+import CreditScoreCard from "@/components/credit-score-card"
+import CreditScoreBadge from "@/components/credit-score-badge"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const CameraModal = dynamic(() => import("@/components/camera-modal"), { ssr: false })
@@ -79,6 +82,7 @@ interface Cliente {
   mapLink: string | null
   foto: string | null
   fotoDocumento: string | null
+  createdAt?: string | Date
 }
 
 interface PagoUsuario {
@@ -142,6 +146,7 @@ interface Prestamo {
   renovadoDeId?: string | null
   datosRefinanciamiento?: any
   prestamoAnteriorInfo?: any
+  prestamosCliente?: any[]
   usuario?: {
     firstName: string | null
     lastName: string | null
@@ -635,6 +640,29 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     microseguroValor: prestamo.microseguroValor !== null && prestamo.microseguroValor !== undefined ? Number(prestamo.microseguroValor) : undefined,
     microseguroTipo: prestamo.microseguroTipo || undefined
   }
+
+  // Score Crediticio y fecha de registro del cliente
+  const scoreCrediticio = useMemo(() => {
+    const listaPrestamos = prestamo.prestamosCliente && prestamo.prestamosCliente.length > 0
+      ? prestamo.prestamosCliente
+      : [prestamoFormatted]
+    return calcularCreditScore(prestamo.cliente, listaPrestamos)
+  }, [prestamo.cliente, prestamo.prestamosCliente, prestamoFormatted])
+
+  const fechaClienteDesde = useMemo(() => {
+    const raw = prestamo.cliente.createdAt
+    if (!raw) return null
+    try {
+      const d = new Date(raw)
+      return d.toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })
+    } catch {
+      return null
+    }
+  }, [prestamo.cliente.createdAt])
 
   const onPagoSuccess = () => {
     setShowPagoModal(false)
@@ -1479,28 +1507,29 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         <div className="space-y-6">
           {/* Información del cliente */}
           <Card className="animate-fadeInScale dark:bg-[#102525] dark:border-[#34766D]">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5 text-primary dark:text-[#36E2C2]" />
-                  <span className="dark:text-[#F4FFFF]">Información del Cliente</span>
+            <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-4">
+              <CardTitle className="flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <User className="h-5 w-5 text-primary dark:text-[#36E2C2] shrink-0" />
+                  <span className="dark:text-[#F4FFFF] text-base sm:text-lg truncate">Información del Cliente</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   {/* Badge de estado de alerta */}
                   <Badge
-                    className={`text-xs ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
+                    className={`text-xs px-2.5 py-1 ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 shrink-0 ${estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
                       }`}
                   >
-                    <IconoAlerta className="h-3 w-3 mr-1" />
-                    {estadoAlerta.texto}
+                    <IconoAlerta className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    <span>{estadoAlerta.texto}</span>
                   </Badge>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowCameraModal(true)}
-                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950 dark:border-blue-800"
+                    className="h-8 px-2.5 sm:px-3 text-xs flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950 dark:border-blue-800 shrink-0 shadow-sm"
+                    title="Actualizar foto del cliente"
                   >
-                    <Camera className="h-4 w-4" />
+                    <Camera className="h-3.5 w-3.5 shrink-0" />
                     <span>Foto</span>
                   </Button>
                 </div>
@@ -1539,15 +1568,25 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                 <div className="flex-1 min-w-0 overflow-hidden w-full">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2 w-full">
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate w-full tracking-tight" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
-                      {prestamo.cliente.nombre} {prestamo.cliente.apellido}
-                    </h3>
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 whitespace-nowrap self-start sm:self-auto shrink-0 font-semibold px-2.5 py-0.5 rounded-full"
-                    >
-                      {getTipoPagoText(prestamo.tipoPago)}
-                    </Badge>
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate w-full tracking-tight" title={`${prestamo.cliente.nombre} ${prestamo.cliente.apellido}`}>
+                        {prestamo.cliente.nombre} {prestamo.cliente.apellido}
+                      </h3>
+                      {fechaClienteDesde && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal">
+                          Cliente desde {fechaClienteDesde}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto shrink-0">
+                      <CreditScoreBadge scoreData={scoreCrediticio} />
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 whitespace-nowrap font-semibold px-2.5 py-0.5 rounded-full"
+                      >
+                        {getTipoPagoText(prestamo.tipoPago)}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -1622,6 +1661,9 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
             </CardContent>
           </Card>
+
+          {/* Score Crediticio del Cliente (Responsivo y alineado al diseño) */}
+          <CreditScoreCard scoreData={scoreCrediticio} className="animate-fadeInScale" />
 
           {/* Información del préstamo */}
           <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>

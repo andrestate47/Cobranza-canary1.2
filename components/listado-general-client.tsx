@@ -32,6 +32,8 @@ import dynamic from "next/dynamic"
 import { useInView } from "react-intersection-observer"
 import { countDiasHabiles } from "@/lib/date-utils"
 import { diaCalendario, diaReferencia } from "@/lib/prestamo-calc"
+import { calcularCreditScore } from "@/lib/credit-score"
+import CreditScoreBadge from "@/components/credit-score-badge"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
@@ -73,6 +75,7 @@ interface ClienteConPrestamos {
     ciudad?: string
     referenciasPersonales?: string
     mapLink?: string
+    createdAt?: string
   }
   prestamos: Prestamo[]
   fechaActividadReciente: string
@@ -269,6 +272,10 @@ const ClienteCard = memo(function ClienteCard({
   const tipoPagoInfo = clienteData.tipoPagoInfo
   const IconoAlerta = estadoAlerta.icono
 
+  const scoreCrediticio = useMemo(() => {
+    return calcularCreditScore(clienteData.cliente, clienteData.prestamos)
+  }, [clienteData.cliente, clienteData.prestamos])
+
   return (
     <Card className="block list-none [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden">
       <Collapsible
@@ -311,6 +318,7 @@ const ClienteCard = memo(function ClienteCard({
                       {clienteData.cliente.nombre} {clienteData.cliente.apellido}
                     </h3>
                     <div className="flex items-center flex-wrap gap-x-1 gap-y-1 mt-1 shrink-0">
+                      <CreditScoreBadge scoreData={scoreCrediticio} />
                       <Badge
                         className={`text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] ${estadoAlerta.color} ${estadoAlerta.colorTexto} hover:opacity-80 ${
                           estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' ? 'animate-pulse' : ''
