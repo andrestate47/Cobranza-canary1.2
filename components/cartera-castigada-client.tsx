@@ -286,112 +286,110 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-3 sm:p-6 lg:p-8 space-y-6">
       {/* Cabecera Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard">
-            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg">
-                <ShieldAlert className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
+      <div className="flex flex-col gap-3 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link href="/dashboard" className="shrink-0">
+              <Button variant="outline" size="icon" className="h-9 w-9 sm:h-10 sm:w-10">
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+            </Link>
+            <div className="p-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg shrink-0">
+              <ShieldAlert className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
                   Cartera Castigada
-                  <Badge variant="destructive" className="text-xs font-semibold">
-                    +30 días sin pago
-                  </Badge>
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                  Préstamos y clientes en mora crítica sin abonos durante 1 mes o más
-                </p>
+                <Badge variant="destructive" className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 whitespace-nowrap">
+                  +30 días sin pago
+                </Badge>
               </div>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 line-clamp-1 sm:line-clamp-none mt-0.5">
+                Préstamos en mora crítica sin abono durante 1 mes o más
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={cargarDatos}
             disabled={loading}
-            className="gap-2"
+            className="h-9 px-2.5 sm:px-3 text-xs gap-1.5 shrink-0"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden xs:inline sm:inline">Actualizar</span>
           </Button>
         </div>
       </div>
 
       {/* KPI Cards de Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="border-red-200 dark:border-red-900/40 bg-gradient-to-br from-red-50/50 via-white to-red-50/20 dark:from-red-950/20 dark:via-slate-900 dark:to-red-950/10 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 flex items-center justify-between">
-              Total Saldo Castigado
-              <AlertOctagon className="h-4 w-4 text-red-500" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <Card className="border-red-200 dark:border-red-900/40 bg-gradient-to-br from-red-50/50 via-white to-red-50/20 dark:from-red-950/20 dark:via-slate-900 dark:to-red-950/10 shadow-sm overflow-hidden">
+          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+            <CardTitle className="text-[11px] sm:text-sm font-medium text-red-600 dark:text-red-400 flex items-center justify-between">
+              <span className="truncate">Total Castigado</span>
+              <AlertOctagon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500 shrink-0 ml-1" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-400">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-base sm:text-2xl font-extrabold text-red-700 dark:text-red-400 truncate tracking-tight">
               {formatCurrency(resumen?.totalSaldoCastigado || 0)}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              En riesgo crítico de incobrabilidad
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+              En riesgo incobrable
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
-              Clientes en Mora Crítica
-              <User className="h-4 w-4 text-slate-500" />
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+            <CardTitle className="text-[11px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
+              <span className="truncate">Clientes Críticos</span>
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 shrink-0 ml-1" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">
               {resumen?.totalClientesCastigados || 0}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
               En {resumen?.totalPrestamosCastigados || 0} créditos activos
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
-              Promedio Días sin Pagar
-              <Clock className="h-4 w-4 text-amber-500" />
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+            <CardTitle className="text-[11px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
+              <span className="truncate">Promedio sin Pago</span>
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500 shrink-0 ml-1" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
               {resumen?.promedioDiasSinAbono || 0} <span className="text-xs font-normal">días</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Desde el último abono registrado
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+              Desde último abono
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
-              Total Recuperado
-              <DollarSign className="h-4 w-4 text-emerald-500" />
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+            <CardTitle className="text-[11px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
+              <span className="truncate">Recuperado</span>
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500 shrink-0 ml-1" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-base sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 truncate tracking-tight">
               {formatCurrency(resumen?.totalRecuperado || 0)}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
               De {formatCurrency(resumen?.totalMontoOriginal || 0)} prestado
             </p>
           </CardContent>
@@ -509,11 +507,11 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                 key={item.id}
                 className="border-slate-200 dark:border-slate-800 hover:border-red-300 dark:hover:border-red-900/60 transition-colors shadow-sm overflow-hidden"
               >
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <CardContent className="p-3 sm:p-5">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
                     {/* Información del Cliente */}
                     <div className="space-y-2 min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <Link
                           href={`/prestamos/${item.id}`}
                           className="font-bold text-base sm:text-lg text-slate-900 dark:text-slate-100 hover:text-red-600 dark:hover:text-red-400 transition-colors truncate"
@@ -521,22 +519,22 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                           {item.cliente.nombre} {item.cliente.apellido}
                         </Link>
                         {item.cliente.codigoCliente && (
-                          <Badge variant="outline" className="text-xs font-mono">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs font-mono">
                             {item.cliente.codigoCliente}
                           </Badge>
                         )}
-                        <Badge className={`text-xs font-bold gap-1 ${diasMoraBadgeColor}`}>
+                        <Badge className={`text-[10px] sm:text-xs font-bold gap-1 px-2 py-0.5 ${diasMoraBadgeColor}`}>
                           <Clock className="h-3 w-3" />
                           {item.diasSinAbono} días sin abono
                         </Badge>
                         {item.esCastigoManual && (
-                          <Badge variant="secondary" className="text-xs font-medium bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300">
+                          <Badge variant="secondary" className="text-[10px] sm:text-xs font-medium bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2 py-0.5">
                             Castigo Manual
                           </Badge>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                         <span>
                           <strong className="text-slate-700 dark:text-slate-300">C.I:</strong>{" "}
                           {item.cliente.documento}
@@ -560,7 +558,7 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                       </div>
 
                       {/* Fechas de seguimiento */}
-                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 flex flex-wrap gap-x-4 gap-y-1">
+                      <div className="p-2 sm:p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1">
                         <div>
                           <strong>Último abono:</strong>{" "}
                           {item.fechaUltimoPago ? formatFecha(item.fechaUltimoPago) : "Nunca abonó"}
@@ -580,27 +578,27 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                     </div>
 
                     {/* Saldos y Acciones Rápidas */}
-                    <div className="flex flex-col sm:flex-row lg:flex-col sm:items-end lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
-                      <div className="text-left sm:text-right">
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                          Saldo Vencido Castigado
+                    <div className="flex flex-col sm:flex-row lg:flex-col sm:items-end lg:items-end justify-between gap-2.5 sm:gap-3 pt-2.5 sm:pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
+                      <div className="flex sm:flex-col items-baseline sm:items-end justify-between gap-1 text-left sm:text-right">
+                        <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Saldo Vencido
                         </div>
-                        <div className="text-2xl font-black text-red-600 dark:text-red-400 tracking-tight">
+                        <div className="text-xl sm:text-2xl font-black text-red-600 dark:text-red-400 tracking-tight">
                           {formatCurrency(item.saldoPendiente)}
                         </div>
-                        <div className="text-[11px] text-slate-400">
-                          Cuota diaria/periódica: {formatCurrency(item.valorCuota)}
+                        <div className="hidden sm:block text-[10px] sm:text-[11px] text-slate-400">
+                          Cuota: {formatCurrency(item.valorCuota)}
                         </div>
                       </div>
 
                       {/* Botonera de Gestión */}
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
                         {item.cliente.telefono && (
                           <>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-2.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              className="h-8 px-2 sm:px-2.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex-1 sm:flex-none justify-center"
                               onClick={() => handleWhatsApp(item.cliente.telefono, `${item.cliente.nombre} ${item.cliente.apellido}`, item.saldoPendiente)}
                               title="Enviar WhatsApp de cobro"
                             >
@@ -610,7 +608,7 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-2.5 text-xs text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                              className="h-8 px-2 sm:px-2.5 text-xs text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-1 sm:flex-none justify-center"
                               onClick={() => handleLlamar(item.cliente.telefono)}
                               title="Llamar al cliente"
                             >
@@ -622,15 +620,15 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
 
                         <Button
                           size="sm"
-                          className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                          className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex-1 sm:flex-none justify-center"
                           onClick={() => handleAbrirPago(item)}
                         >
                           <CreditCard className="h-3.5 w-3.5 mr-1" />
                           Abonar
                         </Button>
 
-                        <Link href={`/prestamos/${item.id}`}>
-                          <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs">
+                        <Link href={`/prestamos/${item.id}`} className="shrink-0">
+                          <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-2.5 text-xs">
                             <ExternalLink className="h-3.5 w-3.5 mr-1" />
                             Ver
                           </Button>
@@ -640,7 +638,7 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-2 text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                            className="h-8 px-2 text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0"
                             onClick={() => {
                               setItemParaGestion(item)
                               setMotivoGestion(item.motivoCastigo || "")
