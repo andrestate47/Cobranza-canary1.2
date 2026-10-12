@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getEcuadorDayRange, esDiaDePago, getDiasMoraSinDomingos, countDiasHabiles } from "@/lib/date-utils"
 import { cargarIdsRenovados, esVencido as calcEsVencido } from "@/lib/prestamo-calc"
+import { esPrestamoCastigado, calcularDiasSinAbono } from "@/lib/cartera-castigada"
 
 export const dynamic = "force-dynamic"
 
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const fechaParam = searchParams.get("fecha")
     const rutaIdParam = searchParams.get("rutaId")
+    const incluirCastigados = searchParams.get("incluirCastigados") === "true"
 
     // Determinar ruta objetivo
     let targetRutaId: string | null = null
@@ -119,16 +121,21 @@ export async function GET(request: NextRequest) {
 
     const prestamoIds = prestamos.map(p => p.id)
 
-    // Agrupar los pagos para obtener el total pagado por préstamo
+    // Agrupar los pagos para obtener el total pagado por préstamo y la última fecha de pago
     const sumasPagos = prestamoIds.length > 0 ? await prisma.pago.groupBy({
       by: ["prestamoId"],
       _sum: { monto: true, devolucionSeguro: true },
+      _max: { fecha: true },
       where: { prestamoId: { in: prestamoIds } }
     }) : []
 
     const pagoTotalesMap = new Map()
+    const ultimoPagoMap = new Map()
     sumasPagos.forEach(s => {
       pagoTotalesMap.set(s.prestamoId, Number(s._sum.monto || 0) + Number(s._sum.devolucionSeguro || 0))
+      if (s._max.fecha) {
+        ultimoPagoMap.set(s.prestamoId, s._max.fecha)
+      }
     })
 
     // Obtener SOLO los pagos de "hoy" (entre inicio y fin) para saber si pagaron
@@ -185,11 +192,22 @@ export async function GET(request: NextRequest) {
         const cuotasEsperadas = getCuotasEsperadas(prestamo.tipoPago, prestamo.fechaInicio, inicio)
         const estaAlDiaOAdelantado = cuotasPagadasRaw >= cuotasEsperadas
 
+        // Verificar si pertenece a Cartera Castigada (>= 30 días sin pagar)
+        const fechaUltimoPago = ultimoPagoMap.get(prestamo.id)
+        const esCastigado = esPrestamoCastigado(
+          { ...prestamo, saldoPendiente },
+          fechaUltimoPago,
+          idsRenovados,
+          inicio
+        )
+        const { diasSinAbono } = calcularDiasSinAbono(prestamo, fechaUltimoPago, inicio)
+
         // Si el préstamo inicia hoy o en el futuro (en el día lógico evaluado), no se debe cobrar hoy (empieza mañana o en su próximo día de cobro)
         const esDiaDeInicio = new Date(prestamo.fechaInicio).getTime() >= inicio.getTime() && new Date(prestamo.fechaInicio).getTime() <= fin.getTime()
 
-        // Si está adelantado (ya cubrió sus cuotas hasta hoy inclusive) o es el día de inicio, no lo ponemos en la ruta
-        const enRutaHoy = !estaAlDiaOAdelantado && (esHoy || esMora) && !esDiaDeInicio
+        // Si está adelantado, es el día de inicio, o es cartera castigada (y no se solicitó incluir), no va a la ruta de hoy
+        const excluidoPorCastigo = esCastigado && !incluirCastigados
+        const enRutaHoy = !estaAlDiaOAdelantado && (esHoy || esMora) && !esDiaDeInicio && !excluidoPorCastigo
 
         // Dias de mora:
         let diasMora = 0
@@ -223,6 +241,8 @@ export async function GET(request: NextRequest) {
           yaPagoHoy,
           pagadoHoyMonto,
           diasMora: diasMora > 0 ? diasMora : 0,
+          diasSinAbono,
+          esCastigado,
           enRutaHoy
         }
       })

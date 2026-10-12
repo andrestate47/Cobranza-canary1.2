@@ -32,7 +32,8 @@ import {
   Search,
   Zap,
   CheckCircle2,
-  LayoutGrid
+  LayoutGrid,
+  ShieldAlert
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -238,6 +239,20 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       }
     },
     ...(isAdmin || isSupervisor || canViewReports ? [
+      {
+        title: "Cartera Castigada",
+        description: "Clientes con mora crítica (+30 días sin abono) y gestión de cobro",
+        icon: ShieldAlert,
+        href: "/cartera-castigada",
+        category: "reportes" as const,
+        badgeText: "Mora Crítica",
+        accentColor: {
+          bg: "bg-red-500/10 dark:bg-red-500/20",
+          text: "text-red-600 dark:text-red-400",
+          border: "border-red-500/30",
+          glow: "from-red-600 to-rose-600"
+        }
+      },
       {
         title: "Reporte de Ganancias",
         description: "Análisis financiero avanzado e intereses generados",
