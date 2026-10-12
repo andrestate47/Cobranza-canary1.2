@@ -27,7 +27,9 @@ import {
   Send,
   CreditCard,
   Edit,
+  Shield,
   ShieldCheck,
+  ShieldX,
   ZoomIn
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -1586,6 +1588,22 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       >
                         {getTipoPagoText(prestamo.tipoPago)}
                       </Badge>
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                        <Badge
+                          className="text-xs bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700 whitespace-nowrap font-bold px-2.5 py-0.5 rounded-full gap-1 shadow-sm"
+                        >
+                          <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                          Seguro: {formatCurrency(prestamo.microseguroTotal)}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700 whitespace-nowrap font-medium px-2.5 py-0.5 rounded-full gap-1 bg-white dark:bg-gray-800"
+                        >
+                          <ShieldX className="h-3 w-3 text-gray-400" />
+                          Sin seguro
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
@@ -1734,6 +1752,22 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Cuotas pagadas:</span>
                     <span className="font-semibold text-green-600 dark:text-green-400 text-right break-words min-w-0">{Number(cuotasPagadas.toFixed(2))}</span>
+                  </div>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Microseguro:</span>
+                    <span className="font-semibold text-right break-words min-w-0">
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                        <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300">
+                          <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                          {formatCurrency(prestamo.microseguroTotal)}{" "}
+                          <span className="text-xs text-purple-500 font-normal">
+                            ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Porcentaje'})
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">No incluye seguro</span>
+                      )}
+                    </span>
                   </div>
                 </div>
 

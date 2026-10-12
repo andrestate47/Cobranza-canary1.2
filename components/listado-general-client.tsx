@@ -19,7 +19,10 @@ import {
   AlertTriangle,
   Clock,
   XCircle,
-  Copy
+  Copy,
+  Shield,
+  ShieldCheck,
+  ShieldX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -337,6 +340,12 @@ const ClienteCard = memo(function ClienteCard({
                           {clienteData.prestamos.length} ptmos
                         </Badge>
                       )}
+                      {clienteData.prestamos.some(p => p.microseguroTipo && p.microseguroTipo !== 'NINGUNO' && p.microseguroTotal) && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 min-h-[16px] leading-[14px] bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800 font-medium gap-0.5">
+                          <ShieldCheck className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400" />
+                          Seguro
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
@@ -431,6 +440,17 @@ const ClienteCard = memo(function ClienteCard({
                           {prestamo.tipoCredito && (
                             <Badge variant="secondary" className="text-xs font-semibold bg-slate-900 text-white dark:bg-slate-700">
                               {prestamo.tipoCredito === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia'}
+                            </Badge>
+                          )}
+                          {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                            <Badge className="text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700 gap-1 shadow-sm">
+                              <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                              Seguro: {formatCurrency(prestamo.microseguroTotal)}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700 gap-1 bg-white dark:bg-gray-800">
+                              <ShieldX className="h-3 w-3 text-gray-400" />
+                              Sin seguro
                             </Badge>
                           )}
                         </div>
@@ -582,13 +602,29 @@ const ClienteCard = memo(function ClienteCard({
                         )}
                       </div>
 
-                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal && (
-                        <div className="bg-purple-50 rounded-lg p-2 border border-purple-200 text-xs">
-                          <span className="text-purple-700 font-medium">🛡️ Microseguro: </span>
-                          <span className="font-bold text-purple-900">{formatCurrency(prestamo.microseguroTotal)}</span>
-                          <span className="text-purple-600 ml-1">
-                            ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : 'Porcentaje'})
+                      {/* Estado y detalle del Microseguro */}
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                        <div className="bg-purple-50 dark:bg-purple-950/40 rounded-lg p-2.5 border border-purple-200 dark:border-purple-800/60 text-xs flex items-center justify-between gap-2 shadow-sm">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                            <div>
+                              <span className="text-purple-700 dark:text-purple-300 font-bold block sm:inline">Microseguro Activo: </span>
+                              <span className="text-purple-600 dark:text-purple-400 font-normal">
+                                ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con devolución' : 'Porcentaje'})
+                              </span>
+                            </div>
+                          </div>
+                          <span className="font-extrabold text-sm text-purple-900 dark:text-purple-200 shrink-0">
+                            {formatCurrency(prestamo.microseguroTotal)}
                           </span>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-1.5">
+                            <Shield className="h-3.5 w-3.5 text-slate-400" />
+                            <span>Microseguro:</span>
+                          </div>
+                          <span className="font-medium text-slate-600 dark:text-slate-400">Sin seguro incluido</span>
                         </div>
                       )}
 
