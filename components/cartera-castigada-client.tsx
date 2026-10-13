@@ -25,7 +25,10 @@ import {
   AlertTriangle,
   X,
   CreditCard,
-  Ban
+  Ban,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -191,6 +194,43 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
   const saldoTotalFiltrado = useMemo(() => {
     return itemsFiltrados.reduce((sum, it) => sum + it.saldoPendiente, 0)
   }, [itemsFiltrados])
+
+  // Agrupación por ruta + paginación por grupo
+  const POR_PAGINA = 10
+  const grupos = useMemo(() => {
+    const map = new Map<string, { key: string; nombre: string; items: ItemCastigado[]; subtotal: number }>()
+    itemsFiltrados.forEach((it) => {
+      const key = it.cliente.ruta?.id || "SIN_RUTA"
+      const nombre = it.cliente.ruta?.nombre || "Sin ruta asignada"
+      if (!map.has(key)) map.set(key, { key, nombre, items: [], subtotal: 0 })
+      const g = map.get(key)!
+      g.items.push(it)
+      g.subtotal += it.saldoPendiente
+    })
+    return Array.from(map.values()).sort((a, b) => b.subtotal - a.subtotal)
+  }, [itemsFiltrados])
+
+  const [gruposAbiertos, setGruposAbiertos] = useState<Set<string>>(new Set())
+  const [paginas, setPaginas] = useState<Record<string, number>>({})
+
+  // Al cambiar filtros: volver a página 1 y abrir automáticamente si hay un solo grupo
+  useEffect(() => {
+    setPaginas({})
+    if (grupos.length === 1) setGruposAbiertos(new Set([grupos[0].key]))
+  }, [grupos])
+
+  const toggleGrupo = (key: string) => {
+    setGruposAbiertos((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const cambiarPagina = (key: string, pagina: number) => {
+    setPaginas((prev) => ({ ...prev, [key]: pagina }))
+  }
 
   // Formato de fecha seguro
   const formatFecha = (fechaStr?: string | null) => {
@@ -494,7 +534,42 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
         </Card>
       ) : (
         <div className="space-y-3">
-          {itemsFiltrados.map((item) => {
+          {grupos.map((grupo) => {
+            const abierto = gruposAbiertos.has(grupo.key)
+            const totalPaginas = Math.max(1, Math.ceil(grupo.items.length / POR_PAGINA))
+            const paginaActual = Math.min(paginas[grupo.key] || 1, totalPaginas)
+            const visibles = grupo.items.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA)
+
+            return (
+              <div key={grupo.key} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleGrupo(grupo.key)}
+                  className="w-full flex items-center justify-between gap-2 p-3 sm:p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {abierto ? (
+                      <ChevronDown className="h-4 w-4 text-slate-500 shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-slate-500 shrink-0" />
+                    )}
+                    <MapPin className="h-4 w-4 text-red-500 shrink-0" />
+                    <span className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
+                      {grupo.nombre}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
+                      {grupo.items.length}
+                    </Badge>
+                  </div>
+                  <span className="text-sm sm:text-base font-bold text-red-600 dark:text-red-400 shrink-0">
+                    {formatCurrency(grupo.subtotal)}
+                  </span>
+                </button>
+
+                {abierto && (
+                  <div className="p-2 sm:p-3 pt-0 sm:pt-0 space-y-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="h-1" />
+          {visibles.map((item) => {
             const diasMoraBadgeColor =
               item.diasSinAbono >= 90
                 ? "bg-red-600 text-white hover:bg-red-700"
@@ -653,6 +728,39 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
                   </div>
                 </CardContent>
               </Card>
+            )
+          })}
+
+                    {totalPaginas > 1 && (
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2.5 text-xs"
+                          disabled={paginaActual <= 1}
+                          onClick={() => cambiarPagina(grupo.key, paginaActual - 1)}
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                          Anterior
+                        </Button>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          Página {paginaActual} de {totalPaginas}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2.5 text-xs"
+                          disabled={paginaActual >= totalPaginas}
+                          onClick={() => cambiarPagina(grupo.key, paginaActual + 1)}
+                        >
+                          Siguiente
+                          <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )
           })}
         </div>
