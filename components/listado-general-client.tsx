@@ -262,7 +262,7 @@ const ClienteCard = memo(function ClienteCard({
   handlePagoRapido,
   formatCurrency
 }: {
-  clienteData: ClienteConPrestamos & { estadoAlerta: any, tipoPagoInfo: any }
+  clienteData: ClienteConPrestamos & { estadoAlerta: any, tipoPagoInfo: any, scoreData: any }
   isExpanded: boolean
   toggleCardExpansion: (id: string) => void
   abrirImagenModal: (cliente: any) => void
@@ -274,10 +274,7 @@ const ClienteCard = memo(function ClienteCard({
   const estadoAlerta = clienteData.estadoAlerta
   const tipoPagoInfo = clienteData.tipoPagoInfo
   const IconoAlerta = estadoAlerta.icono
-
-  const scoreCrediticio = useMemo(() => {
-    return calcularCreditScore(clienteData.cliente, clienteData.prestamos)
-  }, [clienteData.cliente, clienteData.prestamos])
+  const scoreCrediticio = clienteData.scoreData
 
   return (
     <Card className="block list-none [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden">
@@ -304,7 +301,9 @@ const ClienteCard = memo(function ClienteCard({
                       <img
                         src={clienteData.cliente.foto}
                         alt={`${clienteData.cliente.nombre} ${clienteData.cliente.apellido}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </button>
                   ) : (
@@ -889,37 +888,42 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
   }, [toast])
 
-  // Memoizar el cálculo de estados y filtros para evitar O(N*M) renders lentos
-  const clientesConEstados = useMemo(() => {
+  // Pre-filtrar por estado y búsqueda ANTES de calcular scores/estados caros
+  // Así solo procesamos clientes que pasarán a pantalla
+  const clientesFiltradosActivos = useMemo(() => {
     const hoy = new Date()
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
     const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
-
-    return clientes.map(clienteData => {
-      return {
-        ...clienteData,
-        estadoAlerta: calcularEstadoCliente(clienteData, hoy, hoyMidnight, ayerMidnight),
-        tipoPagoInfo: getTipoPagoBadge(clienteData)
-      }
-    })
-  }, [clientes])
-
-  const clientesFiltradosActivos = useMemo(() => {
     const searchLower = deferredSearchTerm.toLowerCase().trim()
-    
-    return clientesConEstados.filter(c => {
-      if (c.estadoAlerta.estado !== activeTab) return false
-      if (!searchLower) return true
 
-      return (
-        c.cliente.nombre.toLowerCase().includes(searchLower) ||
-        c.cliente.apellido.toLowerCase().includes(searchLower) ||
-        c.cliente.documento.includes(searchLower) ||
-        c.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
-        (c.cliente.telefono && c.cliente.telefono.includes(searchLower))
-      )
-    })
-  }, [clientesConEstados, deferredSearchTerm, activeTab])
+    const resultado: (ClienteConPrestamos & { estadoAlerta: ReturnType<typeof calcularEstadoCliente>, tipoPagoInfo: ReturnType<typeof getTipoPagoBadge>, scoreData: ReturnType<typeof calcularCreditScore> })[] = []
+
+    for (const clienteData of clientes) {
+      // Filtro rápido de búsqueda de texto (sin cálculos caros)
+      if (searchLower) {
+        const coincide =
+          clienteData.cliente.nombre.toLowerCase().includes(searchLower) ||
+          clienteData.cliente.apellido.toLowerCase().includes(searchLower) ||
+          clienteData.cliente.documento.includes(searchLower) ||
+          clienteData.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
+          (clienteData.cliente.telefono && clienteData.cliente.telefono.includes(searchLower))
+        if (!coincide) continue
+      }
+
+      // Calcular estado (caro) solo para los que pasan el filtro de texto
+      const estadoAlerta = calcularEstadoCliente(clienteData, hoy, hoyMidnight, ayerMidnight)
+      if (estadoAlerta.estado !== activeTab) continue
+
+      resultado.push({
+        ...clienteData,
+        estadoAlerta,
+        tipoPagoInfo: getTipoPagoBadge(clienteData),
+        scoreData: calcularCreditScore(clienteData.cliente, clienteData.prestamos)
+      })
+    }
+
+    return resultado
+  }, [clientes, deferredSearchTerm, activeTab])
 
   if (loading) {
     return (
