@@ -2,6 +2,7 @@
   "name": "app",
   "private": true,
   "scripts": {
+    "clean-build": "rmdir /s /q .next && rmdir /s /q node_modules && npm ci && npm run build",
     "dev": "node api.js && next dev",
     "build": "node api.js && next build",
     "start": "node api.js && next start",
@@ -18,7 +19,7 @@
     "@types/react-dom": "18.2.7",
     "@typescript-eslint/eslint-plugin": "7.0.0",
     "@typescript-eslint/parser": "7.0.0",
-    "eslint": "9.24.0",
+    "eslint": "^8.56.0",
     "eslint-config-next": "15.3.0",
     "eslint-plugin-prettier": "5.1.3",
     "eslint-plugin-react-hooks": "4.6.0",
