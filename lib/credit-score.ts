@@ -1,4 +1,4 @@
-import { diaCalendario, diaReferencia, esVencido, calcularSaldo } from "./prestamo-calc"
+import { diaCalendario, diaReferencia } from "./prestamo-calc"
 import { getDiasMoraSinDomingos } from "./date-utils"
 
 export interface ScoreItem {
@@ -32,6 +32,7 @@ export interface PrestamoSimple {
   id?: string
   monto: number
   interes?: number
+  valorCuota?: number
   saldoPendiente: number
   cuotas: number
   cuotasPagadas: number
@@ -40,6 +41,8 @@ export interface PrestamoSimple {
   estado: string
   tipoPago?: string
   moraCredito?: number
+  diasGracia?: number | null
+  renovadoDeId?: string | null
   pagos?: Array<{
     monto: number
     devolucionSeguro?: number
@@ -57,13 +60,94 @@ export interface ClienteSimple {
   prestamos?: PrestamoSimple[]
 }
 
+// ----------------------------------------------------------------------
+// Utilidades de calendario (misma regla que el detalle del préstamo:
+// DIARIO / LUNES_A_SABADO sin domingos, LUNES_A_VIERNES sin fines de semana,
+// el resto cada N días calendario).
+// ----------------------------------------------------------------------
+const ONE_DAY = 1000 * 60 * 60 * 24
+const TIPOS_DIARIOS = ["DIARIO", "LUNES_A_SABADO", "LUNES_A_VIERNES"]
+const DIAS_POR_TIPO: Record<string, number> = {
+  SEMANAL: 7, QUINCENAL: 15, CATORCENAL: 14, FIN_DE_MES: 30, MENSUAL: 30,
+  TRIMESTRAL: 90, CUATRIMESTRAL: 120, SEMESTRAL: 180, ANUAL: 365
+}
+
+const aMedianocheUTC = (dia: string) => new Date(`${dia}T00:00:00Z`)
+
+function esDiaCobro(fecha: Date, tipoPago: string): boolean {
+  const d = fecha.getUTCDay()
+  if (d === 0) return false
+  if (tipoPago === "LUNES_A_VIERNES" && d === 6) return false
+  return true
+}
+
+/** Cuotas que ya deberían estar pagadas a la fecha `hoy` (sin pasar del total). */
+function cuotasEsperadas(inicio: Date, hoy: Date, tipoPago: string, totalCuotas: number): number {
+  let esperadas = 0
+  if (TIPOS_DIARIOS.includes(tipoPago)) {
+    const cur = new Date(inicio)
+    cur.setUTCDate(cur.getUTCDate() + 1)
+    while (cur <= hoy && esperadas < totalCuotas) {
+      if (esDiaCobro(cur, tipoPago)) esperadas++
+      cur.setUTCDate(cur.getUTCDate() + 1)
+    }
+  } else {
+    const dias = Math.max(0, Math.floor((hoy.getTime() - inicio.getTime()) / ONE_DAY))
+    esperadas = Math.floor(dias / (DIAS_POR_TIPO[tipoPago] || 1))
+  }
+  return Math.min(esperadas, totalCuotas)
+}
+
+/** Fecha en que vence la cuota número `k` (1-based). */
+function fechaCuota(inicio: Date, k: number, tipoPago: string): Date {
+  if (TIPOS_DIARIOS.includes(tipoPago)) {
+    const cur = new Date(inicio)
+    let count = 0
+    while (count < k) {
+      cur.setUTCDate(cur.getUTCDate() + 1)
+      if (esDiaCobro(cur, tipoPago)) count++
+    }
+    return cur
+  }
+  return new Date(inicio.getTime() + k * (DIAS_POR_TIPO[tipoPago] || 1) * ONE_DAY)
+}
+
+/** Días de cobro (sin domingos) desde `desde` hasta `hasta`, inclusive. */
+function diasCobroEntre(desde: Date, hasta: Date, tipoPago: string): number {
+  let n = 0
+  const cur = new Date(desde)
+  while (cur <= hasta) {
+    if (esDiaCobro(cur, tipoPago)) n++
+    cur.setUTCDate(cur.getUTCDate() + 1)
+  }
+  return n
+}
+
+interface AnalisisPrestamo {
+  p: PrestamoSimple
+  monto: number
+  inicioTs: number
+  cerrado: boolean // pagado, cancelado o renovado
+  renovado: boolean
+  saldo: number
+  cuotasPagadas: number
+  cuotasEsperadas: number
+  cuotasAtrasadas: number
+  diasMora: number
+  enMora: boolean
+  diasTardeAlCerrar: number // solo préstamos pagados: días de cobro después de su fecha fin
+  diasDesdeUltimoPago: number | null
+}
+
 /**
  * Motor de cálculo del Score Crediticio (0 a 100 puntos)
- * 
+ *
  * Pilares:
- * 1. Puntualidad (40 pts máx): Disciplina y ausencia de atrasos/mora.
+ * 1. Puntualidad (40 pts máx): atraso actual (cuotas atrasadas / días de mora reales)
+ *    y penalización por préstamos anteriores que terminó de pagar tarde.
  * 2. Historial de Pago (30 pts máx): Préstamos culminados exitosamente y % amortizado.
- * 3. Consistencia (20 pts máx): Regularidad del flujo de pagos según su frecuencia.
+ * 3. Consistencia (20 pts máx): Ritmo de pago de los créditos vigentes (cuotas pagadas vs.
+ *    esperadas) y tiempo desde el último pago según su frecuencia.
  * 4. Antigüedad (10 pts máx): Tiempo de relación comercial del cliente.
  */
 export function calcularCreditScore(
@@ -72,54 +156,129 @@ export function calcularCreditScore(
 ): CreditScoreResult {
   const prestamos = prestamosInput || cliente.prestamos || []
   const hoyRef = diaReferencia()
+  const hoy = aMedianocheUTC(hoyRef)
   const now = new Date()
 
-  // 1. Clasificación de préstamos
-  let completados = 0
-  let enMora = 0
-  let activos = 0
+  // IDs que otro préstamo tiene como origen de renovación
+  const idsRenovados = new Set(
+    prestamos.map((p) => p.renovadoDeId).filter((x): x is string => Boolean(x))
+  )
+
+  // ----------------------------------------------------------------------
+  // 1. Análisis individual de cada préstamo
+  // ----------------------------------------------------------------------
   let totalPrestado = 0
   let totalCobrado = 0
   let saldoPendienteTotal = 0
   let maxMontoPrestado = 0
+  let maxMontoCompletado = 0 // Mayor monto que el cliente pagó por completo (capacidad demostrada)
+  let montoUltimoPrestamo = 0
+  let fechaUltimoPrestamo = -Infinity
 
-  prestamos.forEach((p) => {
+  const analisis: AnalisisPrestamo[] = prestamos.map((p) => {
     const monto = Number(p.monto) || 0
+    const tipoPago = p.tipoPago || "DIARIO"
+    const montoTotal = monto * (1 + (Number(p.interes) || 0) / 100)
+    const valorCuota = Number(p.valorCuota) > 0 ? Number(p.valorCuota) : p.cuotas > 0 ? montoTotal / p.cuotas : 0
+
     totalPrestado += monto
     if (monto > maxMontoPrestado) maxMontoPrestado = monto
+    const inicioTs = new Date(p.fechaInicio).getTime()
+    if (!isNaN(inicioTs) && inicioTs > fechaUltimoPrestamo) {
+      fechaUltimoPrestamo = inicioTs
+      montoUltimoPrestamo = monto
+    }
 
-    const saldo = Number(p.saldoPendiente) || 0
+    // Total cobrado
+    let pagado = 0
+    let ultimoPagoTs = -Infinity
+    if (p.pagos && p.pagos.length > 0) {
+      for (const pago of p.pagos) {
+        pagado += (Number(pago.monto) || 0) + (Number(pago.devolucionSeguro) || 0)
+        const t = pago.fecha ? new Date(pago.fecha).getTime() : NaN
+        if (!isNaN(t) && t > ultimoPagoTs) ultimoPagoTs = t
+      }
+    } else {
+      pagado = (Number(p.cuotasPagadas) || 0) * valorCuota
+    }
+    totalCobrado += pagado
+
+    // Un préstamo renovado no es deuda pendiente: su saldo pasó al préstamo nuevo
+    const renovado = p.estado === "RENOVADO" || (Boolean(p.id) && idsRenovados.has(p.id as string))
+    const saldoBruto =
+      p.saldoPendiente !== undefined && p.saldoPendiente !== null
+        ? Number(p.saldoPendiente) || 0
+        : Math.max(0, montoTotal - pagado)
+    const saldo = renovado ? 0 : saldoBruto
     saldoPendienteTotal += saldo
 
-    // Calcular total cobrado de los pagos si existen
-    if (p.pagos && p.pagos.length > 0) {
-      p.pagos.forEach((pago) => {
-        totalCobrado += (Number(pago.monto) || 0) + (Number(pago.devolucionSeguro) || 0)
-      })
-    } else {
-      // Estimación si no viene el desglose de pagos
-      const valorCuota = p.cuotas > 0 ? (monto * (1 + (p.interes || 20) / 100)) / p.cuotas : 0
-      totalCobrado += (p.cuotasPagadas || 0) * valorCuota
-    }
+    const cuotasPagadas =
+      p.cuotasPagadas !== undefined && p.cuotasPagadas !== null
+        ? Number(p.cuotasPagadas) || 0
+        : valorCuota > 0 ? pagado / valorCuota : 0
 
-    const estaCancelado =
-      p.estado === "CANCELADO" || p.estado === "RENOVADO" || saldo <= 0.01 || p.cuotasPagadas >= p.cuotas
+    const cerrado = renovado || p.estado === "CANCELADO" || saldo <= 0.01 || cuotasPagadas >= p.cuotas
 
-    if (estaCancelado) {
-      completados++
-    } else {
-      activos++
-      // Verificar si está vencido por fecha o en estado VENCIDO
-      const vencido = p.estado === "VENCIDO" || (Boolean(p.fechaFin) && diaCalendario(p.fechaFin) < hoyRef)
-      // Verificar cuotas atrasadas manuales o mora
-      const cuotasAtrasadas = Number(p.cuotasAtrasadasManual) || 0
-      const diasVencidos = Number(p.diasVencidosManual) || 0
+    const inicio = aMedianocheUTC(diaCalendario(p.fechaInicio))
+    const fin = aMedianocheUTC(diaCalendario(p.fechaFin))
 
-      if (vencido || cuotasAtrasadas > 0 || diasVencidos > 0) {
-        enMora++
+    let esperadas = 0
+    let atrasadas = 0
+    let diasMora = 0
+    let diasTardeAlCerrar = 0
+    let diasDesdeUltimoPago: number | null = null
+
+    if (!cerrado) {
+      // La cuota de hoy todavía no está vencida (el cobrador puede pasar más tarde)
+      const ayer = new Date(hoy.getTime() - ONE_DAY)
+      esperadas = cuotasEsperadas(inicio, ayer, tipoPago, p.cuotas)
+      atrasadas =
+        p.cuotasAtrasadasManual !== null && p.cuotasAtrasadasManual !== undefined
+          ? Number(p.cuotasAtrasadasManual) || 0
+          : Math.max(0, esperadas - cuotasPagadas)
+
+      if (p.diasVencidosManual !== null && p.diasVencidosManual !== undefined) {
+        diasMora = Number(p.diasVencidosManual) || 0
+      } else if (fin < hoy) {
+        diasMora = getDiasMoraSinDomingos(p.fechaFin, now, tipoPago)
+      } else if (atrasadas >= 1) {
+        // Desde el vencimiento de la primera cuota no pagada
+        const venc = fechaCuota(inicio, Math.floor(cuotasPagadas) + 1, tipoPago)
+        diasMora = Math.max(0, diasCobroEntre(venc, hoy, tipoPago) - (Number(p.diasGracia) || 0))
+      }
+
+      if (ultimoPagoTs > -Infinity) {
+        const ult = aMedianocheUTC(diaCalendario(new Date(ultimoPagoTs)))
+        diasDesdeUltimoPago = Math.max(0, Math.round((hoy.getTime() - ult.getTime()) / ONE_DAY))
+      } else if (inicio <= hoy) {
+        diasDesdeUltimoPago = Math.max(0, Math.round((hoy.getTime() - inicio.getTime()) / ONE_DAY))
+      }
+    } else if (!renovado && ultimoPagoTs > -Infinity) {
+      // ¿Terminó de pagar después de su fecha fin?
+      const ult = aMedianocheUTC(diaCalendario(new Date(ultimoPagoTs)))
+      if (ult > fin) {
+        const desde = new Date(fin)
+        desde.setUTCDate(desde.getUTCDate() + 1)
+        diasTardeAlCerrar = Math.max(0, diasCobroEntre(desde, ult, tipoPago) - (Number(p.diasGracia) || 0))
       }
     }
+
+    if (cerrado && monto > maxMontoCompletado) maxMontoCompletado = monto
+
+    return {
+      p, monto, inicioTs, cerrado, renovado, saldo,
+      cuotasPagadas, cuotasEsperadas: esperadas, cuotasAtrasadas: atrasadas, diasMora,
+      // Fracciones menores a una cuota no se consideran mora
+      enMora: !cerrado && (atrasadas >= 1 || diasMora > 0),
+      diasTardeAlCerrar, diasDesdeUltimoPago
+    }
   })
+
+  const vigentes = analisis.filter((a) => !a.cerrado)
+  const cerrados = analisis.filter((a) => a.cerrado)
+  const completados = cerrados.length
+  const activos = vigentes.length
+  const enMora = vigentes.filter((a) => a.enMora).length
 
   // ----------------------------------------------------------------------
   // PILAR 1: PUNTUALIDAD (Máximo: 40 puntos)
@@ -128,38 +287,24 @@ export function calcularCreditScore(
 
   if (prestamos.length === 0) {
     puntosPuntualidad = 30 // Cliente nuevo sin créditos previos
-  } else if (enMora > 0) {
-    // Penalizaciones severas por mora activa
-    let peorAtrasoDias = 0
-    let maxCuotasAtrasadas = 0
-
-    prestamos.forEach((p) => {
-      const saldo = Number(p.saldoPendiente) || 0
-      if (saldo > 0.01) {
-        const dias = Math.max(
-          Number(p.diasVencidosManual) || 0,
-          p.fechaFin && diaCalendario(p.fechaFin) < hoyRef
-            ? getDiasMoraSinDomingos(p.fechaFin, now, p.tipoPago || "DIARIO")
-            : 0
-        )
-        if (dias > peorAtrasoDias) peorAtrasoDias = dias
-        const cAtrasadas = Number(p.cuotasAtrasadasManual) || 0
-        if (cAtrasadas > maxCuotasAtrasadas) maxCuotasAtrasadas = cAtrasadas
-      }
-    })
-
-    if (peorAtrasoDias > 30 || maxCuotasAtrasadas >= 5) {
-      puntosPuntualidad = 0
-    } else if (peorAtrasoDias > 15 || maxCuotasAtrasadas >= 3) {
-      puntosPuntualidad = 8
-    } else if (peorAtrasoDias > 5 || maxCuotasAtrasadas >= 2) {
-      puntosPuntualidad = 16
-    } else {
-      puntosPuntualidad = 25
-    }
   } else {
-    // Al día en todos sus créditos
-    puntosPuntualidad = 40
+    // a) Atraso actual (peor préstamo vigente)
+    const peorDias = Math.max(0, ...vigentes.map((a) => a.diasMora))
+    const peorCuotas = Math.max(0, ...vigentes.map((a) => a.cuotasAtrasadas))
+
+    if (peorDias > 30 || peorCuotas >= 5) puntosPuntualidad = 0
+    else if (peorDias > 15 || peorCuotas >= 3) puntosPuntualidad = 8
+    else if (peorDias > 5 || peorCuotas >= 2) puntosPuntualidad = 16
+    else if (enMora > 0) puntosPuntualidad = 25
+    else puntosPuntualidad = 40
+
+    // b) Préstamos anteriores pagados tarde (máximo -15)
+    let penalHistorica = 0
+    for (const a of cerrados) {
+      if (a.diasTardeAlCerrar > 15) penalHistorica += 8
+      else if (a.diasTardeAlCerrar > 3) penalHistorica += 4
+    }
+    puntosPuntualidad = Math.max(0, puntosPuntualidad - Math.min(15, penalHistorica))
   }
 
   // ----------------------------------------------------------------------
@@ -174,31 +319,48 @@ export function calcularCreditScore(
   } else if (completados === 1) {
     puntosHistorial = 20
   } else {
-    // 0 completados (Crédito actual en curso o primer crédito)
-    // Calculamos el avance del crédito activo
-    const prestamoActivo = prestamos.find(
-      (p) => p.estado !== "CANCELADO" && (Number(p.saldoPendiente) || 0) > 0.01
-    )
-    if (prestamoActivo && prestamoActivo.cuotas > 0) {
-      const ratioPago = Math.min(1, Math.max(0, prestamoActivo.cuotasPagadas / prestamoActivo.cuotas))
-      // Entre 10 y 18 puntos si va avanzando normalmente
+    // Sin préstamos completados: avance del crédito vigente más reciente
+    const actual = [...vigentes].sort((a, b) => b.inicioTs - a.inicioTs)[0]
+    if (actual && actual.p.cuotas > 0) {
+      const ratioPago = Math.min(1, Math.max(0, actual.cuotasPagadas / actual.p.cuotas))
+      // Entre 10 y 18 puntos según avance
       puntosHistorial = Math.round(10 + ratioPago * 8)
     } else {
-      puntosHistorial = 15 // Base neutra para crédito reciente en proceso (15/30)
+      puntosHistorial = 15 // Base neutra
     }
   }
 
   // ----------------------------------------------------------------------
   // PILAR 3: CONSISTENCIA (Máximo: 20 puntos)
+  // Ritmo de pago de los créditos vigentes y regularidad del último pago.
   // ----------------------------------------------------------------------
   let puntosConsistencia = 20
 
-  if (enMora > 0) {
-    puntosConsistencia = Math.max(0, 20 - enMora * 10)
-  } else if (prestamos.length === 0) {
+  if (prestamos.length === 0) {
     puntosConsistencia = 15
+  } else if (vigentes.length === 0) {
+    puntosConsistencia = 20 // Todo pagado
   } else {
-    puntosConsistencia = 20
+    const conEsperadas = vigentes.filter((a) => a.cuotasEsperadas > 0)
+    // Ritmo: cuotas pagadas / cuotas esperadas (promedio de los vigentes)
+    const ritmo =
+      conEsperadas.length > 0
+        ? conEsperadas.reduce((s, a) => s + Math.min(1, a.cuotasPagadas / a.cuotasEsperadas), 0) /
+          conEsperadas.length
+        : 1 // Préstamos recién otorgados, aún sin cuotas vencidas
+    puntosConsistencia = 20 * ritmo
+
+    // Regularidad: días sin pagar vs. frecuencia esperada
+    let penalRegularidad = 0
+    for (const a of conEsperadas) {
+      if (a.diasDesdeUltimoPago === null) continue
+      const tipo = a.p.tipoPago || "DIARIO"
+      const intervalo = TIPOS_DIARIOS.includes(tipo) ? 1 : DIAS_POR_TIPO[tipo] || 1
+      const holgura = TIPOS_DIARIOS.includes(tipo) ? 2 : 0 // fines de semana / domingos
+      if (a.diasDesdeUltimoPago > intervalo * 3 + holgura) penalRegularidad = Math.max(penalRegularidad, 8)
+      else if (a.diasDesdeUltimoPago > intervalo * 2 + holgura) penalRegularidad = Math.max(penalRegularidad, 4)
+    }
+    puntosConsistencia = Math.max(0, Math.round(puntosConsistencia - penalRegularidad))
   }
 
   // ----------------------------------------------------------------------
@@ -286,21 +448,20 @@ export function calcularCreditScore(
   // ----------------------------------------------------------------------
   // CÁLCULO DEL MONTO MÁXIMO SUGERIDO
   // ----------------------------------------------------------------------
-  const baseMonto = maxMontoPrestado > 0 ? maxMontoPrestado : 500000
-  let factorMultiplicador = 1.0
+  // Base = capacidad de pago DEMOSTRADA por el cliente:
+  //  - Si ya pagó préstamos completos: el mayor monto que terminó de pagar.
+  //  - Si aún no completa ninguno: el monto de su préstamo más reciente.
+  const baseMonto = maxMontoCompletado > 0 ? maxMontoCompletado : montoUltimoPrestamo || maxMontoPrestado
 
-  if (totalScore >= 80) {
-    factorMultiplicador = 1.4 // Excelente: hasta 40% más
-  } else if (totalScore >= 65) {
-    factorMultiplicador = 1.2 // Bueno: 20% más (ej. 500.000 * 1.2 = 600.000)
-  } else if (totalScore >= 50) {
-    factorMultiplicador = 1.0 // Regular: mantener cupo actual
-  } else {
-    factorMultiplicador = 0.5 // Riesgo: reducir cupo al 50%
-  }
+  // Factor continuo según el score (0 → x0.40 · 50 → x0.95 · 65 → x1.12 · 80 → x1.28 · 100 → x1.50)
+  let factorMultiplicador = 0.4 + (totalScore / 100) * 1.1
 
-  let montoMaximoSugerido = Math.round((baseMonto * factorMultiplicador) / 10000) * 10000
-  if (montoMaximoSugerido <= 0) montoMaximoSugerido = 100000
+  // Sin préstamos completados todavía: no se sugiere aumentar el cupo
+  if (completados === 0) factorMultiplicador = Math.min(factorMultiplicador, 1.0)
+  // Con mora activa: se reduce el cupo como mínimo un 20%
+  if (enMora > 0) factorMultiplicador = Math.min(factorMultiplicador, 0.8)
+
+  const montoMaximoSugerido = redondearMonto(baseMonto * factorMultiplicador)
 
   return {
     score: totalScore,
@@ -338,4 +499,14 @@ export function calcularCreditScore(
     totalCobradoHistorico: totalCobrado,
     saldoPendienteHistorico: saldoPendienteTotal
   }
+}
+
+/**
+ * Redondea un monto a un paso proporcional a su magnitud para que
+ * funcione tanto con montos pequeños (ej. 350) como grandes (ej. 1.500.000).
+ */
+function redondearMonto(valor: number): number {
+  if (!isFinite(valor) || valor <= 0) return 0
+  const paso = valor < 1000 ? 50 : valor < 10000 ? 100 : valor < 100000 ? 1000 : 10000
+  return Math.max(paso, Math.round(valor / paso) * paso)
 }

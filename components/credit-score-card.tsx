@@ -162,7 +162,7 @@ export default function CreditScoreCard({ scoreData, className = "" }: CreditSco
           Monto máximo sugerido
         </span>
         <span className="text-base sm:text-xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight mt-0.5 block">
-          {formatCurrency(montoMaximoSugerido)}
+          {montoMaximoSugerido > 0 ? formatCurrency(montoMaximoSugerido) : "Sin historial"}
         </span>
       </div>
     </div>

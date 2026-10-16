@@ -123,6 +123,8 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
         tipoPago: p.tipoPago,
         cuotasAtrasadasManual: p.cuotasAtrasadasManual ? parseFloat(p.cuotasAtrasadasManual.toString()) : null,
         diasVencidosManual: p.diasVencidosManual,
+        diasGracia: p.diasGracia,
+        renovadoDeId: p.renovadoDeId,
         pagos: p.pagos.map((pg) => ({
           monto: parseFloat(pg.monto.toString()),
           devolucionSeguro: pg.devolucionSeguro ? parseFloat(pg.devolucionSeguro.toString()) : 0,
