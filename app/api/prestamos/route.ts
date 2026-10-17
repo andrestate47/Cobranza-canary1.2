@@ -26,24 +26,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
     }
 
-    // Construir filtro según el rol
-    const whereClause: any = {}
-    if (conSaldo) {
-      whereClause.estado = { in: ["ACTIVO", "VENCIDO"] }
-    }
-
-    // Si no es ADMINISTRADOR, filtrar por la ruta del cliente
+    // Construir filtro de ruta según el rol
+    const rutaFilter: any = {}
     if (user.role !== "ADMINISTRADOR") {
       if (!user.rutaId) {
-        // Si no tiene ruta asignada, no ve nada
-        whereClause.cliente = {
-          rutaId: "sin-ruta-imposible"
-        }
+        rutaFilter.rutaId = "sin-ruta-imposible"
       } else {
-        whereClause.cliente = {
-          rutaId: user.rutaId
-        }
+        rutaFilter.rutaId = user.rutaId
       }
+    }
+
+    // Cuando conSaldo=true: traer todos los préstamos de los clientes que
+    // tengan AL MENOS un préstamo ACTIVO o VENCIDO, pero incluir TODO el
+    // historial del cliente (cancelados, renovados, etc.) para no perder registros.
+    // Cuando conSaldo=false: traer todos los préstamos sin restricción de estado.
+    let clienteIdsConSaldo: string[] | null = null
+    if (conSaldo) {
+      const prestamosActivos = await prisma.prestamo.findMany({
+        where: {
+          estado: { in: ["ACTIVO", "VENCIDO"] },
+          ...(Object.keys(rutaFilter).length > 0 ? { cliente: rutaFilter } : {})
+        },
+        select: { clienteId: true }
+      })
+      clienteIdsConSaldo = [...new Set(prestamosActivos.map(p => p.clienteId))]
+
+      // Si no hay clientes con saldo, devolver vacío inmediatamente
+      if (clienteIdsConSaldo.length === 0) {
+        return NextResponse.json([])
+      }
+    }
+
+    const whereClause: any = {}
+    if (clienteIdsConSaldo !== null) {
+      // Devolver TODOS los préstamos de esos clientes (historial completo)
+      whereClause.clienteId = { in: clienteIdsConSaldo }
+    } else if (Object.keys(rutaFilter).length > 0) {
+      whereClause.cliente = rutaFilter
     }
 
     const prestamos = await prisma.prestamo.findMany({
