@@ -2,7 +2,6 @@
   "name": "app",
   "private": true,
   "scripts": {
-    "clean-build": "rmdir /s /q .next && rmdir /s /q node_modules && npm ci && npm run build",
     "dev": "node api.js && next dev",
     "build": "node api.js && next build",
     "start": "node api.js && next start",
