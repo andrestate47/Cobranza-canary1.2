@@ -13,14 +13,9 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans selection:bg-cyan-500 selection:text-white">
       {/* Dynamic Background Light Orbs */}
-      <div 
-        className="absolute -top-16 -left-16 w-[550px] h-[550px] rounded-full bg-gradient-to-br from-cyan-500/45 to-blue-600/35 blur-[100px] pointer-events-none animate-pulse-slow" 
-      />
-      <div 
-        className="absolute -bottom-16 -right-16 w-[550px] h-[550px] rounded-full bg-gradient-to-br from-emerald-500/35 to-teal-700/30 blur-[110px] pointer-events-none animate-pulse-slow"
-        style={{ animationDelay: '2.5s' }}
-      />
-      <div className="absolute top-[40%] right-[35%] w-[350px] h-[350px] rounded-full bg-purple-600/25 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-cyan-600/35 to-blue-700/25 blur-[120px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-emerald-600/20 to-teal-800/25 blur-[130px] pointer-events-none" />
+      <div className="absolute top-[40%] right-[35%] w-[350px] h-[350px] rounded-full bg-purple-600/15 blur-[100px] pointer-events-none" />
 
       {/* Grid Pattern Overlay */}
       <div 
