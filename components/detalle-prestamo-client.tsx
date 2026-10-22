@@ -69,7 +69,7 @@ const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), 
 const CameraModal = dynamic(() => import("@/components/camera-modal"), { ssr: false })
 const TransferenciaModal = dynamic(() => import("@/components/transferencia-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
-const BoletaViewerModal = dynamic(() => import("@/components/boleta-viewer-modal"), { ssr: false })
+import BoletaViewerModal from "@/components/boleta-viewer-modal"
 
 // Tipos basados en el modelo de Prisma
 interface Cliente {
