@@ -477,7 +477,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
         <div className="w-full space-y-4">
           {/* Header con Logo */}
           <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-            <div className="flex-shrink-0 bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex items-center justify-center" style={{ width: '80px', height: '80px' }}>
+            <div className="flex-shrink-0 bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex items-center justify-center" style={{ width: '85px', height: '85px' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {logoUrl ? (
                 <img src={`/api/files/system/${encodeURIComponent(logoUrl)}`} alt="Logo" className="w-full h-full object-contain" />
@@ -486,11 +486,11 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center">
-                <Receipt className="h-6 w-6 mr-2 text-blue-600 flex-shrink-0" />
+              <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center">
+                <Receipt className="h-7 w-7 mr-2 text-blue-600 flex-shrink-0" />
                 Comprobante de Pago
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-base text-gray-600 font-medium mt-1">
                 N° {data.numeroBoleta} • {formatDate(data.fecha)}
               </p>
             </div>
@@ -511,10 +511,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
             <Card className="shadow-sm border-l-4 border-l-amber-500">
               <CardContent className="p-4">
                 <div className="flex items-start">
-                  <Receipt className="h-5 w-5 text-amber-600 mr-2 mt-0.5" />
+                  <Receipt className="h-6 w-6 text-amber-600 mr-2.5 mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-semibold text-amber-800 mb-1">Observaciones</h3>
-                    <p className="text-gray-700">{data.observaciones}</p>
+                    <h3 className="text-base font-bold text-amber-800 mb-1">Observaciones</h3>
+                    <p className="text-base text-gray-800">{data.observaciones}</p>
                   </div>
                 </div>
               </CardContent>
@@ -527,25 +527,25 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
             <Card className="shadow-sm">
               <CardContent className="p-4 h-full">
                 <div className="flex items-center mb-3 pb-2 border-b border-gray-100">
-                  <User className="h-5 w-5 text-blue-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">Información del Cliente</h3>
+                  <User className="h-6 w-6 text-blue-600 mr-2" />
+                  <h3 className="text-xl font-bold text-gray-900">Información del Cliente</h3>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold text-gray-900">
+                <div className="space-y-2.5">
+                  <h4 className="text-2xl font-extrabold text-gray-900">
                     {data.cliente.nombre} {data.cliente.apellido}
                   </h4>
-                  <div className="flex items-center text-gray-600">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    <span>Documento: {data.cliente.documento}</span>
+                  <div className="flex items-center text-gray-700 text-base">
+                    <CreditCard className="h-5 w-5 mr-2 text-gray-500 flex-shrink-0" />
+                    <span>Documento: <strong className="font-semibold text-gray-900">{data.cliente.documento}</strong></span>
                   </div>
-                  <div className="flex items-center text-gray-600">
-                    <User className="h-4 w-4 mr-2" />
+                  <div className="flex items-center text-gray-700 text-base">
+                    <User className="h-5 w-5 mr-2 text-gray-500 flex-shrink-0" />
                     <span>{data.cliente.direccionCliente}</span>
                   </div>
                   {data.cliente.telefono && (
-                    <div className="flex items-center text-blue-600">
-                      <span className="text-sm font-medium">{data.cliente.telefono}</span>
+                    <div className="flex items-center text-blue-700 text-base font-semibold">
+                      <span>{data.cliente.telefono}</span>
                     </div>
                   )}
                 </div>
@@ -557,41 +557,41 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               <CardContent className="p-4 h-full">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                   <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-blue-600 mr-2" />
-                    <h3 className="text-lg font-semibold text-gray-900">Montos del Préstamo</h3>
+                    <DollarSign className="h-6 w-6 text-blue-600 mr-2" />
+                    <h3 className="text-xl font-bold text-gray-900">Montos del Préstamo</h3>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${estaCompletado ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  <span className={`text-sm font-semibold px-3 py-1 rounded-full ${estaCompletado ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                     {estaCompletado ? 'Completado' : 'Activo'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-3xl font-extrabold text-blue-600">
                       {formatCurrency(data.prestamo.monto)}
                     </p>
-                    <p className="text-sm text-gray-500">Monto Prestado</p>
+                    <p className="text-base font-medium text-gray-600">Monto Prestado</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-3xl font-extrabold text-green-600">
                       {formatCurrency(totalPagado)}
                     </p>
-                    <p className="text-sm text-gray-500">Total Pagado</p>
+                    <p className="text-base font-medium text-gray-600">Total Pagado</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-2xl font-bold text-red-600">
+                    <p className="text-3xl font-extrabold text-red-600">
                       {formatCurrency(data.prestamo.saldoPendiente)}
                     </p>
-                    <p className="text-sm text-gray-500">Saldo Pendiente</p>
+                    <p className="text-base font-medium text-gray-600">Saldo Pendiente</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-purple-600">
+                    <p className="text-3xl font-extrabold text-purple-600">
                       {formatCurrency(valorCuotaMostrar)}
                     </p>
-                    <p className="text-sm text-gray-500">Valor Cuota</p>
+                    <p className="text-base font-medium text-gray-600">Valor Cuota</p>
                   </div>
                 </div>
               </CardContent>
@@ -600,10 +600,10 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
           {/* Información del Préstamo y Pago Detallado */}
           <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center mb-4 pb-2 border-b border-gray-100">
-                <Receipt className="h-5 w-5 text-blue-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">Detalles del Préstamo y Pago Actual</h3>
+            <CardContent className="p-5">
+              <div className="flex items-center mb-3 pb-2 border-b border-gray-100">
+                <Receipt className="h-6 w-6 text-blue-600 mr-2" />
+                <h3 className="text-xl font-bold text-gray-900">Detalles del Préstamo y Pago Actual</h3>
               </div>
 
               <Separator className="my-3" />
@@ -612,119 +612,119 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
               <div className="grid grid-cols-2 gap-x-12 gap-y-6">
                 
                 {/* Columna Izquierda */}
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2.5 text-base">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Tipo de crédito:</span>
-                    <span className="font-medium capitalize">{data.tipoCredito || 'Efectivo'}</span>
+                    <span className="text-gray-700">Tipo de crédito:</span>
+                    <span className="font-semibold text-gray-900 capitalize">{data.tipoCredito || 'Efectivo'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Tipo de pago:</span>
-                    <span className="font-medium">{formatTipoPago(data.prestamo.tipoPago)}</span>
+                    <span className="text-gray-700">Tipo de pago:</span>
+                    <span className="font-semibold text-gray-900">{formatTipoPago(data.prestamo.tipoPago)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Monto total a pagar:</span>
-                    <span className="font-medium">{formatCurrency(data.prestamo.montoTotal)}</span>
+                    <span className="text-gray-700">Monto total a pagar:</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(data.prestamo.montoTotal)}</span>
                   </div>
 
-                  <Separator className="my-2" />
+                  <Separator className="my-2.5" />
 
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total cuotas:</span>
-                    <span className="font-medium">{totalCuotas}</span>
+                    <span className="text-gray-700">Total cuotas:</span>
+                    <span className="font-semibold text-gray-900">{totalCuotas}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas pagadas:</span>
-                    <span className="font-medium text-green-600">{Number(cuotasPagadas.toFixed(2))}</span>
+                    <span className="text-gray-700">Cuotas pagadas:</span>
+                    <span className="font-bold text-green-700">{Number(cuotasPagadas.toFixed(2))}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas pendientes:</span>
-                    <span className="font-medium text-orange-600">{Number(cuotasPendientes.toFixed(2))}</span>
+                    <span className="text-gray-700">Cuotas pendientes:</span>
+                    <span className="font-bold text-orange-700">{Number(cuotasPendientes.toFixed(2))}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cuotas atrasadas (al abono):</span>
-                    <span className={`font-medium ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-700">Cuotas atrasadas (al abono):</span>
+                    <span className={`font-bold ${cuotasAtrasadas > 0 ? 'text-red-600' : 'text-green-700'}`}>
                       {Number(cuotasAtrasadas.toFixed(2))}
                     </span>
                   </div>
 
-                  <Separator className="my-2" />
+                  <Separator className="my-2.5" />
 
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Días vencidos (al abono):</span>
-                    <span className={`font-medium ${diasVencidos > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-700">Días vencidos (al abono):</span>
+                    <span className={`font-bold ${diasVencidos > 0 ? 'text-red-600' : 'text-green-700'}`}>
                       {diasVencidos} días
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Valor en atraso (al abono):</span>
-                    <span className={`font-medium ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className="text-gray-700">Valor en atraso (al abono):</span>
+                    <span className={`font-bold ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-700'}`}>
                       {formatCurrency(valorEnAtraso)}
                     </span>
                   </div>
 
                   {data.prestamo.ultimoPago && (
                     <>
-                      <Separator className="my-2" />
+                      <Separator className="my-2.5" />
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Último pago anterior:</span>
-                        <span className="font-medium">
+                        <span className="text-gray-700">Último pago anterior:</span>
+                        <span className="font-semibold text-gray-900">
                           {formatCurrency(data.prestamo.ultimoPago.monto)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Fecha del último pago:</span>
-                        <span className="font-medium">{formatDate(data.prestamo.ultimoPago.fecha)}</span>
+                        <span className="text-gray-700">Fecha del último pago:</span>
+                        <span className="font-semibold text-gray-900">{formatDate(data.prestamo.ultimoPago.fecha)}</span>
                       </div>
                     </>
                   )}
                 </div>
 
                 {/* Columna Derecha */}
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2.5 text-base">
                   {/* Destacado: El Abono Actual */}
-                  <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mb-3">
+                  <div className="bg-blue-50 border border-blue-100 p-3.5 rounded-lg mb-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-blue-800 font-bold uppercase text-xs">Monto de este abono</span>
-                      <span className="font-black text-blue-900 text-xl">{formatCurrency(montoAbonoMostrar)}</span>
+                      <span className="text-blue-900 font-bold uppercase text-sm tracking-wider">Monto de este abono</span>
+                      <span className="font-black text-blue-900 text-2xl">{formatCurrency(montoAbonoMostrar)}</span>
                     </div>
                     {data.devolucionSeguro ? (
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
-                        <span className="text-blue-800 font-bold uppercase text-xs">Devolver seguro</span>
-                        <span className="font-black text-green-700 text-xl">{formatCurrency(data.devolucionSeguro)}</span>
+                        <span className="text-blue-900 font-bold uppercase text-sm tracking-wider">Devolver seguro</span>
+                        <span className="font-black text-green-700 text-2xl">{formatCurrency(data.devolucionSeguro)}</span>
                       </div>
                     ) : null}
-                    <div className="flex justify-between text-xs text-blue-700 mt-2">
+                    <div className="flex justify-between text-sm text-blue-800 font-medium mt-2">
                       <span>Progreso total:</span>
                       <span className="font-bold">{progresoPrecentaje}%</span>
                     </div>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Fecha de inicio:</span>
-                    <span className="font-medium">{formatDateOnly(data.prestamo.fechaInicio)}</span>
+                    <span className="text-gray-700">Fecha de inicio:</span>
+                    <span className="font-semibold text-gray-900">{formatDateOnly(data.prestamo.fechaInicio)}</span>
                   </div>
                   {fechaFinCalculada && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Fecha fin:</span>
-                      <span className="font-medium text-gray-800">{formatDateOnly(fechaFinCalculada)}</span>
+                      <span className="text-gray-700">Fecha fin:</span>
+                      <span className="font-semibold text-gray-900">{formatDateOnly(fechaFinCalculada)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Días transcurridos (al pago):</span>
-                    <span className="font-medium">{diasTranscurridos} días</span>
+                    <span className="text-gray-700">Días transcurridos (al pago):</span>
+                    <span className="font-semibold text-gray-900">{diasTranscurridos} días</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Fecha próximo pago:</span>
-                    <span className="font-medium text-blue-600">
+                    <span className="text-gray-700">Fecha próximo pago:</span>
+                    <span className="font-bold text-blue-700">
                       {estaCompletado ? "Préstamo Finalizado" : formatDateOnly(fechaProximoPago)}
                     </span>
                   </div>
 
-                  <Separator className="my-2" />
+                  <Separator className="my-2.5" />
 
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Fecha del abono:</span>
-                    <span className="font-medium text-blue-600">
+                    <span className="text-gray-700">Fecha del abono:</span>
+                    <span className="font-bold text-blue-700">
                       {(() => {
                         try {
                           const local = getLocalYYYYMMDD(data.fecha)
@@ -737,18 +737,18 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Hora de registro:</span>
-                    <span className="font-medium text-gray-700">
+                    <span className="text-gray-700">Hora de registro:</span>
+                    <span className="font-semibold text-gray-900">
                       {(data.fecha ? new Date(data.fecha) : new Date()).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Método de pago:</span>
-                    <span className="font-medium capitalize">{data.tipoPagoMetodo || data.metodoPago || 'Efectivo'}</span>
+                    <span className="text-gray-700">Método de pago:</span>
+                    <span className="font-semibold text-gray-900 capitalize">{data.tipoPagoMetodo || data.metodoPago || 'Efectivo'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Cobrador:</span>
-                    <span className="font-medium">{data.usuario.nombre}</span>
+                    <span className="text-gray-700">Cobrador:</span>
+                    <span className="font-semibold text-gray-900">{data.usuario.nombre}</span>
                   </div>
 
                 </div>
@@ -756,8 +756,8 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
 
               {/* Número de boleta destacado */}
               <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Comprobante / Número de Boleta</p>
-                <p className="text-xl font-mono font-bold text-gray-800 tracking-widest">
+                <p className="text-sm text-gray-600 mb-1 uppercase tracking-wider font-bold">Comprobante / Número de Boleta</p>
+                <p className="text-2xl font-mono font-black text-gray-900 tracking-widest">
                   {data.numeroBoleta}
                 </p>
               </div>

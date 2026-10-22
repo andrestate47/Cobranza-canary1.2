@@ -400,7 +400,20 @@ export default function DashboardClient({ session }: DashboardClientProps) {
     : 0
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-16 w-full max-w-full overflow-x-hidden">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-16 w-full max-w-full overflow-x-hidden">
+
+      {/* ─── EFECTO GLOW / ORBS EN MODO OSCURO PARA INICIO (DASHBOARD) ─── */}
+      <div className="hidden dark:block pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-24 -left-24 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-emerald-500/35 to-teal-700/25 blur-[130px] animate-pulse-slow" />
+        <div 
+          className="absolute top-[35%] -right-24 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-cyan-600/30 to-blue-800/20 blur-[140px] animate-pulse-slow" 
+          style={{ animationDelay: '2.5s' }} 
+        />
+        <div 
+          className="absolute -bottom-24 left-[15%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-800/25 blur-[120px] animate-pulse-slow" 
+          style={{ animationDelay: '1.2s' }} 
+        />
+      </div>
 
       {/* ─── STICKY HEADER (ESTILO RUTA DEL DÍA) ─── */}
       <header className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm w-full overflow-hidden">
@@ -504,7 +517,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       </header>
 
       {/* ─── CONTENIDO PRINCIPAL ─── */}
-      <main className="max-w-6xl mx-auto px-4 mt-6 space-y-6">
+      <main className="relative z-10 max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
         {/* ─── BANNER DE BIENVENIDA Y RESUMEN KPI (ESTILO RUTA DEL DÍA) ─── */}
         <div className="bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-4">

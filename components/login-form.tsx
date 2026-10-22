@@ -74,7 +74,9 @@ export default function LoginForm() {
       <CardHeader className="text-center pt-8 pb-4 space-y-3 relative">
         {/* Glow halo around logo */}
         <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 blur-lg opacity-40 animate-pulse" />
+          <div 
+            className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 blur-lg opacity-60 animate-pulse-slow" 
+          />
           <div className="relative w-20 h-20 rounded-2xl bg-slate-950/80 border border-slate-700/60 p-2.5 flex items-center justify-center shadow-inner">
             <Image
               src="/logo.png"

@@ -208,3 +208,19 @@ ul, ol, li, div, button, section, article, nav, main, header, footer,
 .estado-renovado {
   @apply bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium;
 }
+
+/* Animación de pulso suave de 5 segundos para orbs de luz / glow de fondo */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.08);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
