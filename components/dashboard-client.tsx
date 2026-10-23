@@ -402,16 +402,19 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-16 w-full max-w-full overflow-x-hidden">
 
-      {/* ─── EFECTO GLOW / ORBS EN MODO OSCURO PARA INICIO (DASHBOARD) ─── */}
-      <div className="hidden dark:block pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-24 -left-24 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-emerald-500/35 to-teal-700/25 blur-[130px] animate-pulse-slow" />
+      {/* ─── EFECTO GLOW (HALO CENTRAL QUE PRENDE Y APAGA CADA 5 SEGUNDOS) ─── */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        {/* Halo central superior detrás del contenido */}
         <div 
-          className="absolute top-[35%] -right-24 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-cyan-600/30 to-blue-800/20 blur-[140px] animate-pulse-slow" 
-          style={{ animationDelay: '2.5s' }} 
+          className="absolute -top-16 left-1/2 -translate-x-1/2 w-[700px] sm:w-[850px] h-[360px] rounded-full bg-gradient-to-r from-cyan-500/25 via-teal-400/30 to-emerald-500/25 blur-[120px] animate-pulse-slow"
         />
+        {/* Patrón sutil de cuadrícula */}
         <div 
-          className="absolute -bottom-24 left-[15%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-800/25 blur-[120px] animate-pulse-slow" 
-          style={{ animationDelay: '1.2s' }} 
+          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.04] pointer-events-none" 
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
         />
       </div>
 
@@ -421,7 +424,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
           <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
             
             {/* Logo y título de la plataforma */}
-            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0">
                 {logoUrl ? (
                   <img
@@ -520,7 +523,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
       <main className="relative z-10 max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
         {/* ─── BANNER DE BIENVENIDA Y RESUMEN KPI (ESTILO RUTA DEL DÍA) ─── */}
-        <div className="bg-white dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white/95 dark:bg-[#0E1F1C] border border-gray-200 dark:border-[#1F3A36] rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center space-x-2 flex-wrap gap-y-1">

@@ -55,8 +55,7 @@ export default function LoginForm() {
           title: `¡Bienvenido, ${userName}!`,
           description: `Sesión iniciada con rol ${userRole}.`,
         })
-        router.push("/dashboard")
-        router.refresh()
+        window.location.href = "/dashboard"
       }
     } catch (error) {
       toast({

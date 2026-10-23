@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { usePathname } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Shield, Clock, XCircle, Loader2 } from "lucide-react"
@@ -23,11 +24,14 @@ interface EstadoDispositivo {
 }
 
 export function DeviceGuard({ children }: DeviceGuardProps) {
+  const pathname = usePathname()
+  const isLoginPage = pathname === "/login"
   const { data: session, status } = useSession() || {}
   
-  // Evitar pantalla de carga si ya está verificado en sesión o si es Admin
+  // Evitar pantalla de carga si ya está verificado en sesión o si es Admin o si es la página de login
   const [verificando, setVerificando] = useState(() => {
     if (typeof window !== "undefined") {
+      if (window.location.pathname === "/login") return false
       const cached = sessionStorage.getItem("device_verified")
       if (cached === "true") return false
     }
@@ -47,6 +51,11 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
   })
 
   useEffect(() => {
+    if (isLoginPage) {
+      setVerificando(false)
+      return
+    }
+
     const verificarDispositivo = async () => {
       if (status === "loading") return
       
@@ -85,7 +94,12 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
     }
 
     verificarDispositivo()
-  }, [session, status])
+  }, [session, status, isLoginPage])
+
+  // En la página de login, nunca bloquear ni mostrar pantalla de verificación de dispositivo
+  if (isLoginPage) {
+    return <>{children}</>
+  }
 
   // Pantalla de carga mientras verifica (soporte dark mode completo para evitar destellos)
   if (verificando || status === "loading") {
