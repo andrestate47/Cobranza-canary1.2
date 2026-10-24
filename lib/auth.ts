@@ -168,13 +168,14 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     redirect: async ({ url, baseUrl }) => {
-      if (url.startsWith("/")) return url
+      // NextAuth requiere que redirect retorne una URL absoluta (con baseUrl)
+      // para evitar que new URL(data.url) en next-auth/react falle con "TypeError: Failed to construct URL: Invalid URL"
+      if (url.startsWith("/")) return `${baseUrl}${url}`
       try {
         const u = new URL(url)
-        return u.pathname + u.search
-      } catch {
-        return "/dashboard"
-      }
+        if (u.origin === baseUrl) return url
+      } catch {}
+      return `${baseUrl}/dashboard`
     },
   },
   pages: {

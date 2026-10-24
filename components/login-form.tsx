@@ -27,10 +27,15 @@ export default function LoginForm() {
     try {
       console.log("[LoginForm] Iniciando intento de login para:", email.trim())
 
+      const callbackUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/dashboard`
+        : "/dashboard"
+
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
+        callbackUrl,
       })
 
       console.log("[LoginForm] Respuesta recibida de signIn:", result)
