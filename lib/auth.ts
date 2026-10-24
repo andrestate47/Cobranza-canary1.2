@@ -16,79 +16,96 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.warn('[Auth] Intento de login sin email o contraseña')
+            return null
+          }
 
-        const cleanEmail = credentials.email.trim()
+          const cleanEmail = credentials.email.trim()
+          console.log('[Auth] Validando credenciales para:', cleanEmail)
 
-        const user = await prisma.user.findFirst({
-          where: {
-            email: {
-              equals: cleanEmail,
-              mode: 'insensitive'
-            }
-          },
-          include: {
-            permissions: true,
-            supervisor: {
-              select: {
-                id: true,
-                name: true,
-                firstName: true,
-                lastName: true
+          const user = await prisma.user.findFirst({
+            where: {
+              email: {
+                equals: cleanEmail,
+                mode: 'insensitive'
+              }
+            },
+            include: {
+              permissions: true,
+              supervisor: {
+                select: {
+                  id: true,
+                  name: true,
+                  firstName: true,
+                  lastName: true
+                }
               }
             }
+          })
+
+          if (!user) {
+            console.warn('[Auth] Usuario no encontrado en la base de datos:', cleanEmail)
+            return null
           }
-        })
 
-        if (!user) {
-          return null
-        }
-
-        // Verificar si el usuario está activo
-        if (!user.isActive) {
-          throw new Error('Usuario desactivado. Contacte al administrador.')
-        }
-
-        let isPasswordValid = await bcryptjs.compare(
-          credentials.password,
-          user.password
-        )
-
-        // Compatibilidad para administradores con contraseña estándar de desarrollo (admin123 o 184672)
-        if (!isPasswordValid && user.role === 'ADMINISTRADOR') {
-          if (credentials.password === 'admin123' || credentials.password === '184672') {
-            isPasswordValid = true
+          // Verificar si el usuario está activo
+          if (!user.isActive) {
+            console.warn('[Auth] Usuario desactivado:', cleanEmail)
+            throw new Error('Usuario desactivado. Contacte al administrador.')
           }
-        }
 
-        if (!isPasswordValid) {
-          return null
-        }
+          let isPasswordValid = await bcryptjs.compare(
+            credentials.password,
+            user.password
+          )
 
-        // Actualizar último login
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLogin: new Date() }
-        })
+          // Compatibilidad para administradores con contraseña estándar de desarrollo (admin123 o 184672)
+          if (!isPasswordValid && user.role === 'ADMINISTRADOR') {
+            if (credentials.password === 'admin123' || credentials.password === '184672') {
+              console.log('[Auth] Contraseña validada vía compatibilidad administrador (184672 / admin123)')
+              isPasswordValid = true
+            }
+          }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name || undefined,
-          firstName: user.firstName || undefined,
-          lastName: user.lastName || undefined,
-          role: user.role,
-          isActive: user.isActive,
-          timeLimit: user.timeLimit || undefined,
-          permissions: user.permissions.map(p => p.permission),
-          supervisor: user.supervisor ? {
-            id: user.supervisor.id,
-            name: user.supervisor.name || undefined,
-            firstName: user.supervisor.firstName || undefined,
-            lastName: user.supervisor.lastName || undefined
-          } : undefined
+          if (!isPasswordValid) {
+            console.warn('[Auth] Contraseña incorrecta para:', cleanEmail)
+            return null
+          }
+
+          console.log('[Auth] Login aprobado con éxito para:', user.email, 'Rol:', user.role)
+
+          // Actualizar último login
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { lastLogin: new Date() }
+            })
+          } catch (updateErr) {
+            console.error('[Auth] Error al actualizar lastLogin:', updateErr)
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name || undefined,
+            firstName: user.firstName || undefined,
+            lastName: user.lastName || undefined,
+            role: user.role,
+            isActive: user.isActive,
+            timeLimit: user.timeLimit || undefined,
+            permissions: user.permissions.map(p => p.permission),
+            supervisor: user.supervisor ? {
+              id: user.supervisor.id,
+              name: user.supervisor.name || undefined,
+              firstName: user.supervisor.firstName || undefined,
+              lastName: user.supervisor.lastName || undefined
+            } : undefined
+          }
+        } catch (error) {
+          console.error('[Auth] Excepción durante authorize():', error)
+          throw error
         }
       }
     })

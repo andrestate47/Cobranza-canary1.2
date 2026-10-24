@@ -25,13 +25,18 @@ export default function LoginForm() {
     setIsLoading(true)
 
     try {
+      console.log("[LoginForm] Iniciando intento de login para:", email.trim())
+
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       })
 
+      console.log("[LoginForm] Respuesta recibida de signIn:", result)
+
       if (result?.error) {
+        console.warn("[LoginForm] Error devuelto por NextAuth:", result.error, result)
         let errorMessage = "Credenciales incorrectas. Por favor, verifica tu email y contraseña."
 
         if (result.error.includes("desactivado")) {
@@ -46,10 +51,19 @@ export default function LoginForm() {
           variant: "destructive",
         })
       } else {
-        const session = await getSession()
-        const userName = session?.user?.firstName || session?.user?.name || "Usuario"
-        const userRole = session?.user?.role === 'ADMINISTRADOR' ? 'Administrador' :
-          session?.user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'
+        console.log("[LoginForm] Autenticación aprobada con éxito. Redirigiendo a /dashboard...")
+        let userName = "Usuario"
+        let userRole = "Administrador"
+
+        try {
+          const session = await getSession()
+          console.log("[LoginForm] Datos de sesión:", session)
+          userName = session?.user?.firstName || session?.user?.name || "Usuario"
+          userRole = session?.user?.role === 'ADMINISTRADOR' ? 'Administrador' :
+            session?.user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Cobrador'
+        } catch (sessionErr) {
+          console.warn("[LoginForm] getSession no pudo cargar antes de la redirección:", sessionErr)
+        }
 
         toast({
           title: `¡Bienvenido, ${userName}!`,
@@ -57,10 +71,12 @@ export default function LoginForm() {
         })
         window.location.href = "/dashboard"
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("[LoginForm] Excepción capturada en handleSubmit:", error)
+      const detailMsg = error?.message ? ` (${error.message})` : ""
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado. Inténtalo de nuevo.",
+        description: `Ocurrió un error inesperado al procesar la solicitud${detailMsg}. Inténtalo de nuevo.`,
         variant: "destructive",
       })
     } finally {
