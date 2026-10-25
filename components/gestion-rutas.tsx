@@ -35,6 +35,7 @@ import { toast } from "sonner"
 import { ArrowLeft, Plus, Trash2, Edit2, Users, MapPin, UserCheck, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Textarea } from "@/components/ui/textarea"
+import BackgroundHalo from "@/components/background-halo"
 
 interface Ruta {
   id: string
@@ -445,7 +446,8 @@ export default function GestionRutas() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+      <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12 overflow-x-hidden">
+        <BackgroundHalo />
         {/* Sticky Header */}
         <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
           <div className="container-mobile">

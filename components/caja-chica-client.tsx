@@ -36,6 +36,7 @@ import {
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import dynamic from "next/dynamic"
+import BackgroundHalo from "@/components/background-halo"
 
 const ReporteCobradores = dynamic(() => import("@/components/reporte-cobradores"), { ssr: false })
 import {
@@ -457,7 +458,8 @@ export default function CajaChicaClient({ session }: CajaChicaClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#071313] text-foreground transition-colors duration-200">
+    <div className="relative min-h-screen bg-[#f8fafc] dark:bg-[#071313] text-foreground transition-colors duration-200 overflow-x-hidden">
+      <BackgroundHalo />
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* 1. Header Superior */}

@@ -7,6 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useCurrency } from "@/hooks/use-currency"
 import { usePermissions } from "@/hooks/use-permissions"
+import BackgroundHalo from "@/components/background-halo"
 import {
   Users,
   Calendar,
@@ -403,20 +404,7 @@ export default function DashboardClient({ session }: DashboardClientProps) {
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-16 w-full max-w-full overflow-x-hidden">
 
       {/* ─── EFECTO GLOW (HALO CENTRAL QUE PRENDE Y APAGA CADA 5 SEGUNDOS) ─── */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        {/* Halo central superior detrás del contenido */}
-        <div 
-          className="absolute -top-16 left-1/2 -translate-x-1/2 w-[700px] sm:w-[850px] h-[360px] rounded-full bg-gradient-to-r from-cyan-500/25 via-teal-400/30 to-emerald-500/25 blur-[120px] animate-pulse-slow"
-        />
-        {/* Patrón sutil de cuadrícula */}
-        <div 
-          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.04] pointer-events-none" 
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-      </div>
+      <BackgroundHalo />
 
       {/* ─── STICKY HEADER (ESTILO RUTA DEL DÍA) ─── */}
       <header className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm w-full overflow-hidden">

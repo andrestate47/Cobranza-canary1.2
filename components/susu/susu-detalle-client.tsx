@@ -12,6 +12,7 @@ import { ArrowLeft, Users, Calendar, DollarSign, TrendingUp, CheckCircle2, Clock
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import RegistrarPagoSusuModal from './registrar-pago-susu-modal'
+import BackgroundHalo from '@/components/background-halo'
 import type { Susu } from '@/lib/types-susu'
 
 interface SusuDetalleClientProps {
@@ -121,7 +122,9 @@ export default function SusuDetalleClient({ susuId }: SusuDetalleClientProps) {
   const montoPorPeriodo = calcularMontoPorPeriodo()
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 overflow-x-hidden p-6 space-y-6">
+      <BackgroundHalo />
+      <div className="container mx-auto space-y-6 relative z-10">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
@@ -468,6 +471,7 @@ export default function SusuDetalleClient({ susuId }: SusuDetalleClientProps) {
         periodoActual={periodoActual}
         onPagoRegistrado={cargarSusu}
       />
+      </div>
     </div>
   )
 }

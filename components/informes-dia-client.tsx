@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
+import BackgroundHalo from "@/components/background-halo"
 
 interface InformeDelDia {
   fecha: string
@@ -305,7 +306,8 @@ export default function InformesDiaClient({ session }: InformesDiaClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors overflow-x-hidden">
+      <BackgroundHalo />
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">

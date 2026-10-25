@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/components/ui/use-toast"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import BackgroundHalo from "@/components/background-halo"
 
 interface PerfilClientProps {
   session: Session
@@ -351,7 +352,8 @@ export default function PerfilClient({ session }: PerfilClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="relative min-h-screen bg-gray-50 dark:bg-[#071311] text-foreground transition-colors duration-200 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container-mobile">

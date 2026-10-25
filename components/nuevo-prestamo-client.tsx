@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import BackgroundHalo from "@/components/background-halo"
 
 interface Cliente {
   id: string
@@ -665,7 +666,8 @@ export default function NuevoPrestamoClient({ session }: NuevoPrestamoClientProp
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm mb-6">
         <div className="container-mobile">

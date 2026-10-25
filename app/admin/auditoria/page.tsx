@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Loader2, Search, FileText, Trash2, Calendar, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
+import BackgroundHalo from '@/components/background-halo'
 
 interface Usuario {
   id: string
@@ -128,7 +129,9 @@ export default function AuditoriaPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 overflow-x-hidden p-6 space-y-6">
+      <BackgroundHalo />
+      <div className="container mx-auto space-y-6 relative z-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -387,6 +390,7 @@ export default function AuditoriaPage() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
 }

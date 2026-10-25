@@ -37,6 +37,7 @@ import { countDiasHabiles } from "@/lib/date-utils"
 import { diaCalendario, diaReferencia } from "@/lib/prestamo-calc"
 import { calcularCreditScore } from "@/lib/credit-score"
 import CreditScoreBadge from "@/components/credit-score-badge"
+import BackgroundHalo from "@/components/background-halo"
 
 const PagoRapidoModal = dynamic(() => import("@/components/pago-rapido-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
@@ -957,7 +958,8 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200">
+    <div className="relative min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Header */}
       <div className="bg-white dark:bg-[#102525] shadow-sm border-b dark:border-[#34766D]">
         <div className="container-mobile">

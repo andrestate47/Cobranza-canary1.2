@@ -36,6 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
+import BackgroundHalo from "@/components/background-halo"
 import {
   Dialog,
   DialogContent,
@@ -324,7 +325,8 @@ export default function CarteraCastigadaClient({ session }: { session: Session }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-3 sm:p-6 lg:p-8 space-y-6">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Cabecera Principal */}
       <div className="flex flex-col gap-3 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-start justify-between gap-2">

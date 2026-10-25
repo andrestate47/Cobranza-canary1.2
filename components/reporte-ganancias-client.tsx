@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
+import BackgroundHalo from "@/components/background-halo"
 import {
   Dialog,
   DialogContent,
@@ -424,7 +425,8 @@ export default function ReporteGananciasClient({ session }: ReporteGananciasClie
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-12 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">

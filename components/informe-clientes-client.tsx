@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrency } from "@/hooks/use-currency"
+import BackgroundHalo from "@/components/background-halo"
 
 interface PrestamoDetallado {
   id: string
@@ -392,7 +393,8 @@ export default function InformeClientesClient({ session }: InformeClientesClient
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] pb-12 transition-colors overflow-x-hidden">
+      <BackgroundHalo />
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#0E1F1C]/90 border-b border-gray-200 dark:border-[#1F3A36] shadow-sm">
         <div className="container-mobile">

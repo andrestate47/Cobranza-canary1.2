@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import PagoRapidoModal from "@/components/pago-rapido-modal"
 import { useCurrency } from "@/hooks/use-currency"
+import BackgroundHalo from "@/components/background-halo"
 
 interface RutaDelDiaClientProps {
   session: Session
@@ -222,11 +223,8 @@ export default function RutaDelDiaClient({ session }: RutaDelDiaClientProps) {
   const porcentajeEficiencia = totalClientes > 0 ? Math.round((cobrados.length / totalClientes) * 100) : 0
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 font-sans selection:bg-cyan-500 selection:text-white transition-colors duration-200">
-      {/* Dynamic Ambient Background Glows */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/10 dark:bg-cyan-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 font-sans selection:bg-cyan-500 selection:text-white transition-colors duration-200 overflow-x-hidden">
+      <BackgroundHalo />
       {/* ─── STICKY HEADER WITH GLASSMORPHISM ─── */}
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800/80 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3.5 space-y-3">

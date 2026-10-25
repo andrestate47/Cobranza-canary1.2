@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import CrearSusuModal from './crear-susu-modal'
 import { Plus, Users, Calendar, DollarSign, Clock, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react'
+import BackgroundHalo from '@/components/background-halo'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -134,7 +135,9 @@ export default function SusuListClient() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 overflow-x-hidden p-6 space-y-6">
+      <BackgroundHalo />
+      <div className="container mx-auto space-y-6 relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -351,6 +354,7 @@ export default function SusuListClient() {
 
       {/* Modal Crear SUSU */}
       <CrearSusuModal open={modalOpen} onOpenChange={setModalOpen} />
+      </div>
     </div>
   )
 }

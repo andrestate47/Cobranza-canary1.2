@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       const totalPagado = aggPago.totalPagado
       const interesTotal = parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100;
       const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
-      const multa = parseFloat(prestamo.multa?.toString() || '0');
+      const multa = parseFloat((prestamo as any).multa?.toString() || '0');
       const montoTotal = parseFloat(prestamo.monto.toString()) + interesTotal + multa;
       const saldoPendiente = Math.max(0, Math.round((montoTotal - totalPagado) * 100) / 100)
       const cuotasPagadasRaw = parseFloat(prestamo.valorCuota.toString()) > 0

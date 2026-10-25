@@ -73,6 +73,7 @@ const CameraModal = dynamic(() => import("@/components/camera-modal"), { ssr: fa
 const TransferenciaModal = dynamic(() => import("@/components/transferencia-modal"), { ssr: false })
 const ImageViewerModal = dynamic(() => import("@/components/image-viewer-modal"), { ssr: false })
 import BoletaViewerModal from "@/components/boleta-viewer-modal"
+import BackgroundHalo from "@/components/background-halo"
 
 // Tipos basados en el modelo de Prisma
 interface Cliente {
@@ -1543,7 +1544,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200">
+    <div className="relative min-h-screen bg-gray-50 dark:bg-[#071313] text-foreground transition-colors duration-200 overflow-x-hidden">
+      <BackgroundHalo />
       {/* Header */}
       <div className="bg-white dark:bg-[#102525] shadow-sm border-b dark:border-[#34766D]">
         <div className="container-mobile">
