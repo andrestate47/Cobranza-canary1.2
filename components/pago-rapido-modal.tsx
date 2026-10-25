@@ -57,6 +57,7 @@ interface PrestamoConCliente {
   microseguroTotal?: number
   microseguroValor?: number
   microseguroTipo?: string
+  multa?: number
 }
 
 interface PagoRegistrado {
@@ -729,6 +730,18 @@ export default function PagoRapidoModal({
                   </p>
                 </div>
               </div>
+
+              {Boolean(prestamo.multa && prestamo.multa > 0) && (
+                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 text-xs flex items-center justify-between text-amber-800 dark:text-amber-300">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="shrink-0">⚠️</span>
+                    <span className="truncate">Incluye multa por retraso:</span>
+                  </div>
+                  <span className="font-bold text-sm text-red-600 dark:text-red-400 shrink-0">
+                    +{formatCurrency(prestamo.multa || 0)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">

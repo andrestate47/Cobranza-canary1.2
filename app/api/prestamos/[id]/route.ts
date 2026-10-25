@@ -37,7 +37,8 @@ export async function PUT(
       cuotasAtrasadasManual,
       cuotasPendientesManual,
       diasVencidosManual,
-      valorEnAtrasoManual
+      valorEnAtrasoManual,
+      multa
     } = body
 
     // Validaciones básicas
@@ -163,7 +164,8 @@ export async function PUT(
         cuotasAtrasadasManual: cuotasAtrasadasManual !== undefined && cuotasAtrasadasManual !== null && cuotasAtrasadasManual !== "" ? parseFloat(cuotasAtrasadasManual) : null,
         cuotasPendientesManual: cuotasPendientesManual !== undefined && cuotasPendientesManual !== null && cuotasPendientesManual !== "" ? parseFloat(cuotasPendientesManual) : null,
         diasVencidosManual: diasVencidosManual !== undefined && diasVencidosManual !== null && diasVencidosManual !== "" ? parseInt(diasVencidosManual) : null,
-        valorEnAtrasoManual: valorEnAtrasoManual !== undefined && valorEnAtrasoManual !== null && valorEnAtrasoManual !== "" ? parseFloat(valorEnAtrasoManual) : null
+        valorEnAtrasoManual: valorEnAtrasoManual !== undefined && valorEnAtrasoManual !== null && valorEnAtrasoManual !== "" ? parseFloat(valorEnAtrasoManual) : null,
+        multa: multa !== undefined && multa !== null && multa !== "" ? parseFloat(multa) : 0
         // No cambiar la fecha de creación ni el usuario
       },
       include: {

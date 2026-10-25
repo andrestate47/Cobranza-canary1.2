@@ -30,7 +30,10 @@ import {
   Shield,
   ShieldCheck,
   ShieldX,
-  ZoomIn
+  ZoomIn,
+  Save,
+  AlertCircle,
+  ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -137,6 +140,7 @@ interface Prestamo {
   interesTotal: number | null
   diasGracia: number
   moraCredito: number
+  multa?: number
   microseguroTipo: string
   microseguroValor: number
   microseguroTotal: number
@@ -225,6 +229,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   const [cuotasPendientesManualEditar, setCuotasPendientesManualEditar] = useState<string>("")
   const [diasVencidosManualEditar, setDiasVencidosManualEditar] = useState<string>("")
   const [valorEnAtrasoManualEditar, setValorEnAtrasoManualEditar] = useState<string>("")
+  const [multaActual, setMultaActual] = useState<number>(Number(prestamo.multa || 0))
+  const [multaInput, setMultaInput] = useState<string>(prestamo.multa ? String(prestamo.multa) : "")
+  const [guardandoMulta, setGuardandoMulta] = useState(false)
+  const [multaEditar, setMultaEditar] = useState<string>(prestamo.multa?.toString() || "0")
+  const [mostrarPanelMulta, setMostrarPanelMulta] = useState(false)
+  const [panelMultaAbierto, setPanelMultaAbierto] = useState(false)
 
   // Efecto para calcular el total y cuota en el modal de edición
   useEffect(() => {
@@ -302,8 +312,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
   // Calcular totales
   const montoOriginal = Number(prestamo.monto)
   const interesAmount = (montoOriginal * Number(prestamo.interes)) / 100
-  // Microseguro ya no se suma a la deuda amortizable
-  const montoTotal = montoOriginal + interesAmount
+  // Microseguro ya no se suma a la deuda amortizable. Se suma la multa si existe.
+  const montoTotal = montoOriginal + interesAmount + multaActual
   const totalPagado = prestamo.pagos.reduce((sum: number, pago: Pago) =>
     sum + Number(pago.monto) + (Number(pago.devolucionSeguro) || 0), 0
   )
@@ -1340,6 +1350,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       setCuotasPendientesManualEditar(prestamoFlex3.cuotasPendientesManual?.toString() || "")
       setDiasVencidosManualEditar(prestamoFlex3.diasVencidosManual?.toString() || "")
       setValorEnAtrasoManualEditar(prestamoFlex3.valorEnAtrasoManual?.toString() || "")
+      setMultaEditar(prestamo.multa ? String(prestamo.multa) : "0")
 
     } catch (e) {
       setFechaInicioEditar("");
@@ -1353,9 +1364,55 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       setCuotasPendientesManualEditar("");
       setDiasVencidosManualEditar("");
       setValorEnAtrasoManualEditar("");
+      setMultaEditar("0");
     }
     
     setShowEditarBoletaModal(true)
+  }
+
+  const handleActualizarMulta = async (nuevoValor?: number) => {
+    const valorAGuardar = nuevoValor !== undefined ? nuevoValor : parseFloat(multaInput || "0")
+    if (isNaN(valorAGuardar) || valorAGuardar < 0) {
+      toast({
+        title: "Monto inválido",
+        description: "El monto de la multa debe ser un número válido mayor o igual a 0",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setGuardandoMulta(true)
+    try {
+      const res = await fetch(`/api/prestamos/${prestamo.id}/multa`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ multa: valorAGuardar })
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "No se pudo actualizar la multa")
+      }
+
+      setMultaActual(valorAGuardar)
+      setMultaInput(valorAGuardar > 0 ? String(valorAGuardar) : "")
+      setMultaEditar(String(valorAGuardar))
+      toast({
+        title: valorAGuardar > 0 ? "Multa aplicada exitosamente" : "Multa eliminada",
+        description: valorAGuardar > 0 
+          ? `Se sumó una penalidad de ${formatCurrency(valorAGuardar)} al saldo del préstamo.`
+          : "La multa ha sido removida del préstamo."
+      })
+    } catch (err: any) {
+      console.error("Error al actualizar multa:", err)
+      toast({
+        title: "Error",
+        description: err.message || "Error al actualizar la multa",
+        variant: "destructive"
+      })
+    } finally {
+      setGuardandoMulta(false)
+    }
   }
 
   const handleSubmitEditarBoleta = async (e: React.FormEvent) => {
@@ -1429,7 +1486,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           cuotasAtrasadasManual: cuotasAtrasadasManualEditar || null,
           cuotasPendientesManual: cuotasPendientesManualEditar || null,
           diasVencidosManual: diasVencidosManualEditar || null,
-          valorEnAtrasoManual: valorEnAtrasoManualEditar || null
+          valorEnAtrasoManual: valorEnAtrasoManualEditar || null,
+          multa: multaEditar || 0
         }),
       })
 
@@ -1683,6 +1741,136 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
           {/* Score Crediticio del Cliente (Responsivo y alineado al diseño) */}
           <CreditScoreCard scoreData={scoreCrediticio} className="animate-fadeInScale" />
 
+          {/* Aviso de Penalidad / Multa por Retraso en Pagos */}
+          {(infoExtendida.diasVencidos > 0 || infoExtendida.cuotasAtrasadas > 0 || multaActual > 0 || estadoAlerta.estado === 'MOROSO' || estadoAlerta.estado === 'VENCIDO' || mostrarPanelMulta) ? (
+            <Card className="animate-fadeInScale border-2 border-amber-400 dark:border-amber-600/70 bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-rose-50/40 dark:from-[#1e1710] dark:via-[#1a1515] dark:to-[#141d1c] shadow-md overflow-hidden">
+              <CardHeader
+                role="button"
+                tabIndex={0}
+                aria-expanded={panelMultaAbierto}
+                onClick={() => setPanelMultaAbierto(v => !v)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPanelMultaAbierto(v => !v) } }}
+                className={`p-4 sm:p-5 cursor-pointer select-none hover:bg-amber-100/40 dark:hover:bg-amber-950/30 transition-colors ${panelMultaAbierto ? 'border-b border-amber-200/80 dark:border-amber-800/50' : ''}`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700 flex items-center justify-center shrink-0 shadow-sm">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 animate-pulse" />
+                    </div>
+                    <CardTitle className="flex-1 min-w-0 text-base sm:text-lg font-bold text-amber-950 dark:text-amber-200">
+                      Aviso de Penalidad / Multa
+                    </CardTitle>
+                    <ChevronDown className={`h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300 transition-transform duration-200 sm:hidden ${panelMultaAbierto ? 'rotate-180' : ''}`} />
+                  </div>
+                  <div className="flex items-center flex-wrap gap-1.5 self-start sm:self-auto">
+                    {infoExtendida.diasVencidos > 0 && (
+                      <Badge className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-0.5 shadow-sm">
+                        {infoExtendida.diasVencidos} {infoExtendida.diasVencidos === 1 ? 'Día vencido' : 'Días vencidos'}
+                      </Badge>
+                    )}
+                    {infoExtendida.cuotasAtrasadas > 0 && (
+                      <Badge variant="outline" className="text-xs bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 font-semibold px-2 py-0.5">
+                        {Number(infoExtendida.cuotasAtrasadas.toFixed(2))} cuotas atrasadas
+                      </Badge>
+                    )}
+                    {multaActual > 0 && (
+                      <Badge className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-0.5 shadow-sm">
+                        Multa: +{formatCurrency(multaActual)}
+                      </Badge>
+                    )}
+                    <ChevronDown className={`hidden sm:block h-5 w-5 ml-1 text-amber-700 dark:text-amber-300 transition-transform duration-200 ${panelMultaAbierto ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+              </CardHeader>
+              {panelMultaAbierto && (
+              <CardContent className="p-4 sm:p-5 space-y-4 animate-fadeInScale">
+                <div>
+                  {/* Desglose rápido del saldo */}
+                  <div className="flex items-center gap-2.5 bg-white/80 dark:bg-[#102525]/80 px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs justify-between sm:justify-around">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase font-medium">Deuda Base</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(Math.max(0, montoOriginal + interesAmount - totalPagado))}</span>
+                    </div>
+                    <span className="text-amber-500 font-bold text-sm">+</span>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase font-medium">Multa</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">{formatCurrency(multaActual)}</span>
+                    </div>
+                    <span className="text-amber-500 font-bold text-sm">=</span>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block text-[10px] uppercase font-medium">Total Cobrar</span>
+                      <span className="font-extrabold text-red-600 dark:text-red-400 text-sm">{formatCurrency(saldoPendiente)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formulario de registro/edición de multa */}
+                <div className="bg-white dark:bg-[#102525] rounded-xl p-3.5 sm:p-4 border border-gray-200 dark:border-[#34766D] shadow-sm">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+                    <div className="flex-1 min-w-0">
+                      <Label htmlFor="montoMultaManual" className="text-xs font-semibold text-gray-700 dark:text-gray-300 block mb-1.5">
+                        Monto de la Multa / Penalidad Manual ($)
+                      </Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="montoMultaManual"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={multaInput}
+                          onChange={(e) => setMultaInput(e.target.value)}
+                          disabled={guardandoMulta}
+                          className="pl-9 h-10 text-sm font-semibold border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:bg-gray-800 dark:border-amber-700 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        onClick={() => handleActualizarMulta()}
+                        disabled={guardandoMulta || !multaInput || parseFloat(multaInput) === multaActual}
+                        className="h-10 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg shadow-sm flex items-center gap-1.5 flex-1 sm:flex-none justify-center"
+                      >
+                        {guardandoMulta ? (
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        <span>{multaActual > 0 ? "Actualizar Multa" : "Guardar Multa"}</span>
+                      </Button>
+                      {multaActual > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleActualizarMulta(0)}
+                          disabled={guardandoMulta}
+                          className="h-10 px-3 text-xs text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/60 rounded-lg flex-1 sm:flex-none justify-center"
+                        >
+                          Quitar Multa
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              )}
+            </Card>
+          ) : (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setMostrarPanelMulta(true); setPanelMultaAbierto(true) }}
+                className="text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50 flex items-center gap-1.5 border border-dashed border-amber-300 dark:border-amber-700/60 rounded-lg px-3 py-1.5"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                <span>Asignar penalidad o multa manual</span>
+              </Button>
+            </div>
+          )}
+
           {/* Información del préstamo */}
           <Card className="animate-fadeInScale" style={{ animationDelay: '0.1s' }}>
             <CardHeader>
@@ -1802,6 +1990,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Días de gracia:</span>
                     <span className="font-semibold text-right break-words min-w-0">{infoExtendida.diasGracia}</span>
                   </div>
+                  {multaActual > 0 && (
+                    <div className="flex justify-between items-start gap-2 bg-rose-50 dark:bg-rose-950/40 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60">
+                      <span className="text-rose-700 dark:text-rose-300 shrink-0 font-bold flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                        Multa / Penalidad:
+                      </span>
+                      <span className="font-extrabold text-rose-600 dark:text-rose-400 text-right break-words min-w-0">
+                        +{formatCurrency(multaActual)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -3014,7 +3213,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div>
                     <Label htmlFor="diasVencidosManualEditar" className="text-xs text-amber-800">Días Vencidos (Manual)</Label>
                     <Input
@@ -3038,6 +3237,20 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.valorEnAtrasoAuto.toFixed(2)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="multaEditar" className="text-xs text-rose-800 font-semibold">Multa / Penalidad ($)</Label>
+                    <Input
+                      id="multaEditar"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={multaEditar}
+                      onChange={(e) => setMultaEditar(e.target.value)}
+                      className="mt-1 bg-white border-rose-300 h-8 text-xs font-bold text-rose-700"
+                      disabled={editando}
+                      placeholder="0.00"
                     />
                   </div>
                 </div>

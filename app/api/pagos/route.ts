@@ -158,7 +158,8 @@ export async function POST(request: NextRequest) {
 
     const montoOriginalPrestamo = Number(prestamo.monto)
     const tasaInteresPrestamo = Number(prestamo.interes) / 100
-    let montoTotalPrestamo = Math.round((montoOriginalPrestamo * (1 + tasaInteresPrestamo)) * 100) / 100
+    const multaPrestamo = Number(prestamo.multa || 0)
+    let montoTotalPrestamo = Math.round(((montoOriginalPrestamo * (1 + tasaInteresPrestamo)) + multaPrestamo) * 100) / 100
     
     const microseguroTotal = Number(prestamo.microseguroTotal || 0)
     const totalPagosExistentes = Math.round((Number(pagosExistentes._sum.monto || 0) + Number(pagosExistentes._sum.devolucionSeguro || 0)) * 100) / 100

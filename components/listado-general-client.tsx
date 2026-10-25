@@ -59,6 +59,7 @@ interface Prestamo {
   tipoCredito?: string
   diasGracia?: number
   moraCredito?: number
+  multa?: number
   microseguroTipo?: string
   microseguroTotal?: number
 }
@@ -345,6 +346,12 @@ const ClienteCard = memo(function ClienteCard({
                           Seguro
                         </Badge>
                       )}
+                      {clienteData.prestamos.some(p => Number(p.multa || 0) > 0) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 min-h-[16px] leading-[14px] bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800 font-bold gap-0.5">
+                          <AlertTriangle className="h-2.5 w-2.5 text-rose-600 dark:text-rose-400" />
+                          Multa: {formatCurrency(clienteData.prestamos.reduce((sum, p) => sum + (Number(p.multa) || 0), 0))}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
@@ -450,6 +457,12 @@ const ClienteCard = memo(function ClienteCard({
                             <Badge variant="outline" className="text-xs text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700 gap-1 bg-white dark:bg-gray-800">
                               <ShieldX className="h-3 w-3 text-gray-400" />
                               Sin seguro
+                            </Badge>
+                          )}
+                          {Boolean(prestamo.multa && prestamo.multa > 0) && (
+                            <Badge className="text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700 gap-1 shadow-sm">
+                              <AlertTriangle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                              Multa: {formatCurrency(prestamo.multa || 0)}
                             </Badge>
                           )}
                         </div>
@@ -597,6 +610,12 @@ const ClienteCard = memo(function ClienteCard({
                           <div>
                             <span className="text-gray-600">Mora:</span>
                             <p className="font-medium text-orange-600">{prestamo.moraCredito}%</p>
+                          </div>
+                        )}
+                        {prestamo.multa !== undefined && Number(prestamo.multa) > 0 && (
+                          <div>
+                            <span className="text-rose-600 font-medium">Multa / Penalidad:</span>
+                            <p className="font-bold text-rose-600">+{formatCurrency(prestamo.multa)}</p>
                           </div>
                         )}
                       </div>
