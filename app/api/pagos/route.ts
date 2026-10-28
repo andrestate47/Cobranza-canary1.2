@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
     const { prestamoId, monto, devolucionSeguro, observaciones, metodoPago, fecha, fotoComprobante, fotoMiniatura } = body || {}
 
     // Validaciones básicas
-    if (!prestamoId || !monto) {
+    const devolucionPreliminar = devolucionSeguro ? parseFloat(devolucionSeguro) : 0
+    if (!prestamoId || ((monto === undefined || monto === null || monto === '' || Number(monto) === 0) && !(devolucionPreliminar > 0))) {
       console.log('❌ Faltan datos obligatorios')
       return NextResponse.json(
         { error: "El préstamo y el monto del pago son obligatorios" },
@@ -58,8 +59,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar que el monto sea un número válido y positivo
-    const montoNumerico = parseFloat(monto)
-    if (isNaN(montoNumerico) || montoNumerico <= 0) {
+    const montoNumerico = parseFloat(monto || 0)
+    if (isNaN(montoNumerico) || montoNumerico < 0 || (montoNumerico === 0 && !(devolucionPreliminar > 0))) {
       console.log('❌ Monto inválido:', monto)
       return NextResponse.json(
         { error: "El monto debe ser un número positivo mayor a cero" },
@@ -324,6 +325,7 @@ export async function POST(request: NextRequest) {
           microseguroTipo: prestamo.microseguroTipo,
           microseguroValor: Number(prestamo.microseguroValor),
           microseguroTotal: Number(prestamo.microseguroTotal),
+          multa: multaPrestamo,
           ultimoPago: ultimoPagoAnterior ? {
             fecha: ultimoPagoAnterior.fecha,
             monto: Number(ultimoPagoAnterior.monto)

@@ -957,6 +957,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         microseguroTipo: prestamo.microseguroTipo,
         microseguroValor: prestamo.microseguroValor,
         microseguroTotal: prestamo.microseguroTotal,
+        multa: Number((prestamo as any).multa ?? multaActual ?? 0),
         ultimoPago: ultimoPagoAnterior
       },
       cliente: {
@@ -2555,7 +2556,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     step="0.01"
                     value={interesRenovacion}
                     onChange={(e) => setInteresRenovacion(e.target.value)}
-                    className="pl-10 bg-white"
+                    className="pl-10 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700"
                     required
                     disabled={renovando}
                     min="0"
@@ -2567,7 +2568,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 <div>
                   <Label htmlFor="tipoPagoRenovacion">Tipo de pago *</Label>
                   <Select value={tipoPagoRenovacion} onValueChange={setTipoPagoRenovacion} disabled={renovando}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2594,7 +2595,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     type="number"
                     value={cuotasRenovacion}
                     onChange={(e) => setCuotasRenovacion(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700"
                     required
                     disabled={renovando}
                     min="1"
@@ -2603,21 +2604,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
 
               {/* Microseguros para Renovación */}
-              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-3">
-                <div className="flex items-center space-x-2 text-blue-900 font-semibold mb-1">
-                  <ShieldCheck className="h-4 w-4" />
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800/60 space-y-3">
+                <div className="flex items-center space-x-2 text-blue-900 dark:text-blue-300 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   <Label>Microseguro</Label>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="tipoMicroseguroRenovacion" className="text-xs text-blue-800">Tipo</Label>
+                    <Label htmlFor="tipoMicroseguroRenovacion" className="text-xs text-blue-800 dark:text-blue-300">Tipo</Label>
                     <Select
                       value={tipoMicroseguroRenovacion}
                       onValueChange={(value: any) => setTipoMicroseguroRenovacion(value)}
                       disabled={renovando}
                     >
-                      <SelectTrigger id="tipoMicroseguroRenovacion" className="mt-1 bg-white border-blue-300">
+                      <SelectTrigger id="tipoMicroseguroRenovacion" className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-blue-300 dark:border-blue-700">
                         <SelectValue placeholder="Tipo de seguro" />
                       </SelectTrigger>
                       <SelectContent>
@@ -2630,7 +2631,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                   {tipoMicroseguroRenovacion !== 'NINGUNO' && (
                     <div className="animate-fadeInScale">
-                      <Label htmlFor="valorMicroseguroRenovacion" className="text-xs text-blue-800">
+                      <Label htmlFor="valorMicroseguroRenovacion" className="text-xs text-blue-800 dark:text-blue-300">
                         {tipoMicroseguroRenovacion === 'MONTO_FIJO' ? 'Valor ($)' : 'Porcentaje (%)'}
                       </Label>
                       <Input
@@ -2639,7 +2640,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         step="0.01"
                         value={valorMicroseguroRenovacion}
                         onChange={(e) => setValorMicroseguroRenovacion(e.target.value)}
-                        className="mt-1 bg-white border-blue-300"
+                        className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-blue-300 dark:border-blue-700"
                         disabled={renovando}
                         placeholder={tipoMicroseguroRenovacion === 'MONTO_FIJO' ? "0.00" : "0"}
                       />
@@ -2942,34 +2943,34 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
             <div className="space-y-4">
               {/* Monto e Interés */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <Label htmlFor="montoEditar" className="text-purple-900 font-semibold">Monto ($) *</Label>
+                <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800/60">
+                  <Label htmlFor="montoEditar" className="text-purple-900 dark:text-purple-300 font-semibold">Monto ($) *</Label>
                   <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-purple-600 dark:text-purple-400 pointer-events-none" />
                     <Input
                       id="montoEditar"
                       type="number"
                       step="0.01"
                       value={montoEditar}
                       onChange={(e) => setMontoEditar(e.target.value)}
-                      className="pl-10 border-purple-300 focus:ring-purple-500 font-bold bg-white"
+                      className="pl-10 border-purple-300 dark:border-purple-700 focus:ring-purple-500 font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                       disabled={editando}
                       required
                     />
                   </div>
                 </div>
 
-                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                  <Label htmlFor="interesEditar" className="text-purple-900 font-semibold">Interés (%) *</Label>
+                <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800/60">
+                  <Label htmlFor="interesEditar" className="text-purple-900 dark:text-purple-300 font-semibold">Interés (%) *</Label>
                   <div className="relative mt-1">
-                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-purple-600 pointer-events-none" />
+                    <Calculator className="absolute left-3 top-3 h-4 w-4 text-purple-600 dark:text-purple-400 pointer-events-none" />
                     <Input
                       id="interesEditar"
                       type="number"
                       step="0.01"
                       value={interesEditar}
                       onChange={(e) => setInteresEditar(e.target.value)}
-                      className="pl-10 border-purple-300 focus:ring-purple-500 font-bold bg-white"
+                      className="pl-10 border-purple-300 dark:border-purple-700 focus:ring-purple-500 font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                       disabled={editando}
                       required
                     />
@@ -2982,7 +2983,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                 <div>
                   <Label htmlFor="tipoPagoEditar">Frecuencia *</Label>
                   <Select value={tipoPagoEditar} onValueChange={setTipoPagoEditar} disabled={editando}>
-                    <SelectTrigger id="tipoPagoEditar" className="mt-1">
+                    <SelectTrigger id="tipoPagoEditar" className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700">
                       <SelectValue placeholder="Frecuencia" />
                     </SelectTrigger>
                     <SelectContent>
@@ -3009,7 +3010,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                     type="number"
                     value={cuotasEditar}
                     onChange={(e) => setCuotasEditar(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700"
                     disabled={editando}
                     required
                   />
@@ -3017,58 +3018,58 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
 
               {/* Fechas del préstamo */}
-              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 space-y-3">
+              <div className="bg-orange-50 dark:bg-orange-950/30 p-3 rounded-lg border border-orange-200 dark:border-orange-800/60 space-y-3">
                 <div>
-                  <Label htmlFor="fechaInicioEditar" className="text-orange-900 font-semibold">Fecha de Inicio del Préstamo</Label>
+                  <Label htmlFor="fechaInicioEditar" className="text-orange-900 dark:text-orange-300 font-semibold">Fecha de Inicio del Préstamo</Label>
                   <div className="relative mt-1">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 dark:text-orange-400 pointer-events-none" />
                     <Input
                       id="fechaInicioEditar"
                       type="date"
                       value={fechaInicioEditar}
                       onChange={(e) => setFechaInicioEditar(e.target.value)}
-                      className="pl-10 border-orange-300 focus:ring-orange-500 font-bold bg-white"
+                      className="pl-10 border-orange-300 dark:border-orange-700 focus:ring-orange-500 font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                       disabled={editando}
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-orange-200">
-                  <Label htmlFor="fechaFinEditar" className="text-orange-900 font-semibold">Fecha de Fin (Sobrescribir manualmente)</Label>
+                <div className="pt-2 border-t border-orange-200 dark:border-orange-800/60">
+                  <Label htmlFor="fechaFinEditar" className="text-orange-900 dark:text-orange-300 font-semibold">Fecha de Fin (Sobrescribir manualmente)</Label>
                   <div className="relative mt-1">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 pointer-events-none" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-orange-600 dark:text-orange-400 pointer-events-none" />
                     <Input
                       id="fechaFinEditar"
                       type="date"
                       value={fechaFinEditar}
                       onChange={(e) => setFechaFinEditar(e.target.value)}
-                      className="pl-10 border-orange-300 focus:ring-orange-500 bg-white"
+                      className="pl-10 border-orange-300 dark:border-orange-700 focus:ring-orange-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                       disabled={editando}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-orange-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-orange-200 dark:border-orange-800/60">
                   <div>
-                    <Label htmlFor="diasTranscurridosEditar" className="text-xs text-orange-800">Días Trans. (Manual)</Label>
+                    <Label htmlFor="diasTranscurridosEditar" className="text-xs text-orange-800 dark:text-orange-300">Días Trans. (Manual)</Label>
                     <Input
                       id="diasTranscurridosEditar"
                       type="number"
                       value={diasTranscurridosEditar}
                       onChange={(e) => setDiasTranscurridosEditar(e.target.value)}
-                      className="mt-1 bg-white border-orange-300"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-orange-300 dark:border-orange-700"
                       disabled={editando}
                       placeholder="Ej. 12"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="fechaProximoPagoEditar" className="text-xs text-orange-800">Próx. Pago (Manual)</Label>
+                    <Label htmlFor="fechaProximoPagoEditar" className="text-xs text-orange-800 dark:text-orange-300">Próx. Pago (Manual)</Label>
                     <Input
                       id="fechaProximoPagoEditar"
                       type="date"
                       value={fechaProximoPagoEditar}
                       onChange={(e) => setFechaProximoPagoEditar(e.target.value)}
-                      className="mt-1 bg-white border-orange-300 px-2 text-xs"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-orange-300 dark:border-orange-700 px-2 text-xs"
                       disabled={editando}
                     />
                   </div>
@@ -3076,21 +3077,21 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
               </div>
 
               {/* Microseguros */}
-              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-3">
-                <div className="flex items-center space-x-2 text-blue-900 font-semibold mb-1">
-                  <ShieldCheck className="h-4 w-4" />
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800/60 space-y-3">
+                <div className="flex items-center space-x-2 text-blue-900 dark:text-blue-300 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   <Label>Microseguro</Label>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="tipoMicroseguroEditar" className="text-xs text-blue-800">Tipo</Label>
+                    <Label htmlFor="tipoMicroseguroEditar" className="text-xs text-blue-800 dark:text-blue-300">Tipo</Label>
                     <Select
                       value={tipoMicroseguroEditar}
                       onValueChange={(value: any) => setTipoMicroseguroEditar(value)}
                       disabled={editando}
                     >
-                      <SelectTrigger id="tipoMicroseguroEditar" className="mt-1 bg-white border-blue-300">
+                      <SelectTrigger id="tipoMicroseguroEditar" className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-blue-300 dark:border-blue-700">
                         <SelectValue placeholder="Tipo de seguro" />
                       </SelectTrigger>
                       <SelectContent>
@@ -3104,7 +3105,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                   {tipoMicroseguroEditar !== 'NINGUNO' && (
                     <div className="animate-fadeInScale">
-                      <Label htmlFor="valorMicroseguroEditar" className="text-xs text-blue-800">
+                      <Label htmlFor="valorMicroseguroEditar" className="text-xs text-blue-800 dark:text-blue-300">
                         {tipoMicroseguroEditar === 'PORCENTAJE' ? 'Porcentaje (%)' : tipoMicroseguroEditar === 'DEVOLUCION' ? 'Valor a devolver ($)' : 'Valor ($)'}
                       </Label>
                       <Input
@@ -3113,7 +3114,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                         step="0.01"
                         value={valorMicroseguroEditar}
                         onChange={(e) => setValorMicroseguroEditar(e.target.value)}
-                        className="mt-1 bg-white border-blue-300"
+                        className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-blue-300 dark:border-blue-700"
                         disabled={editando}
                         placeholder={tipoMicroseguroEditar === 'MONTO_FIJO' || tipoMicroseguroEditar === 'DEVOLUCION' ? "0.00" : "0"}
                       />
@@ -3123,33 +3124,33 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                 {/* Resumen de totales editados */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="bg-blue-100 p-2 rounded border border-blue-200 shadow-sm">
-                    <p className="text-[10px] text-blue-700 font-bold uppercase">Nuevo Total</p>
-                    <p className="text-sm font-bold text-blue-900">{formatCurrency(montoTotalEditar)}</p>
+                  <div className="bg-blue-100 dark:bg-blue-950/60 p-2 rounded border border-blue-200 dark:border-blue-800 shadow-sm">
+                    <p className="text-[10px] text-blue-700 dark:text-blue-300 font-bold uppercase">Nuevo Total</p>
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-100">{formatCurrency(montoTotalEditar)}</p>
                   </div>
-                  <div className="bg-emerald-100 p-2 rounded border border-emerald-200 shadow-sm">
-                    <p className="text-[10px] text-emerald-700 font-bold uppercase">Nueva Cuota</p>
-                    <p className="text-sm font-bold text-emerald-900">{formatCurrency(cuotaEditar)}</p>
+                  <div className="bg-emerald-100 dark:bg-emerald-950/60 p-2 rounded border border-emerald-200 dark:border-emerald-800 shadow-sm">
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold uppercase">Nueva Cuota</p>
+                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">{formatCurrency(cuotaEditar)}</p>
                   </div>
                 </div>
               </div>
               
               {/* Ajustes Manuales de Cobro / Morosidad */}
-              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-3">
-                <div className="flex items-center space-x-2 text-amber-900 font-semibold mb-1">
-                  <ShieldCheck className="h-4 w-4" />
+              <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 space-y-3">
+                <div className="flex items-center space-x-2 text-amber-900 dark:text-amber-300 font-semibold mb-1">
+                  <ShieldCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <Label>Ajustes de Cobro (Morosidad y Crédito)</Label>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="tipoCreditoEditar" className="text-xs text-amber-800">Tipo de Crédito</Label>
+                    <Label htmlFor="tipoCreditoEditar" className="text-xs text-amber-800 dark:text-amber-300">Tipo de Crédito</Label>
                     <Select
                       value={tipoCreditoEditar}
                       onValueChange={setTipoCreditoEditar}
                       disabled={editando}
                     >
-                      <SelectTrigger id="tipoCreditoEditar" className="mt-1 bg-white border-amber-300">
+                      <SelectTrigger id="tipoCreditoEditar" className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700">
                         <SelectValue placeholder="Tipo de Crédito" />
                       </SelectTrigger>
                       <SelectContent>
@@ -3160,55 +3161,55 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   </div>
 
                   <div>
-                    <Label htmlFor="diasGraciaEditar" className="text-xs text-amber-800">Días de Gracia</Label>
+                    <Label htmlFor="diasGraciaEditar" className="text-xs text-amber-800 dark:text-amber-300">Días de Gracia</Label>
                     <Input
                       id="diasGraciaEditar"
                       type="number"
                       value={diasGraciaEditar}
                       onChange={(e) => setDiasGraciaEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700"
                       disabled={editando}
                       placeholder="0"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-amber-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-amber-200 dark:border-amber-800/60">
                   <div>
-                    <Label htmlFor="cuotasPagadasManualEditar" className="text-[10px] text-amber-800">Cuotas Pagadas</Label>
+                    <Label htmlFor="cuotasPagadasManualEditar" className="text-[10px] text-amber-800 dark:text-amber-300">Cuotas Pagadas</Label>
                     <Input
                       id="cuotasPagadasManualEditar"
                       type="number"
                       step="0.01"
                       value={cuotasPagadasManualEditar}
                       onChange={(e) => setCuotasPagadasManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.cuotasPagadasAuto.toFixed(2)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cuotasAtrasadasManualEditar" className="text-[10px] text-amber-800">Cuotas Atrasadas</Label>
+                    <Label htmlFor="cuotasAtrasadasManualEditar" className="text-[10px] text-amber-800 dark:text-amber-300">Cuotas Atrasadas</Label>
                     <Input
                       id="cuotasAtrasadasManualEditar"
                       type="number"
                       step="0.01"
                       value={cuotasAtrasadasManualEditar}
                       onChange={(e) => setCuotasAtrasadasManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.cuotasAtrasadasAuto.toFixed(2)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cuotasPendientesManualEditar" className="text-[10px] text-amber-800">Cuotas Pendientes</Label>
+                    <Label htmlFor="cuotasPendientesManualEditar" className="text-[10px] text-amber-800 dark:text-amber-300">Cuotas Pendientes</Label>
                     <Input
                       id="cuotasPendientesManualEditar"
                       type="number"
                       step="0.01"
                       value={cuotasPendientesManualEditar}
                       onChange={(e) => setCuotasPendientesManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.cuotasPendientesAuto.toFixed(2)}
                     />
@@ -3217,32 +3218,32 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div>
-                    <Label htmlFor="diasVencidosManualEditar" className="text-xs text-amber-800">Días Vencidos (Manual)</Label>
+                    <Label htmlFor="diasVencidosManualEditar" className="text-xs text-amber-800 dark:text-amber-300">Días Vencidos (Manual)</Label>
                     <Input
                       id="diasVencidosManualEditar"
                       type="number"
                       value={diasVencidosManualEditar}
                       onChange={(e) => setDiasVencidosManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.diasVencidosAuto.toString()}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="valorEnAtrasoManualEditar" className="text-xs text-amber-800">Valor en Atraso ($)</Label>
+                    <Label htmlFor="valorEnAtrasoManualEditar" className="text-xs text-amber-800 dark:text-amber-300">Valor en Atraso ($)</Label>
                     <Input
                       id="valorEnAtrasoManualEditar"
                       type="number"
                       step="0.01"
                       value={valorEnAtrasoManualEditar}
                       onChange={(e) => setValorEnAtrasoManualEditar(e.target.value)}
-                      className="mt-1 bg-white border-amber-300 h-8 text-xs font-medium"
+                      className="mt-1 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-amber-300 dark:border-amber-700 h-8 text-xs font-medium"
                       disabled={editando}
                       placeholder={infoExtendida.valorEnAtrasoAuto.toFixed(2)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="multaEditar" className="text-xs text-rose-800 font-semibold">Multa / Penalidad ($)</Label>
+                    <Label htmlFor="multaEditar" className="text-xs text-rose-800 dark:text-rose-300 font-semibold">Multa / Penalidad ($)</Label>
                     <Input
                       id="multaEditar"
                       type="number"
@@ -3250,7 +3251,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       min="0"
                       value={multaEditar}
                       onChange={(e) => setMultaEditar(e.target.value)}
-                      className="mt-1 bg-white border-rose-300 h-8 text-xs font-bold text-rose-700"
+                      className="mt-1 bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-700 h-8 text-xs font-bold"
                       disabled={editando}
                       placeholder="0.00"
                     />
@@ -3294,68 +3295,68 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
       {/* Modal de Snapshot de Refinanciamiento/Renovacion */}
       <Dialog open={showSnapshotModal} onOpenChange={setShowSnapshotModal}>
-        <DialogContent className="sm:max-w-md bg-slate-50">
+        <DialogContent className="sm:max-w-md bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-slate-800">
-              <Camera className="h-5 w-5 mr-2 text-blue-600" />
+            <DialogTitle className="flex items-center text-slate-800 dark:text-slate-100">
+              <Camera className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
               Fotografía del Préstamo Anterior
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
               Estado del préstamo en el momento exacto en que fue {prestamo.datosRefinanciamiento?.tipoOperacion === 'RENOVACION' ? 'renovado' : 'refinanciado'}.
             </DialogDescription>
           </DialogHeader>
           
           {prestamo.datosRefinanciamiento && (
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-dashed border-slate-200">
-                <span className="text-sm text-slate-500 font-medium">ID Original</span>
-                <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-600">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-dashed border-slate-200 dark:border-slate-700">
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">ID Original</span>
+                <span className="text-xs font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-200">
                   {prestamo.renovadoDeId}
                 </span>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Monto Original</p>
-                  <p className="text-lg font-bold text-slate-800">{formatCurrency(prestamo.datosRefinanciamiento.montoOriginal || 0)}</p>
+                <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Monto Original</p>
+                  <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(prestamo.datosRefinanciamiento.montoOriginal || 0)}</p>
                 </div>
                 
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Total Pagado</p>
-                  <p className="text-lg font-bold text-green-600">{formatCurrency(prestamo.datosRefinanciamiento.totalPagado || 0)}</p>
+                <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Pagado</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(prestamo.datosRefinanciamiento.totalPagado || 0)}</p>
                 </div>
                 
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 col-span-2">
-                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-semibold mb-1">
+                <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-lg border border-blue-100 dark:border-blue-900/60 col-span-2">
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-semibold mb-1">
                     Saldo Absorbido al {prestamo.datosRefinanciamiento?.tipoOperacion === 'RENOVACION' ? 'Renovar' : 'Refinanciar'}
                   </p>
-                  <p className="text-xl font-black text-blue-800">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
+                  <p className="text-xl font-black text-blue-800 dark:text-blue-200">{formatCurrency(prestamo.datosRefinanciamiento.saldoPendiente || 0)}</p>
                 </div>
               </div>
               
               {prestamo.prestamoAnteriorInfo && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Fecha Inicio</p>
-                    <p className="text-sm font-bold text-slate-800">{new Date(prestamo.prestamoAnteriorInfo.fechaInicio).toLocaleDateString()}</p>
+                  <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Fecha Inicio</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{new Date(prestamo.prestamoAnteriorInfo.fechaInicio).toLocaleDateString()}</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Fecha Fin</p>
-                    <p className="text-sm font-bold text-slate-800">{new Date(prestamo.prestamoAnteriorInfo.fechaFin).toLocaleDateString()}</p>
+                  <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Fecha Fin</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{new Date(prestamo.prestamoAnteriorInfo.fechaFin).toLocaleDateString()}</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Total Cuotas Originales</p>
-                    <p className="text-sm font-bold text-slate-800">{prestamo.prestamoAnteriorInfo.cuotas}</p>
+                  <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Cuotas Originales</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{prestamo.prestamoAnteriorInfo.cuotas}</p>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Pagos Registrados</p>
-                    <p className="text-sm font-bold text-slate-800">{prestamo.prestamoAnteriorInfo.pagos.length}</p>
+                  <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Pagos Registrados</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{prestamo.prestamoAnteriorInfo.pagos.length}</p>
                   </div>
                 </div>
               )}
               
               <div className="text-center pt-2">
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   Refinanciado el {new Date(prestamo.datosRefinanciamiento.fechaRefinanciamiento).toLocaleDateString()}
                 </p>
               </div>

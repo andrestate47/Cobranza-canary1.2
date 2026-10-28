@@ -43,6 +43,7 @@ interface BoletaPagoData {
         microseguroTipo?: string
         microseguroValor?: number
         microseguroTotal?: number
+        multa?: number
         ultimoPago?: {
             fecha: string | Date
             monto: number

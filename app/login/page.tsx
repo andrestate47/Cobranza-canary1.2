@@ -12,10 +12,29 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans selection:bg-cyan-500 selection:text-white">
-      {/* Dynamic Background Light Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-cyan-600/35 to-blue-700/25 blur-[120px] pointer-events-none animate-pulse-slow" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-emerald-600/20 to-teal-800/25 blur-[130px] pointer-events-none" />
-      <div className="absolute top-[40%] right-[35%] w-[350px] h-[350px] rounded-full bg-purple-600/15 blur-[100px] pointer-events-none" />
+      {/* Dynamic Background Light Orbs (Optimized with GPU radial gradients, 0 blur cost) */}
+      <div
+        className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] pointer-events-none animate-pulse-slow"
+        style={{
+          background: "radial-gradient(circle at center, rgba(8, 145, 178, 0.40) 0%, rgba(29, 78, 216, 0.25) 40%, transparent 70%)",
+          transform: "translateZ(0)",
+          willChange: "opacity",
+        }}
+      />
+      <div
+        className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at center, rgba(5, 150, 105, 0.30) 0%, rgba(17, 94, 89, 0.20) 45%, transparent 70%)",
+          transform: "translateZ(0)",
+        }}
+      />
+      <div
+        className="absolute top-[40%] right-[35%] w-[400px] h-[400px] pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at center, rgba(147, 51, 234, 0.20) 0%, transparent 65%)",
+          transform: "translateZ(0)",
+        }}
+      />
 
       {/* Grid Pattern Overlay */}
       <div 

@@ -57,6 +57,7 @@ interface PrestamoConCliente {
   microseguroTotal?: number
   microseguroValor?: number
   microseguroTipo?: string
+  seguroDevuelto?: number
   multa?: number
 }
 
@@ -123,6 +124,13 @@ export default function PagoRapidoModal({
   const [pagoRegistrado, setPagoRegistrado] = useState<PagoRegistrado | null>(null)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const boletaRef = useRef<HTMLDivElement>(null)
+
+  // Microseguro: total, ya devuelto y pendiente por devolver
+  const tieneMicroseguro = Boolean(prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && Number(prestamo.microseguroTotal || 0) > 0)
+  const seguroTotal = Number(prestamo.microseguroTotal || 0)
+  const seguroYaDevuelto = Number(prestamo.seguroDevuelto || 0)
+  const seguroPendiente = Math.max(0, Math.round((seguroTotal - seguroYaDevuelto) * 100) / 100)
+  const montoDevolucionNum = devolverSeguro ? (parseFloat((montoDevolucion || '').replace(/[^0-9.]/g, '')) || 0) : 0
   const streamRef = useRef<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -387,7 +395,29 @@ export default function PagoRapidoModal({
     }
 
     // Validaciones de entrada más robustas
-    if (!monto || monto.trim() === '') {
+    // Se permite monto vacío/0 solo si se está registrando una devolución de seguro
+    const soloDevolucion = montoDevolucionNum > 0 && (!monto || monto.trim() === '' || parseFloat(monto.replace(/[^0-9.]/g, '')) === 0)
+
+    if (devolverSeguro) {
+      if (montoDevolucionNum <= 0) {
+        toast({
+          title: "Devolución inválida",
+          description: "Ingresa el monto a devolver del seguro",
+          variant: "destructive",
+        })
+        return
+      }
+      if (tieneMicroseguro && montoDevolucionNum - seguroPendiente > 0.01) {
+        toast({
+          title: "Devolución excede el seguro",
+          description: `Solo quedan ${formatCurrency(seguroPendiente)} de seguro por devolver`,
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    if (!soloDevolucion && (!monto || monto.trim() === '')) {
       toast({
         title: "Campo requerido",
         description: "Por favor ingresa el monto del pago",
@@ -397,7 +427,7 @@ export default function PagoRapidoModal({
     }
 
     // Limpiar el monto de cualquier formato y validar que solo contenga números y punto decimal
-    const montoLimpio = monto.replace(/[^0-9.]/g, '')
+    const montoLimpio = soloDevolucion ? '0' : monto.replace(/[^0-9.]/g, '')
 
     if (montoLimpio === '' || montoLimpio === '.') {
       toast({
@@ -410,7 +440,7 @@ export default function PagoRapidoModal({
 
     const montoNumerico = parseFloat(montoLimpio)
 
-    if (isNaN(montoNumerico) || montoNumerico <= 0) {
+    if (isNaN(montoNumerico) || montoNumerico < 0 || (montoNumerico === 0 && !soloDevolucion)) {
       toast({
         title: "Monto inválido",
         description: "El monto debe ser un número positivo mayor a cero",
@@ -440,12 +470,14 @@ export default function PagoRapidoModal({
     }
 
     const saldoRedondeado = Math.round((prestamo.saldoPendiente + 0.0001) * 100) / 100
-    if (montoNumerico - saldoRedondeado > 0.01) {
+    if ((montoNumerico + montoDevolucionNum) - saldoRedondeado > 0.01) {
       const saldoFormateado = formatCurrency(prestamo.saldoPendiente)
-      const montoFormateado = formatCurrency(montoNumerico)
+      const montoFormateado = formatCurrency(montoNumerico + montoDevolucionNum)
       toast({
         title: "Monto excede el saldo",
-        description: `El monto (${montoFormateado}) no puede ser mayor al saldo pendiente (${saldoFormateado})`,
+        description: montoDevolucionNum > 0
+          ? `El pago + devolución de seguro (${montoFormateado}) no puede ser mayor al saldo pendiente (${saldoFormateado})`
+          : `El monto (${montoFormateado}) no puede ser mayor al saldo pendiente (${saldoFormateado})`,
         variant: "destructive",
       })
       return
@@ -465,7 +497,7 @@ export default function PagoRapidoModal({
       const requestBody = {
         prestamoId: prestamo.id,
         monto: montoNumerico,
-        devolucionSeguro: devolverSeguro && montoDevolucion ? parseFloat(montoDevolucion.replace(/[^0-9.]/g, '')) : undefined,
+        devolucionSeguro: montoDevolucionNum > 0 ? montoDevolucionNum : undefined,
         observaciones: observaciones.trim() || undefined,
         metodoPago: metodoPago,
         fotoComprobante: fotoComprobante || undefined,
@@ -489,6 +521,11 @@ export default function PagoRapidoModal({
         if (result.pago && result.pago.numeroBoleta) {
           setPagoRegistrado(result.pago)
           setStep('boleta')
+
+          // Notificar actualización en segundo plano para refrescar listados de inmediato
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('clienteActualizado'))
+          }
 
           toast({
             title: "¡Pago registrado exitosamente!",
@@ -705,14 +742,14 @@ export default function PagoRapidoModal({
             )}
 
             {/* Info del cliente */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="bg-gray-50 dark:bg-slate-800/70 border border-transparent dark:border-slate-700 rounded-lg p-4 mb-4">
               <div className="flex items-center space-x-3 mb-3">
-                <User className="h-8 w-8 text-gray-400" />
+                <User className="h-8 w-8 text-gray-400 dark:text-slate-400" />
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
                     {prestamo.cliente.nombre} {prestamo.cliente.apellido}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Documento: {prestamo.cliente.documento}
                   </p>
                 </div>
@@ -720,16 +757,33 @@ export default function PagoRapidoModal({
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Cuota sugerida:</span>
-                  <p className="font-semibold">{formatCurrency(prestamo.valorCuota)}</p>
+                  <span className="text-gray-600 dark:text-slate-400">Cuota sugerida:</span>
+                  <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(prestamo.valorCuota)}</p>
                 </div>
                 <div>
-                  <span className="text-gray-600">Saldo pendiente:</span>
-                  <p className="font-semibold text-red-600">
+                  <span className="text-gray-600 dark:text-slate-400">Saldo pendiente:</span>
+                  <p className="font-semibold text-red-600 dark:text-red-400">
                     {formatCurrency(prestamo.saldoPendiente)}
                   </p>
                 </div>
               </div>
+
+              {tieneMicroseguro && (
+                <div className="mt-3 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg p-2.5 text-xs grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <span className="block text-purple-700 dark:text-purple-300">Seguro</span>
+                    <span className="font-bold text-purple-900 dark:text-purple-100">{formatCurrency(seguroTotal)}</span>
+                  </div>
+                  <div>
+                    <span className="block text-purple-700 dark:text-purple-300">Devuelto</span>
+                    <span className="font-bold text-green-700 dark:text-green-400">{formatCurrency(seguroYaDevuelto)}</span>
+                  </div>
+                  <div>
+                    <span className="block text-purple-700 dark:text-purple-300">Por devolver</span>
+                    <span className="font-bold text-purple-900 dark:text-purple-100">{formatCurrency(seguroPendiente)}</span>
+                  </div>
+                </div>
+              )}
 
               {Boolean(prestamo.multa && prestamo.multa > 0) && (
                 <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 text-xs flex items-center justify-between text-amber-800 dark:text-amber-300">
@@ -999,23 +1053,24 @@ export default function PagoRapidoModal({
               </div>
 
               {/* Fila Completa: Devolución Seguro */}
-              <div className="sm:col-span-2 border-t border-gray-100 pt-4 mt-2">
+              <div className="sm:col-span-2 border-t border-gray-100 dark:border-slate-700 pt-4 mt-2">
                 <div className="flex items-center space-x-4 mb-2">
-                  <Label>¿Devolver seguro?</Label>
+                  <Label className="text-gray-900 dark:text-slate-100">¿Devolver seguro?</Label>
                   <div className="flex items-center space-x-2">
                     <Button
                       type="button"
                       size="sm"
                       variant={devolverSeguro ? "default" : "outline"}
-                      className={devolverSeguro ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                      className={devolverSeguro ? "bg-green-600 hover:bg-green-700 text-white" : "dark:text-slate-200 dark:border-slate-600"}
+                      disabled={tieneMicroseguro && seguroPendiente <= 0}
                       onClick={() => {
                         setDevolverSeguro(true)
                         if (!montoDevolucion) {
                           let defaultVal = "";
-                          if (prestamo.microseguroTipo === 'DEVOLUCION' && prestamo.microseguroValor) {
+                          if (tieneMicroseguro) {
+                            defaultVal = seguroPendiente > 0 ? seguroPendiente.toString() : "";
+                          } else if (prestamo.microseguroTipo === 'DEVOLUCION' && prestamo.microseguroValor) {
                             defaultVal = prestamo.microseguroValor.toString();
-                          } else if (prestamo.microseguroTotal) {
-                            defaultVal = prestamo.microseguroTotal.toString();
                           }
                           setMontoDevolucion(defaultVal)
                         }
@@ -1027,6 +1082,7 @@ export default function PagoRapidoModal({
                       type="button"
                       size="sm"
                       variant={!devolverSeguro ? "default" : "outline"}
+                      className={!devolverSeguro ? "" : "dark:text-slate-200 dark:border-slate-600"}
                       onClick={() => {
                         setDevolverSeguro(false)
                         setMontoDevolucion("")
@@ -1037,11 +1093,15 @@ export default function PagoRapidoModal({
                   </div>
                 </div>
 
+                {tieneMicroseguro && seguroPendiente <= 0 && (
+                  <p className="text-xs text-green-700 dark:text-green-400 font-medium">✅ El seguro de este préstamo ya fue devuelto por completo.</p>
+                )}
+
                 {devolverSeguro && (
                   <div className="mt-3">
-                    <Label htmlFor="montoDevolucion">Monto a devolver de seguro *</Label>
+                    <Label htmlFor="montoDevolucion" className="text-gray-900 dark:text-slate-100">Monto a devolver de seguro *</Label>
                     <div className="relative mt-1">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-slate-400" />
                       <Input
                         id="montoDevolucion"
                         type="text"
@@ -1052,6 +1112,10 @@ export default function PagoRapidoModal({
                         required={devolverSeguro}
                       />
                     </div>
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
+                      {tieneMicroseguro ? `Disponible por devolver: ${formatCurrency(seguroPendiente)}. ` : ''}
+                      Puedes dejar el monto del pago vacío para registrar solo la devolución.
+                    </p>
                   </div>
                 )}
               </div>
@@ -1081,7 +1145,7 @@ export default function PagoRapidoModal({
                 <Button
                   type="submit"
                   className="btn-primary"
-                  disabled={loading || !monto || !tienePermisoPago}
+                  disabled={loading || (!monto && montoDevolucionNum <= 0) || !tienePermisoPago}
                 >
                   {loading ? (
                     <>

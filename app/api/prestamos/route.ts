@@ -110,13 +110,14 @@ export async function GET(request: NextRequest) {
     agregacionPagos.forEach(agg => {
       pagosAgrupadosMap.set(agg.prestamoId, {
         totalPagado: Number(agg._sum.monto || 0) + Number(agg._sum.devolucionSeguro || 0),
+        seguroDevuelto: Number(agg._sum.devolucionSeguro || 0),
         fechaUltimoPago: agg._max.fecha
       })
     })
 
     // Procesar préstamos y calcular saldos
     const prestamosConSaldo = prestamos.map(prestamo => {
-      const aggPago = pagosAgrupadosMap.get(prestamo.id) || { totalPagado: 0, fechaUltimoPago: null }
+      const aggPago = pagosAgrupadosMap.get(prestamo.id) || { totalPagado: 0, seguroDevuelto: 0, fechaUltimoPago: null }
       const totalPagado = aggPago.totalPagado
       const interesTotal = parseFloat(prestamo.monto.toString()) * parseFloat(prestamo.interes.toString()) / 100;
       const microseguroTotal = parseFloat(prestamo.microseguroTotal?.toString() || '0');
@@ -156,6 +157,7 @@ export async function GET(request: NextRequest) {
         microseguroTipo: prestamo.microseguroTipo,
         microseguroTotal: parseFloat(prestamo.microseguroTotal?.toString() || '0'),
         microseguroValor: parseFloat(prestamo.microseguroValor?.toString() || '0'),
+        seguroDevuelto: Math.round((aggPago.seguroDevuelto || 0) * 100) / 100,
         fechaActividadReciente,
         cliente: prestamo.cliente,
         saldoPendiente,

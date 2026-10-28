@@ -200,6 +200,7 @@ model Prestamo {
   @@index([estado, clienteId])
   @@index([userId, estado])
   @@index([createdAt, fechaFin])
+  @@index([renovadoDeId])
   @@map("prestamos")
 }
 

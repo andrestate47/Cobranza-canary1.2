@@ -293,16 +293,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Aplicar orden a "Por Cobrar"
+    // Aplicar orden a "Por Cobrar" optimizado con Map O(1)
     if (ordenArray.length > 0) {
+      const orderMap = new Map<string, number>()
+      ordenArray.forEach((id, idx) => orderMap.set(id, idx))
+
       porCobrar.sort((a, b) => {
-        const indexA = ordenArray.indexOf(a.id)
-        const indexB = ordenArray.indexOf(b.id)
-        
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB
-        if (indexA !== -1) return -1
-        if (indexB !== -1) return 1
-        return 0
+        const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : 999999
+        const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : 999999
+        return indexA - indexB
       })
     }
 

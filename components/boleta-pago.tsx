@@ -28,6 +28,7 @@ interface BoletaPagoData {
     microseguroTipo?: string
     microseguroValor?: number
     microseguroTotal?: number
+    multa?: number
     ultimoPago?: {
       fecha: string
       monto: number
@@ -392,6 +393,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const montoAbonoMostrar = data.monto;
 
     const prestamoFlex = data.prestamo as any
+    const multa = Number(data.prestamo?.multa ?? prestamoFlex.multa ?? (data as any)?.multa ?? 0)
     const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
       ? Number(prestamoFlex.cuotasPagadasManual)
       : (valorCuotaMostrar > 0 ? totalPagado / valorCuotaMostrar : 0)
@@ -402,7 +404,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const cuotasPagadasEnteras = Math.floor(cuotasPagadas)
 
     const totalPagadoHistorico = prestamoFlex.pagos?.reduce((sum: number, p: any) => sum + Number(p.monto), 0) || 0
-    const montoTotalHistorico = Number(prestamoFlex.monto || 0) * (1 + Number(prestamoFlex.interes || 0) / 100)
+    const montoTotalHistorico = (Number(prestamoFlex.monto || 0) * (1 + Number(prestamoFlex.interes || 0) / 100)) + multa
     const saldoPendienteHistorico = prestamoFlex.saldoPendiente !== undefined ? Number(prestamoFlex.saldoPendiente) : Math.max(0, montoTotalHistorico - totalPagadoHistorico)
     const estaCompletado = prestamoFlex.estado === 'CANCELADO' || prestamoFlex.estado === 'COMPLETADO' || saldoPendienteHistorico <= 0.01 || cuotasPagadas >= totalCuotas
 
@@ -600,6 +602,17 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <p className="text-base font-bold text-gray-600 mt-0.5">Valor Cuota</p>
                 </div>
               </div>
+
+              {multa > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-amber-200/60 flex items-center justify-between bg-amber-50 rounded-lg px-3 py-1.5 border border-amber-200">
+                  <span className="text-sm font-bold text-amber-900 flex items-center gap-1.5">
+                    <span>⚠️</span> Multa / Penalidad:
+                  </span>
+                  <span className="text-base font-black text-rose-600">
+                    +{formatCurrency(multa)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -628,7 +641,14 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-700 font-bold">Monto total a pagar:</span>
-                  <span className="font-black text-gray-950">{formatCurrency(data.prestamo.montoTotal)}</span>
+                  <div className="text-right">
+                    <span className="font-black text-gray-950">{formatCurrency(data.prestamo.montoTotal)}</span>
+                    {multa > 0 && (
+                      <span className="block text-xs font-bold text-rose-600">
+                        (incluye multa)
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="my-2.5 border-t border-gray-200" style={{ borderColor: '#e5e7eb' }} />
@@ -664,6 +684,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <span className="text-gray-700 font-bold">Valor en atraso (al abono):</span>
                   <span className={`font-black text-xl ${valorEnAtraso > 0 ? 'text-red-600' : 'text-green-700'}`}>
                     {formatCurrency(valorEnAtraso)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-bold">Multa / Penalidad:</span>
+                  <span className={`font-black text-xl ${multa > 0 ? 'text-red-600' : 'text-green-700'}`}>
+                    {multa > 0 ? `+${formatCurrency(multa)}` : formatCurrency(0)}
                   </span>
                 </div>
 

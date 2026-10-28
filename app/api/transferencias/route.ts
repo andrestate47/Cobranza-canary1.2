@@ -153,7 +153,8 @@ export async function POST(request: NextRequest) {
     if (pagoAsociado) {
       const montoOriginalPrestamo = Number(pagoAsociado.prestamo.monto)
       const tasaInteresPrestamo = Number(pagoAsociado.prestamo.interes) / 100
-      const montoTotalPrestamo = montoOriginalPrestamo * (1 + tasaInteresPrestamo)
+      const multaPrestamo = Number((pagoAsociado.prestamo as any).multa || 0)
+      const montoTotalPrestamo = Math.round(((montoOriginalPrestamo * (1 + tasaInteresPrestamo)) + multaPrestamo) * 100) / 100
 
       // Calcular pagos previos para el saldo pendiente exacto
       const todosLosPagos = await prisma.pago.aggregate({
@@ -191,6 +192,7 @@ export async function POST(request: NextRequest) {
           microseguroTipo: pagoAsociado.prestamo.microseguroTipo,
           microseguroValor: Number(pagoAsociado.prestamo.microseguroValor),
           microseguroTotal: Number(pagoAsociado.prestamo.microseguroTotal),
+          multa: multaPrestamo,
           ultimoPago: ultimoPagoAnterior ? {
             fecha: ultimoPagoAnterior.fecha,
             monto: Number(ultimoPagoAnterior.monto)

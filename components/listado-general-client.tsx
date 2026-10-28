@@ -63,6 +63,8 @@ interface Prestamo {
   multa?: number
   microseguroTipo?: string
   microseguroTotal?: number
+  microseguroValor?: number
+  seguroDevuelto?: number
 }
 
 interface ClienteConPrestamos {
@@ -264,7 +266,7 @@ const ClienteCard = memo(function ClienteCard({
   handlePagoRapido,
   formatCurrency
 }: {
-  clienteData: ClienteConPrestamos & { estadoAlerta: any, tipoPagoInfo: any, scoreData: any }
+  clienteData: ClienteConPrestamos & { estadoAlerta: any, tipoPagoInfo: any, scoreData?: any }
   isExpanded: boolean
   toggleCardExpansion: (id: string) => void
   abrirImagenModal: (cliente: any) => void
@@ -276,7 +278,10 @@ const ClienteCard = memo(function ClienteCard({
   const estadoAlerta = clienteData.estadoAlerta
   const tipoPagoInfo = clienteData.tipoPagoInfo
   const IconoAlerta = estadoAlerta.icono
-  const scoreCrediticio = clienteData.scoreData
+  const scoreCrediticio = useMemo(
+    () => calcularCreditScore(clienteData.cliente, clienteData.prestamos),
+    [clienteData.cliente, clienteData.prestamos]
+  )
 
   return (
     <Card className="block list-none [list-style:none] [&::marker]:hidden [&::-webkit-details-marker]:hidden">
@@ -385,8 +390,8 @@ const ClienteCard = memo(function ClienteCard({
           <CollapsibleContent className="space-y-3">
             <div className="pt-3 border-t mt-3">
               <div className="space-y-3">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                  <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2 text-green-600 dark:text-green-400" />
                   Préstamos de {clienteData.cliente.nombre} ({clienteData.prestamos.length})
                 </h4>
 
@@ -414,7 +419,7 @@ const ClienteCard = memo(function ClienteCard({
                   }
 
                   return (
-                    <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 space-y-3 border border-gray-200 shadow-sm">
+                    <div key={prestamo.id} className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800/90 rounded-lg p-4 space-y-3 border border-gray-200 dark:border-slate-700 shadow-sm">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                         <div className="flex items-center flex-wrap gap-1.5 min-w-0">
                           <Badge variant="outline" className="text-xs font-bold bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
@@ -450,12 +455,17 @@ const ClienteCard = memo(function ClienteCard({
                             </Badge>
                           )}
                           {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
-                            <Badge className="text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700 gap-1 shadow-sm">
+                            <Badge className="text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950 dark:text-purple-200 dark:border-purple-700 gap-1 shadow-sm">
                               <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
                               Seguro: {formatCurrency(prestamo.microseguroTotal)}
+                              {Number(prestamo.seguroDevuelto || 0) > 0 && (
+                                <span className="ml-1 text-[11px] text-green-700 dark:text-green-300 font-bold">
+                                  (Devuelto: {formatCurrency(prestamo.seguroDevuelto || 0)})
+                                </span>
+                              )}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700 gap-1 bg-white dark:bg-gray-800">
+                            <Badge variant="outline" className="text-xs text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700 gap-1 bg-white dark:bg-slate-800">
                               <ShieldX className="h-3 w-3 text-gray-400" />
                               Sin seguro
                             </Badge>
@@ -486,13 +496,13 @@ const ClienteCard = memo(function ClienteCard({
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg p-3 border border-gray-300 space-y-2">
+                      <div className="bg-white dark:bg-slate-800/90 rounded-lg p-3 border border-gray-300 dark:border-slate-700 space-y-2">
                         <div className="flex items-center justify-between">
-                          <h5 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                          <h5 className="font-semibold text-sm text-gray-700 dark:text-slate-200 flex items-center gap-2">
                             <User className="h-4 w-4" />
                             {clienteData.cliente.nombre} {clienteData.cliente.apellido}
                           </h5>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
                             {clienteData.cliente.codigoCliente} • {clienteData.cliente.documento}
                           </span>
                         </div>
@@ -500,14 +510,14 @@ const ClienteCard = memo(function ClienteCard({
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {clienteData.cliente.telefono && (
                             <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-green-600" />
-                              <a href={`tel:${clienteData.cliente.telefono}`} className="text-blue-600 hover:underline">
+                              <Phone className="h-3 w-3 text-green-600 dark:text-green-400" />
+                              <a href={`tel:${clienteData.cliente.telefono}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                                 {clienteData.cliente.telefono}
                               </a>
                             </div>
                           )}
                           {(clienteData.cliente.pais || clienteData.cliente.ciudad) && (
-                            <div className="flex items-center gap-1 text-gray-600">
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-slate-300">
                               <MapPin className="h-3 w-3" />
                               <span>{clienteData.cliente.ciudad || clienteData.cliente.pais}</span>
                             </div>
@@ -516,11 +526,11 @@ const ClienteCard = memo(function ClienteCard({
 
                         <div className="space-y-1">
                           <div className="flex items-start gap-1 text-xs min-w-0">
-                            <MapPin className="h-3 w-3 mt-0.5 text-blue-600 flex-shrink-0" />
+                            <MapPin className="h-3 w-3 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <button
                                 onClick={() => abrirMapa(clienteData.cliente.direccionCliente, 'cliente', clienteData.cliente.mapLink)}
-                                className="text-blue-600 hover:underline text-left break-all font-medium block leading-tight max-w-full"
+                                className="text-blue-600 dark:text-blue-400 hover:underline text-left break-all font-medium block leading-tight max-w-full"
                               >
                                 {clienteData.cliente.direccionCliente.startsWith('http') 
                                   ? "Ubicación en Google Maps" 
@@ -529,7 +539,7 @@ const ClienteCard = memo(function ClienteCard({
                             </div>
                             <button
                               onClick={() => copiarDireccion(clienteData.cliente.direccionCliente, 'cliente')}
-                              className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 shrink-0 ml-1"
                               title="Copiar"
                             >
                               <Copy className="h-3 w-3" />
@@ -538,12 +548,12 @@ const ClienteCard = memo(function ClienteCard({
 
                           {clienteData.cliente.direccionCobro && (
                             <div className="flex items-start gap-1 text-xs min-w-0">
-                              <MapPin className="h-3 w-3 mt-0.5 text-orange-600 flex-shrink-0" />
+                              <MapPin className="h-3 w-3 mt-0.5 text-orange-600 dark:text-orange-400 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <span className="text-gray-500 mr-1 shrink-0 font-medium">Cobro:</span>
+                                <span className="text-gray-500 dark:text-slate-400 mr-1 shrink-0 font-medium">Cobro:</span>
                                 <button
                                   onClick={() => abrirMapa(clienteData.cliente.direccionCobro!, 'cobro')}
-                                  className="text-orange-600 hover:underline text-left break-all font-medium inline-block leading-tight max-w-full"
+                                  className="text-orange-600 dark:text-orange-400 hover:underline text-left break-all font-medium inline-block leading-tight max-w-full"
                                 >
                                   {clienteData.cliente.direccionCobro.startsWith('http') 
                                     ? "Ubicación en Google Maps" 
@@ -552,7 +562,7 @@ const ClienteCard = memo(function ClienteCard({
                               </div>
                               <button
                                 onClick={() => copiarDireccion(clienteData.cliente.direccionCobro!, 'cobro')}
-                                className="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 shrink-0 ml-1"
                                 title="Copiar"
                               >
                                 <Copy className="h-3 w-3" />
@@ -562,106 +572,123 @@ const ClienteCard = memo(function ClienteCard({
                         </div>
 
                         {clienteData.cliente.referenciasPersonales && (
-                          <div className="text-xs bg-amber-50 p-2 rounded border border-amber-200">
-                            <span className="font-medium text-amber-800">📋 Referencias:</span>
-                            <p className="text-gray-700 mt-0.5">{clienteData.cliente.referenciasPersonales}</p>
+                          <div className="text-xs bg-amber-50 dark:bg-amber-950/40 p-2 rounded border border-amber-200 dark:border-amber-800">
+                            <span className="font-medium text-amber-800 dark:text-amber-300">📋 Referencias:</span>
+                            <p className="text-gray-700 dark:text-slate-200 mt-0.5">{clienteData.cliente.referenciasPersonales}</p>
                           </div>
                         )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <p className="text-xs text-gray-600 mb-1">Monto prestado</p>
-                          <p className="text-lg font-bold text-blue-700">{formatCurrency(prestamo.monto)}</p>
-                          <p className="text-xs text-gray-500">Interés: {prestamo.interes}%</p>
+                        <div className="bg-white dark:bg-slate-800/90 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+                          <p className="text-xs text-gray-600 dark:text-slate-400 mb-1">Monto prestado</p>
+                          <p className="text-lg font-bold text-blue-700 dark:text-blue-400">{formatCurrency(prestamo.monto)}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Interés: {prestamo.interes}%</p>
                         </div>
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <p className="text-xs text-gray-600 mb-1">Saldo pendiente</p>
-                          <p className="text-lg font-bold text-red-600">{formatCurrency(prestamo.saldoPendiente)}</p>
-                          <p className="text-xs text-gray-500">Total: {formatCurrency(prestamo.montoTotal)}</p>
+                        <div className="bg-white dark:bg-slate-800/90 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+                          <p className="text-xs text-gray-600 dark:text-slate-400 mb-1">Saldo pendiente</p>
+                          <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(prestamo.saldoPendiente)}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Total: {formatCurrency(prestamo.montoTotal)}</p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-800/90 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
                         <div>
-                          <span className="text-gray-600">Valor por cuota:</span>
-                          <p className="font-semibold text-green-700">{formatCurrency(prestamo.valorCuota)}</p>
+                          <span className="text-gray-600 dark:text-slate-400">Valor por cuota:</span>
+                          <p className="font-semibold text-green-700 dark:text-green-400">{formatCurrency(prestamo.valorCuota)}</p>
                         </div>
                         <div>
-                          <span className="text-gray-600">Progreso:</span>
-                          <p className="font-semibold text-gray-900">
+                          <span className="text-gray-600 dark:text-slate-400">Progreso:</span>
+                          <p className="font-semibold text-gray-900 dark:text-slate-100">
                             {prestamo.cuotasPagadas}/{prestamo.cuotas} cuotas
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-600">Fecha inicio:</span>
-                          <p className="font-medium text-gray-900">{fechaInicio}</p>
+                          <span className="text-gray-600 dark:text-slate-400">Fecha inicio:</span>
+                          <p className="font-medium text-gray-900 dark:text-slate-100">{fechaInicio}</p>
                         </div>
                         <div>
-                          <span className="text-gray-600">Fecha fin:</span>
-                          <p className="font-medium text-gray-900">{fechaFin}</p>
+                          <span className="text-gray-600 dark:text-slate-400">Fecha fin:</span>
+                          <p className="font-medium text-gray-900 dark:text-slate-100">{fechaFin}</p>
                         </div>
                         {prestamo.diasGracia !== undefined && prestamo.diasGracia > 0 && (
                           <div>
-                            <span className="text-gray-600">Días de gracia:</span>
-                            <p className="font-medium text-blue-600">{prestamo.diasGracia} días</p>
+                            <span className="text-gray-600 dark:text-slate-400">Días de gracia:</span>
+                            <p className="font-medium text-blue-600 dark:text-blue-400">{prestamo.diasGracia} días</p>
                           </div>
                         )}
                         {prestamo.moraCredito !== undefined && prestamo.moraCredito > 0 && (
                           <div>
-                            <span className="text-gray-600">Mora:</span>
-                            <p className="font-medium text-orange-600">{prestamo.moraCredito}%</p>
+                            <span className="text-gray-600 dark:text-slate-400">Mora:</span>
+                            <p className="font-medium text-orange-600 dark:text-orange-400">{prestamo.moraCredito}%</p>
                           </div>
                         )}
                         {prestamo.multa !== undefined && Number(prestamo.multa) > 0 && (
                           <div>
-                            <span className="text-rose-600 font-medium">Multa / Penalidad:</span>
-                            <p className="font-bold text-rose-600">+{formatCurrency(prestamo.multa)}</p>
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">Multa / Penalidad:</span>
+                            <p className="font-bold text-rose-600 dark:text-rose-400">+{formatCurrency(prestamo.multa)}</p>
                           </div>
                         )}
                       </div>
 
                       {/* Estado y detalle del Microseguro */}
                       {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
-                        <div className="bg-purple-50 dark:bg-purple-950/40 rounded-lg p-2.5 border border-purple-200 dark:border-purple-800/60 text-xs flex items-center justify-between gap-2 shadow-sm">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                            <div>
-                              <span className="text-purple-700 dark:text-purple-300 font-bold block sm:inline">Microseguro Activo: </span>
-                              <span className="text-purple-600 dark:text-purple-400 font-normal">
-                                ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con devolución' : 'Porcentaje'})
-                              </span>
+                        <div className="bg-purple-50 dark:bg-purple-950/60 rounded-lg p-3 border border-purple-200 dark:border-purple-800 text-xs shadow-sm space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-300 shrink-0" />
+                              <div>
+                                <span className="text-purple-900 dark:text-purple-100 font-bold block sm:inline">Microseguro: </span>
+                                <span className="text-purple-700 dark:text-purple-300 font-normal">
+                                  ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con devolución' : 'Porcentaje'})
+                                </span>
+                              </div>
                             </div>
+                            <span className="font-extrabold text-sm text-purple-900 dark:text-purple-100 shrink-0">
+                              {formatCurrency(prestamo.microseguroTotal)}
+                            </span>
                           </div>
-                          <span className="font-extrabold text-sm text-purple-900 dark:text-purple-200 shrink-0">
-                            {formatCurrency(prestamo.microseguroTotal)}
-                          </span>
+
+                          {Number(prestamo.seguroDevuelto || 0) > 0 && (
+                            <div className="pt-2 border-t border-purple-200 dark:border-purple-800/70 grid grid-cols-2 gap-2">
+                              <div className="flex items-center justify-between bg-white/70 dark:bg-slate-900/60 rounded p-1.5 px-2">
+                                <span className="text-gray-600 dark:text-slate-300 font-medium">Devuelto:</span>
+                                <span className="text-green-700 dark:text-green-400 font-bold">+{formatCurrency(prestamo.seguroDevuelto || 0)}</span>
+                              </div>
+                              <div className="flex items-center justify-between bg-white/70 dark:bg-slate-900/60 rounded p-1.5 px-2">
+                                <span className="text-gray-600 dark:text-slate-300 font-medium">Por devolver:</span>
+                                <span className="text-purple-800 dark:text-purple-200 font-bold">
+                                  {formatCurrency(Math.max(0, Number(prestamo.microseguroTotal || 0) - Number(prestamo.seguroDevuelto || 0)))}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div className="bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between text-slate-500 dark:text-slate-400">
+                        <div className="bg-slate-50 dark:bg-slate-800/90 rounded-lg p-2.5 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between text-slate-600 dark:text-slate-300">
                           <div className="flex items-center gap-1.5">
-                            <Shield className="h-3.5 w-3.5 text-slate-400" />
-                            <span>Microseguro:</span>
+                            <Shield className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
+                            <span className="font-medium text-slate-700 dark:text-slate-200">Microseguro:</span>
                           </div>
-                          <span className="font-medium text-slate-600 dark:text-slate-400">Sin seguro incluido</span>
+                          <span className="font-medium text-slate-500 dark:text-slate-400">Sin seguro incluido</span>
                         </div>
                       )}
 
                       {prestamo.observaciones && (
-                        <div className="bg-yellow-50 rounded-lg p-2 border border-yellow-200 text-xs">
-                          <span className="text-yellow-700 font-medium">📝 Observaciones: </span>
-                          <p className="text-gray-700 mt-1">{prestamo.observaciones}</p>
+                        <div className="bg-yellow-50 dark:bg-yellow-950/40 rounded-lg p-2 border border-yellow-200 dark:border-yellow-800 text-xs">
+                          <span className="text-yellow-700 dark:text-yellow-300 font-medium">📝 Observaciones: </span>
+                          <p className="text-gray-700 dark:text-slate-200 mt-1">{prestamo.observaciones}</p>
                         </div>
                       )}
 
                       <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-600">
+                        <div className="flex justify-between text-xs text-gray-600 dark:text-slate-400">
                           <span>Progreso del préstamo</span>
-                          <span className="font-semibold">
+                          <span className="font-semibold text-gray-900 dark:text-slate-200">
                             {getProgressPercentage(prestamo.cuotasPagadas, prestamo.cuotas).toFixed(1)}%
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                           <div
                             className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500 shadow-sm"
                             style={{
@@ -908,42 +935,47 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
     }
   }, [toast])
 
-  // Pre-filtrar por estado y búsqueda ANTES de calcular scores/estados caros
-  // Así solo procesamos clientes que pasarán a pantalla
-  const clientesFiltradosActivos = useMemo(() => {
+  // 1. Pre-computar estado de alerta, tipo de pago e índice de búsqueda UNA SOLA VEZ cuando cambia la lista de clientes
+  const clientesConMetadata = useMemo(() => {
     const hoy = new Date()
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
     const ayerMidnight = new Date(hoyMidnight.getTime() - 24 * 60 * 60 * 1000)
-    const searchLower = deferredSearchTerm.toLowerCase().trim()
 
-    const resultado: (ClienteConPrestamos & { estadoAlerta: ReturnType<typeof calcularEstadoCliente>, tipoPagoInfo: ReturnType<typeof getTipoPagoBadge>, scoreData: ReturnType<typeof calcularCreditScore> })[] = []
-
-    for (const clienteData of clientes) {
-      // Filtro rápido de búsqueda de texto (sin cálculos caros)
-      if (searchLower) {
-        const coincide =
-          clienteData.cliente.nombre.toLowerCase().includes(searchLower) ||
-          clienteData.cliente.apellido.toLowerCase().includes(searchLower) ||
-          clienteData.cliente.documento.includes(searchLower) ||
-          clienteData.cliente.codigoCliente.toLowerCase().includes(searchLower) ||
-          (clienteData.cliente.telefono && clienteData.cliente.telefono.includes(searchLower))
-        if (!coincide) continue
-      }
-
-      // Calcular estado (caro) solo para los que pasan el filtro de texto
+    return clientes.map((clienteData) => {
       const estadoAlerta = calcularEstadoCliente(clienteData, hoy, hoyMidnight, ayerMidnight)
-      if (estadoAlerta.estado !== activeTab) continue
+      const tipoPagoInfo = getTipoPagoBadge(clienteData)
+      const searchIndex = `${clienteData.cliente.nombre} ${clienteData.cliente.apellido} ${clienteData.cliente.documento} ${clienteData.cliente.codigoCliente} ${clienteData.cliente.telefono || ''}`.toLowerCase()
 
-      resultado.push({
+      return {
         ...clienteData,
         estadoAlerta,
-        tipoPagoInfo: getTipoPagoBadge(clienteData),
-        scoreData: calcularCreditScore(clienteData.cliente, clienteData.prestamos)
-      })
-    }
+        tipoPagoInfo,
+        searchIndex
+      }
+    })
+  }, [clientes])
 
-    return resultado
-  }, [clientes, deferredSearchTerm, activeTab])
+  // 2. Conteo instantáneo O(N) por pestaña
+  const tabCounts = useMemo(() => {
+    const counts = { OK: 0, PROXIMO_A_VENCER: 0, MOROSO: 0, VENCIDO: 0, INACTIVO: 0 }
+    for (const c of clientesConMetadata) {
+      if (c.estadoAlerta?.estado && counts[c.estadoAlerta.estado as keyof typeof counts] !== undefined) {
+        counts[c.estadoAlerta.estado as keyof typeof counts]++
+      }
+    }
+    return counts
+  }, [clientesConMetadata])
+
+  // 3. Filtrado ultra-rápido en memoria (<1ms) sin recalcular fechas ni scores pesados
+  const clientesFiltradosActivos = useMemo(() => {
+    const searchLower = deferredSearchTerm.toLowerCase().trim()
+
+    return clientesConMetadata.filter((c) => {
+      if (c.estadoAlerta.estado !== activeTab) return false
+      if (searchLower && !c.searchIndex.includes(searchLower)) return false
+      return true
+    })
+  }, [clientesConMetadata, deferredSearchTerm, activeTab])
 
   if (loading) {
     return (
@@ -1012,56 +1044,61 @@ export default function ListadoGeneralClient({ session }: ListadoGeneralClientPr
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-gray-100 dark:bg-[#102525] p-1 border dark:border-[#34766D] rounded-lg mb-6 w-full">
           <button
             onClick={() => setActiveTab('OK')}
-            className={`py-2 text-xs font-medium rounded-md transition-all ${
+            className={`py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'OK' 
                 ? 'bg-white text-green-700 dark:bg-[#36E2C2] dark:text-[#071313] shadow-sm' 
                 : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
-            Al Día
+            <span>Al Día</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-green-100 dark:bg-[#173333] text-green-800 dark:text-[#36E2C2]">{tabCounts.OK}</span>
           </button>
           <button
             onClick={() => setActiveTab('PROXIMO_A_VENCER')}
-            className={`py-2 text-xs font-medium rounded-md transition-all ${
+            className={`py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'PROXIMO_A_VENCER' 
                 ? 'bg-white text-yellow-600 dark:bg-[#F5A623] dark:text-[#071313] shadow-sm' 
                 : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
-            Próximo a Vencer
+            <span>Próx. Vencer</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-[#173333] text-amber-800 dark:text-[#F5A623]">{tabCounts.PROXIMO_A_VENCER}</span>
           </button>
           <button
             onClick={() => setActiveTab('MOROSO')}
-            className={`py-2 text-xs font-medium rounded-md transition-all ${
+            className={`py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'MOROSO' 
                 ? 'bg-white text-orange-600 dark:bg-[#F5A623] dark:text-[#071313] shadow-sm' 
                 : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
-            Morosos
+            <span>Morosos</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-orange-100 dark:bg-[#173333] text-orange-800 dark:text-[#F5A623]">{tabCounts.MOROSO}</span>
           </button>
           <button
             onClick={() => setActiveTab('VENCIDO')}
-            className={`py-2 text-xs font-medium rounded-md transition-all ${
+            className={`py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'VENCIDO' 
                 ? 'bg-white text-red-700 dark:bg-[#FF5C5C] dark:text-[#F4FFFF] shadow-sm' 
                 : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
-            Vencidos
+            <span>Vencidos</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-100 dark:bg-[#173333] text-red-800 dark:text-[#FF5C5C]">{tabCounts.VENCIDO}</span>
           </button>
           <button
             onClick={() => {
               setActiveTab('INACTIVO')
               if (soloConSaldo) setSoloConSaldo(false)
             }}
-            className={`col-span-2 sm:col-span-1 py-2 text-xs font-medium rounded-md transition-all ${
+            className={`col-span-2 sm:col-span-1 py-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'INACTIVO' 
                 ? 'bg-white text-gray-700 dark:bg-[#173333] dark:text-[#F4FFFF] shadow-sm' 
                 : 'text-gray-500 dark:text-[#9CB7B2] hover:text-gray-700 dark:hover:text-[#F4FFFF] hover:bg-gray-200/50 dark:hover:bg-[#173333]'
             }`}
           >
-            Inactivos
+            <span>Inactivos</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gray-200 dark:bg-[#254642] text-gray-700 dark:text-gray-200">{tabCounts.INACTIVO}</span>
           </button>
         </div>
 
