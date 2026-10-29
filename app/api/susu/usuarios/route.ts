@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 // GET - Obtener usuarios disponibles para participar en SUSU
 export async function GET(request: NextRequest) {
   try {

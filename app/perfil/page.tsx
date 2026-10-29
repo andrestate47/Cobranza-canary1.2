@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import PerfilClient from "@/components/perfil-client"
 
+export const dynamic = 'force-dynamic'
+
 export default async function PerfilPage() {
   const session = await getServerSession(authOptions)
 

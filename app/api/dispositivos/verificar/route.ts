@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getDeviceInfo } from '@/lib/device-fingerprint'
 
+export const dynamic = 'force-dynamic'
+
 // POST - Verificar y registrar dispositivo
 export async function POST(request: NextRequest) {
   try {

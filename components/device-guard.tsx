@@ -25,13 +25,13 @@ interface EstadoDispositivo {
 
 export function DeviceGuard({ children }: DeviceGuardProps) {
   const pathname = usePathname()
-  const isLoginPage = pathname === "/login"
+  const isLoginPage = pathname === "/login" || pathname === "/"
   const { data: session, status } = useSession() || {}
   
   // Evitar pantalla de carga si ya está verificado en sesión o si es Admin o si es la página de login
   const [verificando, setVerificando] = useState(() => {
     if (typeof window !== "undefined") {
-      if (window.location.pathname === "/login") return false
+      if (window.location.pathname === "/login" || window.location.pathname === "/") return false
       const cached = sessionStorage.getItem("device_verified")
       if (cached === "true") return false
     }
@@ -50,8 +50,21 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
     return null
   })
 
+  // Timeout de seguridad: si en 3.5 segundos aún sigue verificando o status no responde, desbloquear
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVerificando(false)
+    }, 3500)
+    return () => clearTimeout(timer)
+  }, [])
+
   useEffect(() => {
     if (isLoginPage) {
+      setVerificando(false)
+      return
+    }
+
+    if (status === "unauthenticated") {
       setVerificando(false)
       return
     }
@@ -74,11 +87,28 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
         return
       }
 
+      // Si ya está verificado en sessionStorage, no volver a llamar a la API
+      if (typeof window !== "undefined" && sessionStorage.getItem("device_verified") === "true") {
+        setVerificando(false)
+        return
+      }
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3500)
+
       try {
         const response = await fetch("/api/dispositivos/verificar", {
           method: "POST",
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal
         })
+        clearTimeout(timeoutId)
+
+        if (!response.ok) {
+          console.warn("Respuesta no OK de verificación de dispositivo:", response.status)
+          setVerificando(false)
+          return
+        }
 
         const data = await response.json()
         setEstadoDispositivo(data)
@@ -90,26 +120,35 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
       } catch (error) {
         console.error("Error al verificar dispositivo:", error)
         setVerificando(false)
+      } finally {
+        clearTimeout(timeoutId)
       }
     }
 
     verificarDispositivo()
   }, [session, status, isLoginPage])
 
-  // En la página de login, nunca bloquear ni mostrar pantalla de verificación de dispositivo
-  if (isLoginPage) {
+  // En la página de login o si no hay sesión autenticada, nunca bloquear
+  if (isLoginPage || status === "unauthenticated" || !session) {
     return <>{children}</>
   }
 
-  // Pantalla de carga mientras verifica (soporte dark mode completo para evitar destellos)
-  if (verificando || status === "loading") {
+  // Pantalla de carga mientras verifica (solo si hay sesión y aún se está verificando activamente)
+  if (verificando) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#071313] transition-colors">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#071313] transition-colors p-4">
         <Card className="w-full max-w-md bg-white dark:bg-[#102525] border-gray-200 dark:border-[#1F3A36] shadow-md">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-4">
               <Loader2 className="h-10 w-10 animate-spin text-emerald-600 dark:text-emerald-400" />
               <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">Verificando dispositivo...</p>
+              <button
+                type="button"
+                onClick={() => setVerificando(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline pt-2"
+              >
+                ¿Tardando demasiado? Continuar
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -117,7 +156,7 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
     )
   }
 
-  // Si no hay sesión, mostrar contenido normal (página de login)
+  // Si no hay sesión, mostrar contenido normal
   if (!session) {
     return <>{children}</>
   }
