@@ -73,16 +73,6 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   const { logoUrl, format: formatCurrency } = useCurrency()
   const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports, canViewInformeClientes } = usePermissions()
 
-  if (!isAdmin && !canViewDashboard) {
-    return (
-      <div className="text-center p-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl my-8">
-        <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
-        <h3 className="text-lg font-bold text-rose-800 dark:text-rose-300">Acceso Denegado</h3>
-        <p className="text-rose-600 dark:text-rose-400">No tienes permiso para ver el Dashboard</p>
-      </div>
-    )
-  }
-
   const userFirstName = user?.firstName?.trim()
   const userName = user?.name?.trim()
   const userRole = user?.role || ''
@@ -399,6 +389,16 @@ export default function DashboardClient({ session }: DashboardClientProps) {
   const porcentajeEficiencia = totalAtendidos > 0
     ? Math.round((rutaStats.cobradosCount / totalAtendidos) * 100)
     : 0
+
+  if (!isAdmin && !canViewDashboard) {
+    return (
+      <div className="text-center p-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl my-8">
+        <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
+        <h3 className="text-lg font-bold text-rose-800 dark:text-rose-300">Acceso Denegado</h3>
+        <p className="text-rose-600 dark:text-rose-400">No tienes permiso para ver el Dashboard</p>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#071311] text-foreground transition-colors duration-200 pb-16 w-full max-w-full overflow-x-hidden">

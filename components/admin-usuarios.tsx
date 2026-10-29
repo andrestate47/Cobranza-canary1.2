@@ -91,18 +91,8 @@ export default function AdminUsuarios() {
 
   const hasAccess = isAuthenticated && (isAdmin || canManageUsers || canManagePermissions)
 
-  // Redirigir si no tiene permisos
-  if (!hasAccess) {
-    return (
-      <div className="text-center p-8 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl">
-        <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
-        <h3 className="text-lg font-bold text-rose-800 dark:text-rose-300">Acceso Denegado</h3>
-        <p className="text-rose-600 dark:text-rose-400">No tienes los permisos requeridos para acceder a la gestión de usuarios</p>
-      </div>
-    )
-  }
-
   const fetchUsuarios = async () => {
+    if (!hasAccess) return
     setLoading(true)
     try {
       const response = await fetch('/api/admin/usuarios')
@@ -130,8 +120,21 @@ export default function AdminUsuarios() {
   }
 
   useEffect(() => {
-    fetchUsuarios()
-  }, [])
+    if (hasAccess) {
+      fetchUsuarios()
+    }
+  }, [hasAccess])
+
+  // Redirigir si no tiene permisos (después de todos los hooks de React)
+  if (!hasAccess) {
+    return (
+      <div className="text-center p-8 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl">
+        <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
+        <h3 className="text-lg font-bold text-rose-800 dark:text-rose-300">Acceso Denegado</h3>
+        <p className="text-rose-600 dark:text-rose-400">No tienes los permisos requeridos para acceder a la gestión de usuarios</p>
+      </div>
+    )
+  }
 
   const handleToggleUserStatus = async (userId: string, isActive: boolean) => {
     try {
