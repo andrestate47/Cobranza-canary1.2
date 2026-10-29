@@ -71,7 +71,7 @@ interface ModuleItem {
 export default function DashboardClient({ session }: DashboardClientProps) {
   const user = session?.user
   const { logoUrl, format: formatCurrency } = useCurrency()
-  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports, canViewInformeClientes } = usePermissions()
+  const { isAdmin, isSupervisor, isCobrador, canManageUsers, canManagePermissions, canViewDashboard, canViewReports, canViewInformeClientes, isLoading } = usePermissions()
 
   const userFirstName = user?.firstName?.trim()
   const userName = user?.name?.trim()
@@ -390,7 +390,10 @@ export default function DashboardClient({ session }: DashboardClientProps) {
     ? Math.round((rutaStats.cobradosCount / totalAtendidos) * 100)
     : 0
 
-  if (!isAdmin && !canViewDashboard) {
+  const isUserAdmin = user?.role === 'ADMINISTRADOR' || isAdmin
+  const hasDashboardAccess = isUserAdmin || canViewDashboard || user?.role === 'SUPERVISOR' || user?.role === 'COBRADOR'
+
+  if (!isLoading && !hasDashboardAccess) {
     return (
       <div className="text-center p-12 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl my-8">
         <Shield className="mx-auto h-12 w-12 text-rose-500 dark:text-rose-400 mb-4" />
