@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Shield, Clock, XCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Shield, Clock, XCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface DeviceGuardProps {
@@ -23,79 +23,68 @@ interface EstadoDispositivo {
   }
 }
 
+// Funciones seguras para acceder a sessionStorage sin lanzar excepciones en navegadores restrictivos
+function safeGetSessionStorage(key: string): string | null {
+  try {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      return window.sessionStorage.getItem(key)
+    }
+  } catch {
+    // Modo incógnito, storage deshabilitado o políticas estrictas
+  }
+  return null
+}
+
+function safeSetSessionStorage(key: string, value: string) {
+  try {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem(key, value)
+    }
+  } catch {
+    // Ignorar si no hay permisos de storage
+  }
+}
+
 export function DeviceGuard({ children }: DeviceGuardProps) {
   const pathname = usePathname()
-  const isLoginPage = pathname === "/login" || pathname === "/"
+  const [mounted, setMounted] = useState(false)
   const { data: session, status } = useSession() || {}
-  
-  // Evitar pantalla de carga si ya está verificado en sesión o si es Admin o si es la página de login
-  const [verificando, setVerificando] = useState(() => {
-    if (typeof window !== "undefined") {
-      if (window.location.pathname === "/login" || window.location.pathname === "/") return false
-      const cached = sessionStorage.getItem("device_verified")
-      if (cached === "true") return false
-    }
-    return true
-  })
+  const [estadoDispositivo, setEstadoDispositivo] = useState<EstadoDispositivo | null>(null)
 
-  const [estadoDispositivo, setEstadoDispositivo] = useState<EstadoDispositivo | null>(() => {
-    if (typeof window !== "undefined") {
-      const cached = sessionStorage.getItem("device_verified_data")
-      if (cached) {
-        try {
-          return JSON.parse(cached)
-        } catch (e) {}
-      }
-    }
-    return null
-  })
-
-  // Timeout de seguridad: si en 3.5 segundos aún sigue verificando o status no responde, desbloquear
+  // Asegurar que el primer render en cliente coincida exactamente con el SSR (prevenir Hydration Error)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVerificando(false)
-    }, 3500)
-    return () => clearTimeout(timer)
+    setMounted(true)
+    const cachedData = safeGetSessionStorage("device_verified_data")
+    if (cachedData) {
+      try {
+        setEstadoDispositivo(JSON.parse(cachedData))
+      } catch {}
+    }
   }, [])
 
+  const isPublicPage = !pathname || pathname === "/" || pathname.startsWith("/login")
+
   useEffect(() => {
-    if (isLoginPage) {
-      setVerificando(false)
+    if (!mounted || isPublicPage || status !== "authenticated" || !session?.user) {
       return
     }
 
-    if (status === "unauthenticated") {
-      setVerificando(false)
+    // Administradores nunca se bloquean
+    if (session.user.role === "ADMINISTRADOR") {
+      setEstadoDispositivo({ autorizado: true, esAdmin: true })
+      safeSetSessionStorage("device_verified", "true")
       return
     }
+
+    // Si ya está verificado en caché de sesión como autorizado, no repetir fetch
+    if (safeGetSessionStorage("device_verified") === "true") {
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
 
     const verificarDispositivo = async () => {
-      if (status === "loading") return
-      
-      if (!session?.user) {
-        setVerificando(false)
-        return
-      }
-
-      // Si es admin, autorizar inmediatamente sin bloquear en cada refresh
-      if (session.user.role === "ADMINISTRADOR") {
-        setEstadoDispositivo({ autorizado: true, esAdmin: true })
-        setVerificando(false)
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("device_verified", "true")
-        }
-        return
-      }
-
-      // Si ya está verificado en sessionStorage, no volver a llamar a la API
-      if (typeof window !== "undefined" && sessionStorage.getItem("device_verified") === "true") {
-        setVerificando(false)
-        return
-      }
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3500)
-
       try {
         const response = await fetch("/api/dispositivos/verificar", {
           method: "POST",
@@ -104,74 +93,38 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
         })
         clearTimeout(timeoutId)
 
-        if (!response.ok) {
-          console.warn("Respuesta no OK de verificación de dispositivo:", response.status)
-          setVerificando(false)
-          return
-        }
+        if (!response.ok) return
 
         const data = await response.json()
         setEstadoDispositivo(data)
-        setVerificando(false)
-        if (typeof window !== "undefined" && (data.autorizado || data.esAdmin)) {
-          sessionStorage.setItem("device_verified", "true")
-          sessionStorage.setItem("device_verified_data", JSON.stringify(data))
+
+        if (data.autorizado || data.esAdmin) {
+          safeSetSessionStorage("device_verified", "true")
+          safeSetSessionStorage("device_verified_data", JSON.stringify(data))
         }
-      } catch (error) {
-        console.error("Error al verificar dispositivo:", error)
-        setVerificando(false)
+      } catch (err) {
+        // En caso de fallo o timeout de red, no bloquear la experiencia del usuario
+        console.warn("[DeviceGuard] Verificación de dispositivo omitida o demorada:", err)
       } finally {
         clearTimeout(timeoutId)
       }
     }
 
     verificarDispositivo()
-  }, [session, status, isLoginPage])
+  }, [mounted, isPublicPage, status, session])
 
-  // En la página de login o si no hay sesión autenticada, nunca bloquear
-  if (isLoginPage || status === "unauthenticated" || !session) {
+  // Antes de montar en el cliente, SIEMPRE renderizar children tal como lo hace el SSR.
+  // Esto elimina 100% el "Application error: a client-side exception has occurred" por desajuste de hidratación.
+  if (!mounted || isPublicPage || status !== "authenticated" || !session) {
     return <>{children}</>
   }
 
-  // Pantalla de carga mientras verifica (solo si hay sesión y aún se está verificando activamente)
-  if (verificando) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#071313] transition-colors p-4">
-        <Card className="w-full max-w-md bg-white dark:bg-[#102525] border-gray-200 dark:border-[#1F3A36] shadow-md">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-10 w-10 animate-spin text-emerald-600 dark:text-emerald-400" />
-              <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">Verificando dispositivo...</p>
-              <button
-                type="button"
-                onClick={() => setVerificando(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline pt-2"
-              >
-                ¿Tardando demasiado? Continuar
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Si no hay sesión, mostrar contenido normal
-  if (!session) {
+  // Si es admin o está explícitamente autorizado, permitir acceso normal
+  if (session.user?.role === "ADMINISTRADOR" || estadoDispositivo?.esAdmin || estadoDispositivo?.autorizado) {
     return <>{children}</>
   }
 
-  // Si es admin, permitir acceso sin restricciones
-  if (session.user?.role === "ADMINISTRADOR" || estadoDispositivo?.esAdmin) {
-    return <>{children}</>
-  }
-
-  // Si el dispositivo está autorizado, permitir acceso
-  if (estadoDispositivo?.autorizado) {
-    return <>{children}</>
-  }
-
-  // Si el dispositivo está bloqueado
+  // Si el dispositivo está bloqueado por el administrador
   if (estadoDispositivo?.bloqueado) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#071313] p-4">
@@ -268,6 +221,6 @@ export function DeviceGuard({ children }: DeviceGuardProps) {
     )
   }
 
-  // Por defecto, permitir acceso (fallback)
+  // Fallback por defecto: renderizar children normalmente
   return <>{children}</>
 }
