@@ -651,7 +651,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     montoTotal,
     microseguroTotal: prestamo.microseguroTotal !== null && prestamo.microseguroTotal !== undefined ? Number(prestamo.microseguroTotal) : undefined,
     microseguroValor: prestamo.microseguroValor !== null && prestamo.microseguroValor !== undefined ? Number(prestamo.microseguroValor) : undefined,
-    microseguroTipo: prestamo.microseguroTipo || undefined
+    microseguroTipo: prestamo.microseguroTipo || undefined,
+    seguroDevuelto: prestamo.pagos?.reduce((acc: number, p: any) => acc + (Number(p.devolucionSeguro) || 0), 0) || Number((prestamo as any).seguroDevuelto || 0)
   }
 
   // Score Crediticio y fecha de registro del cliente
@@ -921,8 +922,17 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
 
     // Sumamos todos los pagos hasta este (inclusive)
     let totalPagadoHastaEste = 0
+    let seguroDevueltoHastaEste = 0
     if (index !== -1) {
-      totalPagadoHastaEste = pagosSorted.slice(0, index + 1).reduce((sum, p) => sum + Number(p.monto), 0)
+      const pagosHastaAqui = pagosSorted.slice(0, index + 1)
+      totalPagadoHastaEste = pagosHastaAqui.reduce(
+        (sum, p) => sum + Number(p.monto) + (Number(p.devolucionSeguro) || 0),
+        0
+      )
+      seguroDevueltoHastaEste = pagosHastaAqui.reduce(
+        (sum, p) => sum + (Number(p.devolucionSeguro) || 0),
+        0
+      )
     }
 
     const saldoPendienteEnEseMomento = Math.max(0, montoTotal - totalPagadoHastaEste)
@@ -940,6 +950,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       fecha: pago.fecha,
       observaciones: pago.observaciones,
       metodoPago: pago.metodoPago,
+      devolucionSeguro: Number(pago.devolucionSeguro || 0),
       fotoComprobante: (pago as any).fotoComprobante || null,
       fotoMiniatura: (pago as any).fotoMiniatura || null,
       numeroBoleta: `BOL-${String(pago.id).padStart(6, '0')}`,
@@ -957,6 +968,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
         microseguroTipo: prestamo.microseguroTipo,
         microseguroValor: prestamo.microseguroValor,
         microseguroTotal: prestamo.microseguroTotal,
+        seguroDevuelto: seguroDevueltoHastaEste,
         multa: Number((prestamo as any).multa ?? multaActual ?? 0),
         ultimoPago: ultimoPagoAnterior
       },

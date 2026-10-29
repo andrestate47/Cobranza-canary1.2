@@ -325,6 +325,7 @@ export async function POST(request: NextRequest) {
           microseguroTipo: prestamo.microseguroTipo,
           microseguroValor: Number(prestamo.microseguroValor),
           microseguroTotal: Number(prestamo.microseguroTotal),
+          seguroDevuelto: Math.round((Number(pagosExistentes._sum.devolucionSeguro || 0) + devolucionSeguroNumerico) * 100) / 100,
           multa: multaPrestamo,
           ultimoPago: ultimoPagoAnterior ? {
             fecha: ultimoPagoAnterior.fecha,

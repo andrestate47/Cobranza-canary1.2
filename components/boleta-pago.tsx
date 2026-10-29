@@ -28,6 +28,7 @@ interface BoletaPagoData {
     microseguroTipo?: string
     microseguroValor?: number
     microseguroTotal?: number
+    seguroDevuelto?: number
     multa?: number
     ultimoPago?: {
       fecha: string
@@ -392,6 +393,43 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     
     const montoAbonoMostrar = data.monto;
 
+    // Cálculos de Microseguro y Devoluciones
+    const tieneMicroseguro = Boolean(
+      data.prestamo.microseguroTipo && 
+      data.prestamo.microseguroTipo !== 'NINGUNO' && 
+      (Number(data.prestamo.microseguroTotal || 0) > 0 || Number(data.prestamo.microseguroValor || 0) > 0)
+    );
+    const seguroTotal = tieneMicroseguro 
+      ? Number(data.prestamo.microseguroTotal || data.prestamo.microseguroValor || 0) 
+      : 0;
+    const devolucionEnEstePago = Number(data.devolucionSeguro || (data as any)?.pago?.devolucionSeguro || 0);
+    const seguroDevueltoAcumulado = Math.max(
+      Number(data.prestamo.seguroDevuelto ?? ((data.prestamo as any)?.seguroDevuelto || 0)),
+      devolucionEnEstePago
+    );
+    const seguroPendiente = Math.max(0, Math.round((seguroTotal - seguroDevueltoAcumulado) * 100) / 100);
+
+    const getEstadoSeguro = () => {
+      if (!tieneMicroseguro) return null;
+      if (seguroPendiente <= 0.01 && seguroDevueltoAcumulado > 0) {
+        return {
+          texto: 'Devuelto por completo',
+          color: 'bg-green-100 text-green-800 border-green-300'
+        };
+      }
+      if (seguroDevueltoAcumulado > 0) {
+        return {
+          texto: 'Devolución parcial',
+          color: 'bg-amber-100 text-amber-800 border-amber-300'
+        };
+      }
+      return {
+        texto: 'Activo / Sin devolución',
+        color: 'bg-purple-100 text-purple-800 border-purple-300'
+      };
+    };
+    const estadoSeguro = getEstadoSeguro();
+
     const prestamoFlex = data.prestamo as any
     const multa = Number(data.prestamo?.multa ?? prestamoFlex.multa ?? (data as any)?.multa ?? 0)
     const cuotasPagadas = (prestamoFlex.cuotasPagadasManual !== null && prestamoFlex.cuotasPagadasManual !== undefined)
@@ -651,6 +689,39 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   </div>
                 </div>
 
+                {tieneMicroseguro && (
+                  <div className="bg-purple-50 rounded-xl p-3.5 border border-purple-200 space-y-2 mt-1 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black text-purple-900 uppercase tracking-wide flex items-center gap-1.5">
+                        <span>🛡️</span> Microseguro ({data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : data.prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con Devolución' : 'Porcentaje'}):
+                      </span>
+                      <span className="font-black text-purple-900 text-xl">
+                        {formatCurrency(seguroTotal)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm pt-1.5 border-t border-purple-200/80">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700 font-bold">Devuelto:</span>
+                        <span className="font-black text-green-700">
+                          {seguroDevueltoAcumulado > 0 ? `+${formatCurrency(seguroDevueltoAcumulado)}` : formatCurrency(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700 font-bold">Por devolver:</span>
+                        <span className="font-black text-purple-950">
+                          {formatCurrency(seguroPendiente)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-1.5 border-t border-purple-200/80 text-sm">
+                      <span className="text-gray-700 font-bold">Estado del seguro:</span>
+                      <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${estadoSeguro?.color || 'bg-gray-100 text-gray-800'}`}>
+                        {estadoSeguro?.texto}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="my-2.5 border-t border-gray-200" style={{ borderColor: '#e5e7eb' }} />
 
                 <div className="flex justify-between items-center">
@@ -715,15 +786,28 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 {/* Destacado: El Abono Actual */}
                 <div className="border border-blue-200 p-3.5 rounded-xl mb-3 shadow-sm" style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-black uppercase text-base tracking-wider" style={{ color: '#1e3a8a' }}>Monto de este abono</span>
+                    <span className="font-black uppercase text-base tracking-wider" style={{ color: '#1e3a8a' }}>
+                      {montoAbonoMostrar === 0 && devolucionEnEstePago > 0 ? "Abono en efectivo" : "Monto de este abono"}
+                    </span>
                     <span className="font-black text-3xl" style={{ color: '#1e3a8a' }}>{formatCurrency(montoAbonoMostrar)}</span>
                   </div>
-                  {data.devolucionSeguro ? (
+                  {devolucionEnEstePago > 0 ? (
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
-                      <span className="font-black uppercase text-base tracking-wider" style={{ color: '#1e3a8a' }}>Devolver seguro</span>
-                      <span className="font-black text-green-700 text-3xl">{formatCurrency(data.devolucionSeguro)}</span>
+                      <div className="flex flex-col">
+                        <span className="font-black uppercase text-base tracking-wider" style={{ color: '#1e3a8a' }}>
+                          Devolución microseguro
+                        </span>
+                        <span className="text-xs font-bold text-green-700">Abonado a deuda</span>
+                      </div>
+                      <span className="font-black text-green-700 text-3xl">+{formatCurrency(devolucionEnEstePago)}</span>
                     </div>
                   ) : null}
+                  {devolucionEnEstePago > 0 && montoAbonoMostrar > 0 && (
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
+                      <span className="font-black uppercase text-sm tracking-wider text-blue-900 font-bold">Total aplicado a deuda</span>
+                      <span className="font-black text-blue-900 text-2xl">{formatCurrency(montoAbonoMostrar + devolucionEnEstePago)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-base font-bold mt-2" style={{ color: '#1e40af' }}>
                     <span>Progreso total:</span>
                     <span className="font-black text-xl">{progresoPrecentaje}%</span>

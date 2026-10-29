@@ -130,9 +130,11 @@ export async function GET(request: NextRequest) {
     }) : []
 
     const pagoTotalesMap = new Map()
+    const seguroDevueltoMap = new Map()
     const ultimoPagoMap = new Map()
     sumasPagos.forEach(s => {
       pagoTotalesMap.set(s.prestamoId, Number(s._sum.monto || 0) + Number(s._sum.devolucionSeguro || 0))
+      seguroDevueltoMap.set(s.prestamoId, Number(s._sum.devolucionSeguro || 0))
       if (s._max.fecha) {
         ultimoPagoMap.set(s.prestamoId, s._max.fecha)
       }
@@ -235,6 +237,7 @@ export async function GET(request: NextRequest) {
           microseguroTipo: prestamo.microseguroTipo,
           microseguroTotal: parseFloat(prestamo.microseguroTotal?.toString() || '0'),
           microseguroValor: parseFloat(prestamo.microseguroValor?.toString() || '0'),
+          seguroDevuelto: seguroDevueltoMap.get(prestamo.id) || 0,
           cliente: prestamo.cliente,
           saldoPendiente,
           cuotasPagadas,

@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
         fecha: pagoAsociado.fecha,
         observaciones: pagoAsociado.observaciones,
         metodoPago: pagoAsociado.metodoPago,
+        devolucionSeguro: Number(pagoAsociado.devolucionSeguro || 0),
         numeroBoleta: numeroBoleta,
         prestamo: {
           id: pagoAsociado.prestamo.id,
