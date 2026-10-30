@@ -394,19 +394,24 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
     const montoAbonoMostrar = data.monto;
 
     // Cálculos de Microseguro y Devoluciones
-    const tieneMicroseguro = Boolean(
-      data.prestamo.microseguroTipo && 
-      data.prestamo.microseguroTipo !== 'NINGUNO' && 
-      (Number(data.prestamo.microseguroTotal || 0) > 0 || Number(data.prestamo.microseguroValor || 0) > 0)
-    );
-    const seguroTotal = tieneMicroseguro 
-      ? Number(data.prestamo.microseguroTotal || data.prestamo.microseguroValor || 0) 
-      : 0;
     const devolucionEnEstePago = Number(data.devolucionSeguro || (data as any)?.pago?.devolucionSeguro || 0);
     const seguroDevueltoAcumulado = Math.max(
       Number(data.prestamo.seguroDevuelto ?? ((data.prestamo as any)?.seguroDevuelto || 0)),
       devolucionEnEstePago
     );
+    const tieneMicroseguro = Boolean(
+      (data.prestamo.microseguroTipo && data.prestamo.microseguroTipo !== 'NINGUNO') ||
+      Number(data.prestamo.microseguroTotal || 0) > 0 ||
+      Number(data.prestamo.microseguroValor || 0) > 0 ||
+      devolucionEnEstePago > 0 ||
+      seguroDevueltoAcumulado > 0
+    );
+    const seguroTotal = tieneMicroseguro
+      ? Math.max(
+          Number(data.prestamo.microseguroTotal || data.prestamo.microseguroValor || 0),
+          seguroDevueltoAcumulado
+        )
+      : 0;
     const seguroPendiente = Math.max(0, Math.round((seguroTotal - seguroDevueltoAcumulado) * 100) / 100);
 
     const getEstadoSeguro = () => {
@@ -690,18 +695,34 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                 </div>
 
                 {tieneMicroseguro && (
-                  <div className="bg-purple-50 rounded-xl p-3.5 border border-purple-200 space-y-2 mt-1 shadow-sm">
+                  <div className="bg-purple-50 rounded-xl p-3.5 border border-purple-200 space-y-2.5 mt-1 shadow-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-black text-purple-900 uppercase tracking-wide flex items-center gap-1.5">
-                        <span>🛡️</span> Microseguro ({data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : data.prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con Devolución' : 'Porcentaje'}):
+                        <span>🛡️</span> Microseguro ({data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : data.prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con Devolución' : data.prestamo.microseguroTipo || 'Configurado'}):
                       </span>
                       <span className="font-black text-purple-900 text-xl">
                         {formatCurrency(seguroTotal)}
                       </span>
                     </div>
+
+                    {/* Resaltado destacado si en este pago se realizó una devolución de microseguro */}
+                    {devolucionEnEstePago > 0 && (
+                      <div className="flex justify-between items-center bg-green-100/90 border border-green-300 px-3 py-2 rounded-lg">
+                        <div className="flex flex-col">
+                          <span className="text-green-950 font-black text-xs uppercase tracking-wide">
+                            Devolución de microseguro:
+                          </span>
+                          <span className="text-[11px] font-bold text-green-700">Abonado a la deuda en este pago</span>
+                        </div>
+                        <span className="font-black text-green-700 text-xl">
+                          +{formatCurrency(devolucionEnEstePago)}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2 text-sm pt-1.5 border-t border-purple-200/80">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-700 font-bold">Devuelto:</span>
+                        <span className="text-gray-700 font-bold">Devolución de microseguro:</span>
                         <span className="font-black text-green-700">
                           {seguroDevueltoAcumulado > 0 ? `+${formatCurrency(seguroDevueltoAcumulado)}` : formatCurrency(0)}
                         </span>

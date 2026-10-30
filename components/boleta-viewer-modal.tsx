@@ -27,6 +27,7 @@ interface BoletaPagoData {
     id: string
     monto: number
     fecha: string | Date
+    metodoPago?: string
     observaciones?: string | null
     numeroBoleta: string
     prestamo: {
