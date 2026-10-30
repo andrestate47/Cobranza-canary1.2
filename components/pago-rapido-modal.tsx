@@ -126,8 +126,12 @@ export default function PagoRapidoModal({
   const boletaRef = useRef<HTMLDivElement>(null)
 
   // Microseguro: total, ya devuelto y pendiente por devolver
-  const tieneMicroseguro = Boolean(prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && Number(prestamo.microseguroTotal || 0) > 0)
-  const seguroTotal = Number(prestamo.microseguroTotal || 0)
+  const tieneMicroseguro = Boolean(
+    (prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO') ||
+    Number(prestamo.microseguroTotal || 0) > 0 ||
+    Number(prestamo.microseguroValor || 0) > 0
+  )
+  const seguroTotal = Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0)
   const seguroYaDevuelto = Number(prestamo.seguroDevuelto || 0)
   const seguroPendiente = Math.max(0, Math.round((seguroTotal - seguroYaDevuelto) * 100) / 100)
   const montoDevolucionNum = devolverSeguro ? (parseFloat((montoDevolucion || '').replace(/[^0-9.]/g, '')) || 0) : 0

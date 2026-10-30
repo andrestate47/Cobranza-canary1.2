@@ -143,8 +143,11 @@ export default async function PrestamoDetailPage({ params }: PrestamoDetailPageP
       monto: parseFloat(prestamo.monto.toString()),
       interes: parseFloat(prestamo.interes.toString()),
       valorCuota: parseFloat(prestamo.valorCuota.toString()),
-      interesTotal: prestamo.interesTotal ? parseFloat(prestamo.interesTotal.toString()) : null,
-      microseguroTotal: prestamo.microseguroTotal ? parseFloat(prestamo.microseguroTotal.toString()) : 0,
+      microseguroTotal: (prestamo.microseguroTotal && parseFloat(prestamo.microseguroTotal.toString()) > 0)
+        ? parseFloat(prestamo.microseguroTotal.toString())
+        : (prestamo.microseguroTipo === 'DEVOLUCION' || prestamo.microseguroTipo === 'MONTO_FIJO') && prestamo.microseguroValor
+          ? parseFloat(prestamo.microseguroValor.toString())
+          : 0,
       microseguroValor: prestamo.microseguroValor ? parseFloat(prestamo.microseguroValor.toString()) : 0,
       seguroDevuelto: prestamo.pagos.reduce((acc, p) => acc + (p.devolucionSeguro ? parseFloat(p.devolucionSeguro.toString()) : 0), 0),
       moraCredito: prestamo.moraCredito ? parseFloat(prestamo.moraCredito.toString()) : 0,

@@ -53,7 +53,19 @@ export async function PUT(
     const interesNum = parseFloat(interes)
     const cuotasNum = parseInt(cuotas)
     const microseguroValorNum = parseFloat(microseguroValor || '0')
-    const microseguroTotalNum = parseFloat(microseguroTotal || '0')
+    let microseguroTotalNum = parseFloat(microseguroTotal || '0')
+
+    if (microseguroTipo === 'MONTO_FIJO' || microseguroTipo === 'DEVOLUCION') {
+      if (microseguroTotalNum === 0 && microseguroValorNum > 0) {
+        microseguroTotalNum = microseguroValorNum
+      }
+    } else if (microseguroTipo === 'PORCENTAJE') {
+      if (microseguroTotalNum === 0 && microseguroValorNum > 0) {
+        microseguroTotalNum = (montoNum * microseguroValorNum) / 100
+      }
+    } else if (microseguroTipo === 'NINGUNO') {
+      microseguroTotalNum = 0
+    }
 
     if (montoNum <= 0 || interesNum < 0 || cuotasNum <= 0) {
       return NextResponse.json(
