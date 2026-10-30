@@ -454,10 +454,14 @@ const ClienteCard = memo(function ClienteCard({
                               {prestamo.tipoCredito === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia'}
                             </Badge>
                           )}
-                          {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
-                            <Badge className="text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950 dark:text-purple-200 dark:border-purple-700 gap-1 shadow-sm">
+                          {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && (Number(prestamo.microseguroTotal) > 0 || Number(prestamo.microseguroValor) > 0 || prestamo.microseguroTipo === 'DEVOLUCION') ? (
+                            <Badge className={`text-xs font-bold border gap-1 shadow-sm ${
+                              prestamo.microseguroTipo === 'DEVOLUCION'
+                                ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-700'
+                                : 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950 dark:text-purple-200 dark:border-purple-700'
+                            }`}>
                               <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                              Seguro: {formatCurrency(prestamo.microseguroTotal)}
+                              {prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Seguro'}: {formatCurrency(Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0))}
                               {Number(prestamo.seguroDevuelto || 0) > 0 && (
                                 <span className="ml-1 text-[11px] text-green-700 dark:text-green-300 font-bold">
                                   (Devuelto: {formatCurrency(prestamo.seguroDevuelto || 0)})
@@ -632,7 +636,7 @@ const ClienteCard = memo(function ClienteCard({
                       </div>
 
                       {/* Estado y detalle del Microseguro */}
-                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && (Number(prestamo.microseguroTotal) > 0 || Number(prestamo.microseguroValor) > 0 || prestamo.microseguroTipo === 'DEVOLUCION') ? (
                         <div className="bg-purple-50 dark:bg-purple-950/60 rounded-lg p-3 border border-purple-200 dark:border-purple-800 text-xs shadow-sm space-y-2">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -640,12 +644,12 @@ const ClienteCard = memo(function ClienteCard({
                               <div>
                                 <span className="text-purple-900 dark:text-purple-100 font-bold block sm:inline">Microseguro: </span>
                                 <span className="text-purple-700 dark:text-purple-300 font-normal">
-                                  ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con devolución' : 'Porcentaje'})
+                                  ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Porcentaje'})
                                 </span>
                               </div>
                             </div>
                             <span className="font-extrabold text-sm text-purple-900 dark:text-purple-100 shrink-0">
-                              {formatCurrency(prestamo.microseguroTotal)}
+                              {formatCurrency(Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0))}
                             </span>
                           </div>
 

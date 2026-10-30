@@ -7,8 +7,6 @@ out
 dist
 
 # env
-.env
-.env.*
 !.env.example
 
 # logs
@@ -23,7 +21,6 @@ pnpm-debug.log*
 Thumbs.db
 
 # local tooling
-.vscode
 .idea
 
 # uploads / user data (no versionar)
@@ -43,3 +40,5 @@ branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
 
+.gitignore
+config.bat

@@ -428,6 +428,12 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
           color: 'bg-amber-100 text-amber-800 border-amber-300'
         };
       }
+      if (data.prestamo.microseguroTipo === 'DEVOLUCION') {
+        return {
+          texto: 'Devolución',
+          color: 'bg-blue-100 text-blue-800 border-blue-300'
+        };
+      }
       return {
         texto: 'Activo / Sin devolución',
         color: 'bg-purple-100 text-purple-800 border-purple-300'
@@ -698,7 +704,7 @@ const BoletaPago = forwardRef<HTMLDivElement, BoletaPagoProps>(
                   <div className="bg-purple-50 rounded-xl p-3.5 border border-purple-200 space-y-2.5 mt-1 shadow-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-black text-purple-900 uppercase tracking-wide flex items-center gap-1.5">
-                        <span>🛡️</span> Microseguro ({data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : data.prestamo.microseguroTipo === 'DEVOLUCION' ? 'Con Devolución' : data.prestamo.microseguroTipo || 'Configurado'}):
+                        <span>🛡️</span> Microseguro ({data.prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Monto Fijo' : data.prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : data.prestamo.microseguroTipo || 'Configurado'}):
                       </span>
                       <span className="font-black text-purple-900 text-xl">
                         {formatCurrency(seguroTotal)}
