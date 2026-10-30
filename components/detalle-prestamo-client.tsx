@@ -145,6 +145,7 @@ interface Prestamo {
   microseguroTipo: string
   microseguroValor: number
   microseguroTotal: number
+  seguroDevuelto?: number
   createdAt: string | Date
   updatedAt: string | Date
   cliente: Cliente
@@ -1148,7 +1149,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
       // Calcular microseguro total para la renovación
       const microseguroValorNum = parseFloat(valorMicroseguroRenovacion) || 0
       let microseguroTotal = 0
-      if (tipoMicroseguroRenovacion === 'MONTO_FIJO') {
+      if (tipoMicroseguroRenovacion === 'MONTO_FIJO' || tipoMicroseguroRenovacion === 'DEVOLUCION') {
         microseguroTotal = microseguroValorNum
       } else if (tipoMicroseguroRenovacion === 'PORCENTAJE') {
         microseguroTotal = (montoNum * microseguroValorNum) / 100
@@ -1225,7 +1226,7 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     
     // Calcular microseguro total para la renovación
     let microseguroTotal = 0
-    if (tipoMicroseguroRenovacion === 'MONTO_FIJO') {
+    if (tipoMicroseguroRenovacion === 'MONTO_FIJO' || tipoMicroseguroRenovacion === 'DEVOLUCION') {
       microseguroTotal = microseguroValorNum
     } else if (tipoMicroseguroRenovacion === 'PORCENTAJE') {
       microseguroTotal = (montoNum * microseguroValorNum) / 100
@@ -1333,8 +1334,8 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     setInteresEditar(prestamo.interes.toString())
     setTipoPagoEditar(prestamo.tipoPago)
     setCuotasEditar(prestamo.cuotas.toString())
-    setTipoMicroseguroEditar(prestamo.microseguroTipo)
-    setValorMicroseguroEditar(prestamo.microseguroValor?.toString() || "0")
+    setTipoMicroseguroEditar(prestamo.microseguroTipo || "NINGUNO")
+    setValorMicroseguroEditar((prestamo.microseguroValor || prestamo.microseguroTotal || 0).toString())
     
     // Obtener la fecha en formato YYYY-MM-DD para los inputs type="date"
     try {
@@ -1450,10 +1451,12 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
     try {
       // Calcular microseguro total
       let microseguroTotal = 0
-      if (tipoMicroseguroEditar === 'MONTO_FIJO') {
+      if (tipoMicroseguroEditar === 'MONTO_FIJO' || tipoMicroseguroEditar === 'DEVOLUCION') {
         microseguroTotal = microseguroValorNum
       } else if (tipoMicroseguroEditar === 'PORCENTAJE') {
         microseguroTotal = (montoNum * microseguroValorNum) / 100
+      } else if (tipoMicroseguroEditar === 'NINGUNO') {
+        microseguroTotal = 0
       }
       
       // Reconstruir fecha manteniendo el formato UTC al mediodía para evitar saltos (igual que en creación)
@@ -1661,12 +1664,16 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                       >
                         {getTipoPagoText(prestamo.tipoPago)}
                       </Badge>
-                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && (Number(prestamo.microseguroTotal) > 0 || Number(prestamo.microseguroValor) > 0 || prestamo.microseguroTipo === 'DEVOLUCION') ? (
                         <Badge
-                          className="text-xs bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700 whitespace-nowrap font-bold px-2.5 py-0.5 rounded-full gap-1 shadow-sm"
+                          className={`text-xs whitespace-nowrap font-bold px-2.5 py-0.5 rounded-full gap-1 shadow-sm ${
+                            prestamo.microseguroTipo === 'DEVOLUCION'
+                              ? 'bg-blue-100 text-blue-900 border border-blue-300 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-700'
+                              : 'bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700'
+                          }`}
                         >
                           <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                          Seguro: {formatCurrency(prestamo.microseguroTotal)}
+                          {prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Seguro'}: {formatCurrency(Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0))}
                         </Badge>
                       ) : (
                         <Badge
@@ -1959,14 +1966,33 @@ export default function DetallePrestamoClient({ prestamo, session }: DetallePres
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-gray-600 dark:text-gray-300 shrink-0 font-medium">Microseguro:</span>
                     <span className="font-semibold text-right break-words min-w-0">
-                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && prestamo.microseguroTotal ? (
-                        <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300">
-                          <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                          {formatCurrency(prestamo.microseguroTotal)}{" "}
-                          <span className="text-xs text-purple-500 font-normal">
-                            ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Porcentaje'})
+                      {prestamo.microseguroTipo && prestamo.microseguroTipo !== 'NINGUNO' && (Number(prestamo.microseguroTotal) > 0 || Number(prestamo.microseguroValor) > 0 || prestamo.microseguroTipo === 'DEVOLUCION') ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300">
+                            <ShieldCheck className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                            {formatCurrency(Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0))}{" "}
+                            <span className="text-xs text-purple-500 font-normal">
+                              ({prestamo.microseguroTipo === 'MONTO_FIJO' ? 'Fijo' : prestamo.microseguroTipo === 'DEVOLUCION' ? 'Devolución' : 'Porcentaje'})
+                            </span>
                           </span>
-                        </span>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                            Number(prestamo.seguroDevuelto || 0) >= Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0) && Number(prestamo.seguroDevuelto || 0) > 0
+                              ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800'
+                              : Number(prestamo.seguroDevuelto || 0) > 0
+                                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                                : 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800'
+                          }`}>
+                            Estado: {
+                              Number(prestamo.seguroDevuelto || 0) >= Number(prestamo.microseguroTotal || prestamo.microseguroValor || 0) && Number(prestamo.seguroDevuelto || 0) > 0
+                                ? 'Devuelto por completo'
+                                : Number(prestamo.seguroDevuelto || 0) > 0
+                                  ? `Devolución parcial (${formatCurrency(Number(prestamo.seguroDevuelto))})`
+                                  : prestamo.microseguroTipo === 'DEVOLUCION'
+                                    ? 'Devolución'
+                                    : 'Activo / Sin devolución'
+                            }
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-gray-400 dark:text-gray-500 text-xs font-normal">No incluye seguro</span>
                       )}
